@@ -42,6 +42,7 @@ jobs:
       - name: pytest
         shell: bash
         run: |
+          set +e    # Actions 默认 bash -e, pytest 一挂就短路, 注解发不出去
           python -m pytest tests -q --tb=short > pytest.log 2>&1
           rc=$?
           if [ $rc -ne 0 ]; then
