@@ -45,8 +45,7 @@ jobs:
           python -m pytest tests -q --tb=short > pytest.log 2>&1
           rc=$?
           if [ $rc -ne 0 ]; then
-            grep -E "^(FAILED|ERROR)|^E |^tests/|^apps/|Error" pytest.log | head -10 \
-              | while IFS= read -r line; do echo "::error::${line}"; done
+            tail -10 pytest.log | while IFS= read -r line; do echo "::error::${line}"; done
             cat pytest.log
             exit $rc
           fi
