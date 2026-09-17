@@ -108,6 +108,31 @@ def test_lyrics_online_fetch_and_negative_cache(tmp_path, monkeypatch):
         assert calls == ["曲B", "曲C"]
 
 
+def test_lyrics_first_fetch_on_fresh_boot(tmp_path, monkeypatch):
+    """刚开机的机器首求歌词不被负缓存挡 (2026-09-18 CI 全红揪出的坑)。
+
+    负缓存 elapsed = monotonic() - 上次错过时刻, 从没错过过的曲目拿默认
+    0.0 兜底 —— 开机不满 24 小时的机器 (CI 全新 runner / 刚重启的 NAS)
+    首求被当"24小时内刚错过"跳过, 联网补歌词静默失效。本地长 uptime 测
+    不出来, 冻结 monotonic 到开机 45 秒才能复现。"""
+    _seed_library()
+    library_queries.lyrics_queries._lyrics_fetch_misses.clear()
+    monkeypatch.setattr("time.monotonic", lambda: 45.0)   # 开机 45 秒
+    monkeypatch.setattr(library_queries.lyrics_queries, "fetch_lyrics",
+                        lambda *a: "[00:01.00]联网歌词")
+    api = (True, "https://lrc.invalid/api")
+    with session_factory()() as session:
+        page = library_queries.list_tracks(session, limit=10)
+        ids = {track.title: track.track_id for track in page.tracks}
+        got = library_queries.lyrics_for_track(session, ids["曲B"], api)
+        assert got is not None
+        assert got.lyrics == "[00:01.00]联网歌词" and got.lyrics_synced
+        # 反向: 真在 24 小时内错过过的还是要挡 (负缓存本意不受影响)
+        library_queries.lyrics_queries._lyrics_fetch_misses[ids["曲C"]] = 44.0
+        miss = library_queries.lyrics_for_track(session, ids["曲C"], api)
+        assert miss is not None and miss.lyrics == "" and not miss.lyrics_synced
+
+
 def test_search_four_boards(tmp_path):
     """搜索: 歌名/专辑/艺人/歌词四板块 + 语种过滤 + LIKE 转义。"""
     _seed_library()

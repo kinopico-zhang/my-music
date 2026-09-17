@@ -36,20 +36,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: pip install -r requirements.txt -r requirements-dev.txt
-      # 不带 --cov: 与本地 run_tests.sh 对齐 (覆盖率门槛配置保留给手动验证)。
-      # 失败细节提升为 check-run 注解 (Actions 日志 API 要鉴权, 注解走公开
-      # API 可读 —— 远程排查 CI 全红用的诊断步)
-      - name: pytest
-        shell: bash
-        run: |
-          set +e    # Actions 默认 bash -e, pytest 一挂就短路, 注解发不出去
-          python -m pytest tests -q --tb=short > pytest.log 2>&1
-          rc=$?
-          if [ $rc -ne 0 ]; then
-            tail -10 pytest.log | while IFS= read -r line; do echo "::error::${line}"; done
-            cat pytest.log
-            exit $rc
-          fi
+      # 不带 --cov: 与本地 run_tests.sh 对齐 (覆盖率门槛配置保留给手动验证)
+      - run: python -m pytest tests -q
 
   # 后端静态检查: pylint (app 严检 / tests 放宽仪式告警) + mypy 严格
   python-lint:
