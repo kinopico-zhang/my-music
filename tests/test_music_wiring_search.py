@@ -2,7 +2,7 @@
 回车收起键盘 + 结果四子页左右滑切换 + 打开 app 回上次停的页 —— 静态文本
 断言, 不碰数据库。拆自 test_music_page_wiring.py (文件超 200 行按域再拆)。"""
 
-from tests.music_static_files import music_browser_js, music_page_shell
+from tests.music_static_files import MUSIC_STATIC, music_browser_js, music_page_shell
 
 
 def test_music_183_search_restore_batch():
@@ -99,3 +99,31 @@ def test_music_186_search_batch():
     assert js.count("contains(document.activeElement)) document.activeElement.blur();") == 2
     # 搜索圆键聚焦收窄到栈顶层: 旧层那枚不许碰
     assert 'const input = top && top.pane.querySelector("#search-input");' in js
+
+
+def test_music_187_keyboard_scroll_repair():
+    """1.8.7 修「搜索页开关几回, 回主页底部一块黑、页面没充满屏」(用户
+    追了两个版本, 重启 app 都不消): iOS 键盘收走后赖账有两味 —— ① 键盘
+    避让把文档滚了 (overflow:hidden 拦不住, window.scrollY 赖非零而视口
+    偏移是 0; 1.8.5 只查偏移, 漏的正是这味); ② 视口停在偏移上 (1.8.5
+    修过)。收尾还经常一声事件不响, 脏滚位会被 iOS 会话恢复原样带回重启
+    后。对策全在全局事件层: 复位条件补查文档滚位; 焦点一走迟两拍补跑;
+    滚动恢复关掉; 开局/pageshow/回前台各清一次账。"""
+    ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
+        encoding="utf-8")
+    # 复位条件: 文档滚位 + 视口偏移两味都查; 焦点在输入框里不复位
+    # (别跟键盘避让的让位滚动打架)
+    assert "!typing && (window.scrollX || window.scrollY" in ge
+    assert "|| visualViewport.offsetLeft" in ge
+    assert "window.scrollTo(0, 0);" in ge
+    # 收尾没事件也兜得住: 焦点一离开输入框迟两拍各补一次
+    # (层滑出/移除的 420ms 罩在这个窗口里)
+    assert 'document.addEventListener("focusout", () => {' in ge
+    assert "setTimeout(lift, 350);" in ge
+    assert "setTimeout(lift, 900);" in ge
+    # iOS 会话恢复别把脏滚位带回来 (重启 app 黑区还在的元凶):
+    # 滚动恢复关掉 + 页面一亮出来就清账 (开局/pageshow/回前台)
+    assert 'if ("scrollRestoration" in history) history.scrollRestoration = "manual";' in ge
+    assert "addEventListener(\"pageshow\", lift);" in ge
+    assert "if (!document.hidden) lift();" in ge
+    assert "    lift();\n    addEventListener(\"pageshow\", lift);" in ge

@@ -35,13 +35,15 @@ def test_music_pane_fixed_chrome_wiring():
     assert "max(16px, env(safe-area-inset-left))" in root_css
     assert html.index('<main id="main">') < html.index('<div id="root-view">') \
         < html.index("</main>") < html.index('<div id="dock">')
-    # 一级页滚动/渲染都走 main/#root-view, 文档滚动彻底退出
+    # 一级页滚动/渲染都走 main/#root-view, 文档滚动彻底退出 —— 唯一例外
+    # 是 lift() 的脏滚位复位 (iOS 键盘避让会把文档滚了, overflow:hidden
+    # 拦不住; 1.8.7 起复位条件连 window.scrollY 一起查, 见搜索接线测试)
     assert '$("#main").scrollTop = pageState.rootScroll;' in js
     assert 'pageState.rootScroll = $("#main").scrollTop;' in js
-    assert "window.scrollY" not in js
+    assert js.count("window.scrollY") == 1
     assert '$("#root-view").innerHTML' in js
-    # 文档滚动唯一例外: iOS 键盘收走后视口可能停在偏移上 (回主页底部一块
-    # 黑), lift() 复位一次 —— 除它之外文档滚动仍彻底退出
+    # 文档滚动唯一例外: 键盘收走后 iOS 赖账 (文档停在滚位上或视口停在偏移
+    # 上, 回主页底部一块黑), lift() 复位一次 —— 除它之外文档滚动仍彻底退出
     assert js.count("window.scrollTo") == 1
     # 推入层铺满全高: 顶上一直铺到屏顶 (顶栏撤了, env 让开刘海), 底下从磨砂
     # 船坞/气泡底下过 (设计一致, 用户点名"气泡下面要有内容")

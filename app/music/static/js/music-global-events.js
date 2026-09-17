@@ -42,20 +42,46 @@ function bindGlobalEvents() {
   if (window.visualViewport) {
     const lift = () => {
       const active = document.activeElement;
-      const keyboard = active && active.tagName === "INPUT"
+      const typing = active && active.tagName === "INPUT";
+      const keyboard = typing
         ? Math.max(0, window.innerHeight - visualViewport.height
                    - visualViewport.offsetTop)
         : 0;
       document.documentElement.style.setProperty("--kb-h", `${keyboard}px`);
-      // 键盘收走后 iOS 偶尔把视口停在偏移上 (输入框随层撤走时没回滚),
-      // 表现是回主页后底部一块黑、页面没充满屏 —— 没有键盘就归零复位 (1.8.5)
-      if (!keyboard && (visualViewport.offsetLeft || visualViewport.offsetTop)) {
+      // 键盘收走后 iOS 赖账有两种风味, 哪种赖下都是回主页底部一块黑、
+      // 页面没充满屏, 还会被 iOS 会话恢复原样带回来 (重启 app 也不消,
+      // 用户追了两个版本):
+      // ① 键盘避让把文档滚了 (overflow:hidden 拦不住) —— 文档滚位
+      //   (scrollY) 赖着非零, 视口偏移反而是 0 (1.8.5 只查偏移, 漏的正是这味);
+      // ② 视口停在偏移上 (offsetTop/Left 非零, 1.8.5 修过的那味)。
+      // 文档永不滚是本应用铁律 (固定壳), 任何非零都是脏账 —— 焦点不在
+      // 输入框里就一律归零复位
+      if (!typing && (window.scrollX || window.scrollY
+                      || visualViewport.offsetLeft
+                      || visualViewport.offsetTop)) {
         window.scrollTo(0, 0);
       }
     };
     visualViewport.addEventListener("resize", lift);
     visualViewport.addEventListener("scroll", lift);
+    // 键盘收走的收尾经常一声事件都不响 (最后那下 resize 响在收干净之前,
+    // 从此再没人喊 lift): 焦点一离开输入框就迟两拍各补一次 —— 层滑出/
+    // 移除的 420ms 也罩在这个窗口里, 搜索页开关几回赖下的账当场清
+    document.addEventListener("focusout", () => {
+      setTimeout(lift, 350);
+      setTimeout(lift, 900);
+    });
+    // 开局/回前台/会话恢复: iOS 可能在页面亮出来之后才把脏滚位塞回来
+    // (重启 app 黑区还在的元凶) —— 页面一亮相就清一次账
+    lift();
+    addEventListener("pageshow", lift);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) lift();
+    });
   }
+  // 滚动自己管: iOS 重启/回退会"恢复"上次的滚位 —— 固定壳应用能被恢复的
+  // 只有脏账 (文档本来就不该滚), 关掉恢复, 清账的活 lift() 包了
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 }
 
 // ------------------------------------------------------------ 蜂窝流量
