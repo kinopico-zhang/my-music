@@ -30,8 +30,12 @@ def test_track_artwork_extraction_formats(tmp_path):
     assert extract_album_artwork(mp3_path) == front
 
     # tak (ape 系): "(Back)" 是裸图像字节, "(Front)" 带文件名前缀 —— 取正面且剥掉
+    # 最小合法 TAK 头: tBaK + STREAM_INFO 块 (type=1, size=13, 数据位全零) +
+    # END 块; mutagen ≥1.48 头解析变严, 缺 STREAM_INFO 的文件整个被拒
+    # (TAKHeaderError), 合法头才能让断言落在封面抽取而不是头校验上
+    tak_header = b"tBaK" + b"\x01\x0d\x00\x00" + b"\x00" * 13 + b"\x00" * 4
     tak_path = tmp_path / "01 Cello.tak"
-    tak_path.write_bytes(b"tBaK\x00\x00\x00\x00")     # 头 + 立即结束的空块
+    tak_path.write_bytes(tak_header)
     ape = APEv2()
     ape["Cover Art (Back)"] = APEBinaryValue(back)
     ape["Cover Art (Front)"] = APEBinaryValue(b"cover.jpg\x00" + front)
@@ -40,7 +44,7 @@ def test_track_artwork_extraction_formats(tmp_path):
 
     # 切不出图像的一律 None (不是图像开头又没有 \\0 分隔); 文件没了也是 None
     broken = tmp_path / "02 坏.tak"
-    broken.write_bytes(b"tBaK\x00\x00\x00\x00")
+    broken.write_bytes(tak_header)
     ape = APEv2()
     ape["Cover Art (Front)"] = APEBinaryValue(b"not an image")
     ape.save(broken)
