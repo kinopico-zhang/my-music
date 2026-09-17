@@ -30,7 +30,8 @@ def _make_library(root: Path) -> None:
                   "SCRIPT": "Hant", "ALBUM": "丙", "DATE": "2001"},
                  mtime=1000.0)
     _write_audio(root, "老歌手/2001 丙 [cccc3333]/02 曲D.flac", {}, mtime=1000.0)
-    (root / "老歌手/notes.txt").write_text("不是音频")
+    # 显式 utf-8: Windows 默认按 locale (cp1252) 写, 中文内容直接炸
+    (root / "老歌手/notes.txt").write_text("不是音频", encoding="utf-8")
     (root / ".隐藏/03 隐藏.flac").parent.mkdir(parents=True, exist_ok=True)
     (root / ".隐藏/03 隐藏.flac").write_bytes(_flac_bytes({"TITLE": "隐藏"}))
 
