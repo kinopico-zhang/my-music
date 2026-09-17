@@ -36,8 +36,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: pip install -r requirements.txt -r requirements-dev.txt
-      # 不带 --cov: 与本地 run_tests.sh 对齐 (覆盖率门槛配置保留给手动验证)
-      - run: python -m pytest tests -q
+      # 诊断步 (Windows 失败细节提升为注解 —— 日志 API 要鉴权, 注解公开可读)
+      - name: pytest
+        shell: bash
+        run: |
+          set +e
+          python -m pytest tests -q --tb=short > pytest.log 2>&1
+          rc=$?
+          if [ $rc -ne 0 ]; then
+            grep -E "^(FAILED|ERROR)" pytest.log | head -4 | while IFS= read -r line; do echo "::error::${line}"; done
+            tail -6 pytest.log | while IFS= read -r line; do echo "::error::${line}"; done
+            exit $rc
+          fi
 
   # 后端静态检查: pylint (app 严检 / tests 放宽仪式告警) + mypy 严格
   python-lint:
