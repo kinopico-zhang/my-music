@@ -26,8 +26,11 @@ def lyrics_for_track(session: Session, track_id: int,
     if track is None:
         return None
     if not track.lyrics and lyrics_api and lyrics_api[0]:
-        if time.monotonic() - _lyrics_fetch_misses.get(track.id, 0.0) \
-                > _LYRICS_MISS_TTL:
+        # 没求过的 (账上无记录) 立刻放行: monotonic 从开机起算, 若拿默认 0.0
+        # 当"上次错过时刻", 开机不满 24 小时的机器 (CI 全新runner / 刚重启的
+        # NAS) 会把首求也当"24小时内刚错过"挡掉, 联网补歌词静默失效
+        last_miss = _lyrics_fetch_misses.get(track.id)
+        if last_miss is None or time.monotonic() - last_miss > _LYRICS_MISS_TTL:
             album_title = session.scalar(
                 select(Album.title).where(Album.id == track.album_id)) or ""
             fetched = fetch_lyrics(lyrics_api[1], track.title, track.artist,
