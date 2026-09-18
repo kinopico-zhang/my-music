@@ -1,5 +1,5 @@
-"""My Music 页面静态接线测试: 统计页/主页/下载面/长按菜单/
-设置页的静态文件断言。"""
+"""My Music 页面静态接线测试: 统计页/下载面/长按菜单/
+设置页的静态文件断言 (主页的拆去 test_music_home_sections.py)。"""
 import re
 
 
@@ -19,40 +19,6 @@ def test_music_stats_page_wiring():
     assert 'data-set-tab="stats"' in js                   # 设置页四滑页之一
     assert 'renderStatsView(page("stats"));' in js        # 嵌进设置子页
     assert 'const body = target.querySelector("#stats-body");' in js  # 收层内
-
-
-def test_music_home_page_wiring():
-    """主页接线 (1.8.0: 主页是唯一根视图, 其余全是推入层): 上弹菜单六项 +
-    播放列表/最近播放两段 + 播放列表详情路由 + 最近播放独立页 (1.8.1,
-    E2E 再验真数据)。"""
-    html = music_page_shell()
-    assert '<div id="dock">' in html                     # 船坞三件套在场
-    assert 'data-pop-nav="playlists"' in html           # 菜单进播放列表
-    assert 'data-pop-nav="recent"' in html              # 菜单进最近播放页
-    assert 'id="dock-search"' in html                   # 搜索键直进搜索页
-    assert 'id="search-btn"' not in html    # 放大镜按钮已撤
-    assert 'id="sync-playlists"' not in html     # Plex 同步入口已撤
-    assert "playlist-row" in html                  # 行样式在
-    js = music_browser_js()
-    assert "function renderHomeView()" in js
-    assert '"/music/api/plays/recent?limit=20"' in js
-    assert '"/music/api/playlists"' in js          # 主页播放列表段
-    assert 'if (name === "playlist" && argument)' in js
-    assert "function renderPlaylistView(" in js
-    assert "playlistRowHTML" in js
-    # 播放列表独立成层 (原主页列表段上头的入口, 1.8.0 进上弹菜单)
-    assert "function renderPlaylistsPane(" in js
-    # 最近播放独立成层 (1.8.1): LRU 整页 + 次数替时长 (词标/下载标照旧)
-    assert "function renderRecentPane(" in js
-    assert '"recent", "downloads",' in js                 # PANE_VIEWS 收录
-    assert 'else if (view === "recent") renderRecentPane(target);' in js
-    assert '"/music/api/plays/recent?limit=100"' in js
-    assert "pageState.recentPane" in js                   # 点行开播的队列语境
-    assert "`×${track.play_count}`" in js                 # 行右缘 = 播过几次
-    # 默认进主页 (单地址批: 旧深链开局消化一次, URL 洗成光杆 /music);
-    # 1.8.8 起档案记整条轨迹, 开局逐层重放 (详见搜索接线测试)
-    assert 'history.replaceState(null, "", location.pathname + location.search);' in js
-    assert "journey.forEach(navigate);" in js
 
 
 def test_music_downloads_wiring():
@@ -131,7 +97,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v27" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v28" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 

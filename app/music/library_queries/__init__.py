@@ -11,12 +11,14 @@ from .browse_queries import (album_card, album_page, artist_page,
                              list_tracks, track_brief)
 from .lyrics_queries import credits_for_track, lyrics_for_track
 from .play_history_queries import recent_plays, record_play
-from .playlist_queries import list_playlists, playlist_page
+from .playlist_queries import (list_playlists, playlist_page,
+                               recent_playlists)
 from .search_queries import _matching_lyric_line, search_library
 
 __all__ = [
     "_matching_lyric_line", "album_card", "album_page", "artist_page",
     "credits_for_track", "library_stats", "list_albums", "list_artists",
     "list_playlists", "list_tracks", "lyrics_for_track", "playlist_page",
-    "recent_plays", "record_play", "search_library", "track_brief",
+    "recent_playlists", "recent_plays", "record_play", "search_library",
+    "track_brief",
 ]
