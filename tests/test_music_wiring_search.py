@@ -57,6 +57,14 @@ def test_music_183_search_restore_batch():
     assert 'const pager = event.target.closest("#search-body.paged, #settings-body");' in js
     assert "if (pager && pager.scrollLeft > 0) return;" in js
     assert "touch-action: pan-x pan-y;" in html
+    # 1.8.18 最左页右划退出整层 (用户点名「跟其他界面右划退出一样」):
+    # 原生平移把横拖整个抢走 (pointercancel), 右划返回死在半路 —— 触摸
+    # 看门在最左页右向坐实 (6px, 抢在浏览器自家 slop 之前) 的那一下
+    # preventDefault 掐掉原生平移, 手势让回右划返回; 左向切页/竖向滚页/
+    # 不在最左页照旧全交原生
+    assert 'pane.addEventListener("touchstart"' in js
+    assert "guardRight = dx > 0 && Math.abs(dx) > Math.abs(dy);" in js
+    assert "if (guardRight) event.preventDefault();" in js
     # 搜索歌曲行带封面 (与播放列表行同款 trackArtHTML)
     search_render = js[js.index("function renderSearchResults"):]
     assert 'trackRowHTML(track, trackArtHTML(track), "art")' in search_render
@@ -97,6 +105,13 @@ def test_music_185_search_top_pin():
     assert "input.focus(); input.select();" in js
     # 让位滚过页壳的话落定时归位, 标题底下别压着结果
     assert "shell.scrollTo(0, 0);" in js
+    # 1.8.18 修「点放大镜进来没有输入框」(用户报): 框默认藏着
+    # (:not(.editing) display:none), 藏着的框恰恰聚不上焦 —— 焦点进不去,
+    # .editing 就永远等不来。空查询开局先亮框; 点标题回来改 / 船坞键
+    # 聚焦前也都先亮框再 focus
+    assert 'if (!pageState.searchQuery) shell.classList.add("editing");' in js
+    assert "shell.classList.add(\"editing\");   // 框先亮出来才聚焦得上" in js
+    assert 'input.closest(".search-shell").classList.add("editing");' in js
 
 
 def test_music_186_search_batch():

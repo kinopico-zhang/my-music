@@ -24,7 +24,7 @@ function bindPlaylistDrag(container, reorder) {
     grip.setPointerCapture(event.pointerId);      // 移出把手事件也不丢
     playlistDrag = { wrap, wraps, row, from: index, target: index,
                      rowH: wrap.offsetHeight || 1, startY: event.clientY,
-                     offsetTop: wrap.offsetTop, moved: false };
+                     moved: false };
     row.classList.add("swiping", "dragging");
   });
   container.addEventListener("pointermove", (event) => {
@@ -36,8 +36,11 @@ function bindPlaylistDrag(container, reorder) {
       drag.moved = true;
     }
     drag.row.style.transform = `translateY(${dy}px)`;   // 被拖行跟手
+    // 目标位 = 起始下标 + 拖过的行数: 只认拖动距离, 不认绝对坐标 —— 绝对
+    // 坐标相对整个 offsetParent (头图/操作排的全高都记进来), 一动就整体
+    // 偏出去, 让位乱跳 (1.8.18 修的正是这个: 行距均匀, 距离换算就可靠)
     drag.target = Math.max(0, Math.min(drag.wraps.length - 1,
-        Math.round((drag.offsetTop + dy) / drag.rowH)));
+        drag.from + Math.round(dy / drag.rowH)));
     drag.wraps.forEach((wrap, index) => {               // 其余行让位
       if (wrap === drag.wrap) return;
       let shift = 0;

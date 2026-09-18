@@ -1,22 +1,17 @@
 /* music-downloads-select — My Music 已下载页多选删除 (1.8.6, 用户点名):
-   选择模式里行左缘出选择圈; 1.8.17 行删除改左滑, 选择模式里左滑让位
-   (拖不动也删不了, 点行只管勾选)。 */
-#dl-pane-body.selecting .dl-row { padding-left: 32px; position: relative; }
-/* 选择模式里点行 = 勾选, 左滑删除让位 (拖不动也删不了) */
+   1.8.18 改版「封面即复选框」—— 不再左移画选择圈, 选中的封面蒙暗 +
+   中央打白勾 (勾画在 .dl-art 裹层上, img 是替换元素挂不了伪元素),
+   行布局一毫米不动; 左滑删除让位 (拖不动也删不了, 点行只管勾选)。 */
 #dl-pane-body.selecting .swipe-wrap > button:first-child { transform: none !important; }
 #dl-pane-body.selecting .swipe-del { display: none; }
-/* 未选: 空圈; 选中: 实心圈带勾 (accent 底黑勾, 圆键同款对比) */
-#dl-pane-body.selecting .dl-row::before {
-  content: ""; position: absolute; left: 4px; top: 50%;
-  width: 19px; height: 19px; margin-top: -9.5px; border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,.4);
+.dl-art { position: relative; flex-shrink: 0; display: block; }
+/* 选中: 封面蒙暗 (半透黑) + 白勾居中, 与右上一对黑白灰键一个语言 */
+#dl-pane-body.selecting .dl-row.sel .dl-art::before {
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  border-radius: 6px; background: rgba(0,0,0,.55);
 }
-#dl-pane-body.selecting .dl-row.sel::before {
-  border-color: var(--accent); background: var(--accent);
-}
-#dl-pane-body.selecting .dl-row.sel::after {
-  content: "✓"; position: absolute; left: 4px; top: 50%;
-  width: 19px; height: 19px; margin-top: -9.5px; color: #000;
+#dl-pane-body.selecting .dl-row.sel .dl-art::after {
+  content: "✓"; position: absolute; inset: 0; z-index: 2;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
+  color: #fff; font-size: 17px; font-weight: 700;
 }
