@@ -38,14 +38,18 @@ def test_music_pane_fixed_chrome_wiring():
     # 一级页滚动/渲染都走 main/#root-view, 文档滚动彻底退出 —— 唯一例外
     # 是 lift() 的脏滚位复位 (iOS 键盘避让会把文档滚了, overflow:hidden
     # 拦不住; 1.8.7 起复位条件连 window.scrollY 一起查, 见视口接线测试);
-    # 另两处是视口医生 (1.8.10): 体检窗的现场数字行 + 回传快照, 都只读不写
+    # 其余四处都只读: 体检窗现场数字行 + 回传快照 (医生/HUD) + 收键「按住」
+    # 的循环与松手报数 (1.8.13, 详见视口接线测试)
     assert '$("#main").scrollTop = pageState.rootScroll;' in js
     assert 'pageState.rootScroll = $("#main").scrollTop;' in js
-    assert js.count("window.scrollY") == 3
+    assert js.count("window.scrollY") == 5
     assert '$("#root-view").innerHTML' in js
-    # 文档滚动唯一例外: 键盘收走后 iOS 赖账 (文档停在滚位上或视口停在偏移
-    # 上, 回主页底部一块黑), lift() 复位一次 —— 除它之外文档滚动仍彻底退出
-    assert js.count("window.scrollTo") == 1
+    # 文档滚动的写手只有两个: ① lift() —— 键盘收走后 iOS 赖账 (文档停在滚位
+    # 上或视口停在偏移上, 回主页底部一块黑), 复位一次; ② 1.8.13 收键「按住」
+    # —— 收键盘动画里把视口偏移钉在键盘整个高度 (逼「还原高度」记账记成
+    # 满高), 钉上/循环/松手归位共四处 (详见视口接线测试)。除它们之外
+    # 文档滚动仍彻底退出
+    assert js.count("window.scrollTo") == 5
     # 推入层铺满全高: 顶上一直铺到屏顶 (顶栏撤了, env 让开刘海), 底下从磨砂
     # 船坞/气泡底下过 (设计一致, 用户点名"气泡下面要有内容")
     pane_css = html[html.index(".push-pane {"):html.index(".push-pane .pane-scroll")]

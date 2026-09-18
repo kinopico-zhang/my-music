@@ -7,6 +7,22 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.13", date="2026-09-18", items=[
+        ChangelogItem(kind="修复", text="底部黑带的病根这回连数学都对上了: "
+                                       "回传数据里, 冻住的高度每次都正好等于"
+                                       "「键盘弹起时页面剩的高 + 收起瞬间页面"
+                                       "被顶起的距离」, 而正确答案该用键盘整个"
+                                       "的高度 —— 苹果在收键盘的半路就把这笔账"
+                                       "记走了。现在键盘一收, 应用会把页面悄悄"
+                                       "钉在原位陪动画走完, 让账记成正确的满高,"
+                                       " 黑带来不及冒头 (自动的, 不打扰)"),
+        ChangelogItem(kind="改进", text="万一哪天还是冻上了, 体检窗不说虚话了:"
+                                       " 「划掉重开应用」秒复原 —— 上一版的「刷"
+                                       "新复位」在你手机的回传里实测无效 (坏值"
+                                       "跟着窗口走, 刷了还矮), 只有新开一个窗口"
+                                       "才干净; 每次收键盘的按住/松手数字都记在"
+                                       "服务器日志里, 灵不灵有账可查"),
+    ]),
     ChangelogVersion(version="1.8.12", date="2026-09-18", items=[
         ChangelogItem(kind="修复", text="底部黑带这回换真管用的治法了: 上一版"
                                        "按社区验方做的「翻面」修复, 在你手机回传"
