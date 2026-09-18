@@ -17,6 +17,7 @@ from .search_schemas import (LyricHit, LyricsResponse, PlayRecordRequest,
 from .settings_schemas import (CellularMonth, CellularUsageReport,
                                MusicSettingsState, MusicSettingsUpdate)
 from .share_schemas import ShareCreated, ShareCreateRequest, SharePageData
+from .viewport_schemas import ViewportEvent, ViewportLogReport
 
 __all__ = [
     "AlbumCard", "AlbumPage", "AlbumPageList", "ArtistBrief", "ArtistPage",
@@ -28,4 +29,5 @@ __all__ = [
     "RecentTrackBrief", "RescanResponse", "ScanStatus", "ScanSummary",
     "ScannedTrack", "SearchResult", "ShareCreated", "ShareCreateRequest",
     "SharePageData", "TagFields", "TrackBrief", "TrackCredits", "TrackPageList",
+    "ViewportEvent", "ViewportLogReport",
 ]

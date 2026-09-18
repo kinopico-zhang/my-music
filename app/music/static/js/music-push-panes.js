@@ -5,7 +5,8 @@
 /* global $, bindPaneSwipe, pageState, pushStack, renderAlbumView, renderAlbumsPane,
           renderArtistView, renderArtistsPane, renderChangelogView, renderDownloadsPane,
           renderHomeView, renderPlaylistsPane, renderPlaylistView, renderRecentPane,
-          renderSearchView, renderSettingsView, renderStatsView, saveLastRoute */
+          renderSearchView, renderSettingsView, renderStatsView, saveLastRoute,
+          ViewportDoctor */
 /* exported closePushStack, paneMotion, pushPaneTarget, removePaneWhenSettled,
             renderRootView, routePushed, routeRoot, syncSearchDock, unlockRootScroll */
 
@@ -109,13 +110,18 @@ function openPushPane(view, id) {
 /** 收走的层等键盘收稳再移除 DOM (1.8.9): 键盘收起动画走到半路时移除
     聚焦过的元素, iOS 偶尔把布局视口整个冻在没收满的矮个上 —— 顶部
     纹丝不动 (不是滚位, scrollTo 够不着), fixed 船坞和 100dvh 一起垫高,
-    屏底露出一条纯黑 (录屏逐帧量过: 船坞上移 41pt)。420ms 滑出动画走完
-    后加一步: 等视口高度回到 innerHeight 附近 (键盘彻底收走) 才动手;
-    键盘赖着不收最多再等 1.2s, 别让层永远挂着。安卓 interactive-widget
-    键盘自己缩布局, innerHeight 跟着缩, 头一步就放行, 行为照旧。 */
+    屏底露出一条纯黑 (录屏逐帧量过: 船坞上移 41pt)。
+    收稳的判据 (1.8.10 修正) 交给视口医生: 独立模式 iPhone 键盘收起时
+    连 innerHeight 都在动画中, 要等它回到见过的满高才算真收稳 —— 1.8.9
+    自己判 (vv.height ≥ innerHeight) 在高度跟着键盘一起动的场合恒真,
+    等了等于没等, 1.8.10 用户复测黑带仍在就是这一处。键盘赖着不收最多
+    再等 1.2s, 别让层永远挂着 (安卓 interactive-widget 键盘自己缩布局,
+    医生对非病号直接放行, 行为照旧)。 */
 function removePaneWhenSettled(pane) {
-  const vv = window.visualViewport;
-  const settled = () => !vv || vv.height >= window.innerHeight - 12;
+  const settled = () => (typeof ViewportDoctor === "undefined"
+    ? !window.visualViewport
+      || window.visualViewport.height >= window.innerHeight - 12
+    : ViewportDoctor.settled());
   setTimeout(() => {
     if (settled()) { pane.remove(); return; }
     const start = Date.now();

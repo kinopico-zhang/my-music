@@ -17,9 +17,10 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v11 (2026-09-18 1.8.9: 键盘收起动画半途移除层 → 视口冻矮的
-// 底部黑带三件套修复 —— 静态资源地址变了 (?v= 各升), 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v11";
+// 壳缓存 v12 (2026-09-18 1.8.10: 黑带三味修复没断根 —— 收稳判据改等
+// innerHeight 回满高 (视口医生模块), 冻矮自动弹体检窗; 静态资源地址变了
+// (?v= 各升), 换版本号让 activate 清旧账)
+const SHELL_CACHE = "music-shell-v12";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档

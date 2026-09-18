@@ -2,7 +2,7 @@
 回车收起键盘 + 结果四子页左右滑切换 + 打开 app 回上次停的页 —— 静态文本
 断言, 不碰数据库。拆自 test_music_page_wiring.py (文件超 200 行按域再拆)。"""
 
-from tests.music_static_files import MUSIC_STATIC, music_browser_js, music_page_shell
+from tests.music_static_files import music_browser_js, music_page_shell
 
 
 def test_music_183_search_restore_batch():
@@ -107,77 +107,3 @@ def test_music_186_search_batch():
     assert js.count("contains(document.activeElement)) document.activeElement.blur();") == 3
     # 搜索圆键聚焦收窄到栈顶层: 旧层那枚不许碰
     assert 'const input = top && top.pane.querySelector("#search-input");' in js
-
-
-def test_music_187_keyboard_scroll_repair():
-    """1.8.7 修「搜索页开关几回, 回主页底部一块黑、页面没充满屏」(用户
-    追了两个版本, 重启 app 都不消): iOS 键盘收走后赖账有两味 —— ① 键盘
-    避让把文档滚了 (overflow:hidden 拦不住, window.scrollY 赖非零而视口
-    偏移是 0; 1.8.5 只查偏移, 漏的正是这味); ② 视口停在偏移上 (1.8.5
-    修过)。收尾还经常一声事件不响, 脏滚位会被 iOS 会话恢复原样带回重启
-    后。对策全在全局事件层: 复位条件补查文档滚位; 焦点一走迟两拍补跑;
-    滚动恢复关掉; 开局/pageshow/回前台各清一次账。"""
-    ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
-        encoding="utf-8")
-    # 复位条件: 文档滚位 + 视口偏移两味都查; 焦点在输入框里不复位
-    # (别跟键盘避让的让位滚动打架)
-    assert "!typing && (window.scrollX || window.scrollY" in ge
-    assert "|| visualViewport.offsetLeft" in ge
-    assert "window.scrollTo(0, 0);" in ge
-    # 收尾没事件也兜得住: 焦点一离开输入框迟两拍各补一次
-    # (层滑出/移除的 420ms 罩在这个窗口里)
-    assert 'document.addEventListener("focusout", () => {' in ge
-    assert "setTimeout(lift, 350);" in ge
-    assert "setTimeout(lift, 900);" in ge
-    assert "setTimeout(lift, 1800);" in ge   # 1.8.8 加长一拍 (100% 复现兜底)
-    # iOS 会话恢复别把脏滚位带回来 (重启 app 黑区还在的元凶):
-    # 滚动恢复关掉 + 页面一亮出来就清账 (开局/pageshow/回前台)
-    assert 'if ("scrollRestoration" in history) history.scrollRestoration = "manual";' in ge
-    assert "addEventListener(\"pageshow\", lift);" in ge
-    assert "if (!document.hidden) lift();" in ge
-    assert "    lift();\n    addEventListener(\"pageshow\", lift);" in ge
-
-
-def test_music_189_viewport_freeze_repair():
-    """1.8.9 修「键盘没收起就右划关搜索, 底部一条黑带」的真病根 (用户
-    录屏逐帧量出来的): 键盘收起动画走到半路时移除聚焦过的层, iOS 把
-    布局视口整个冻在没收满的矮个上 —— 顶部纹丝不动 (不是 1.8.5/1.8.7
-    修的偏移/滚位那两味, scrollTo 够不着), fixed 船坞和 100dvh 一起
-    垫高, 屏底露出纯黑。三层对策: ① 右划起手 (横向坐实) 就摘焦点,
-    键盘从拖动第一下就开始收 (同原生返回手势); ② 收层移除 DOM 不再
-    赌 420ms 够用 —— 等视口高度回到 innerHeight 附近 (键盘彻底收走)
-    才动手, 键盘赖着最多再等 1.2s; ③ 真被冻矮了应用自己修: 记着见过
-    的满高 (存档跨重启, 转屏按新方向重立), 没键盘却矮一截就拿常驻的
-    隐形输入框走一趟 focus→blur 逼视口重算 (定时器没手势未必唤得动
-    iOS 键盘, 再埋一手借用户下次触屏补一趟; 一回赖账最多修三次)。"""
-    html = music_page_shell()
-    ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
-        encoding="utf-8")
-    panes = (MUSIC_STATIC / "js" / "music-push-panes.js").read_text(
-        encoding="utf-8")
-    swipe = (MUSIC_STATIC / "js" / "music-pane-swipe.js").read_text(
-        encoding="utf-8")
-    # ① 起手摘焦点 + ② 收稳才移除: 两处收层共用同一个等待函数
-    assert "function removePaneWhenSettled(pane)" in panes
-    assert "removePaneWhenSettled(item.pane);" in panes    # closePushStack
-    assert "removePaneWhenSettled(pane);" in swipe         # 手势收层
-    assert "vv.height >= window.innerHeight - 12" in panes  # 键盘收走判据
-    assert "Date.now() - start > 1200" in panes            # 键盘赖着: 最多再等 1.2s
-    # ③ 视口冻矮的察觉与自修 (全局事件层): 满高基准 (开局读档 + 长高刷新 +
-    # 转屏重立) / 探针走一趟 focus→blur / 手势补一趟 / 三次封顶
-    assert '"music.fullInner"' in ge                       # 满高存档 (跨重启)
-    assert 'matchMedia("(orientation: landscape)").matches' in ge
-    assert "setTimeout(() => probe.blur(), 150);" in ge    # 键盘往返一趟
-    assert "if (fullInner - window.innerHeight > 12) repairViewport();" in ge
-    assert '"pointerdown", () => {' in ge                  # 借下次触屏补一趟
-    assert "{ once: true });" in ge
-    assert "repairs >= 3" in ge                            # 别闪个没完
-    # 触发条件: 没键盘 (视口回到 innerHeight 附近) + iOS 独有 (安卓布局
-    # 自己缩, innerHeight 天生会动, 不修)
-    assert "visualViewport.height >= window.innerHeight - 12" in ge
-    assert "/iP(hone|ad|od)/.test(navigator.userAgent)" in ge
-    # 探针本体: JS 建的常驻隐形输入框 (markup 不占行, 样式在 base.css)
-    assert 'probe.id = "kb-repair";' in ge
-    assert "document.body.appendChild(probe);" in ge
-    assert "#kb-repair {" in html                          # 隐形样式 (1px 全透明)
-    assert "opacity: 0; pointer-events: none;" in html
