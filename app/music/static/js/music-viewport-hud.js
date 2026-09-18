@@ -1,4 +1,4 @@
-// music-viewport-hud — 视口体检窗 + 回传 (1.8.10, 配合 music-viewport-doctor):
+// music-viewport-hud — 视口体检窗 + 回传 (1.8.11, 配合 music-viewport-doctor):
 // 冻矮时亮相的现场数字小窗 (平时绝不出现), 每行流水同时排进发件箱回传
 // 服务器 (data/viewport-doctor.jsonl) —— 手机上复现完, 日志已经在服务器上
 // 等人来读, 不用截图。本模块只管「说」: 屏幕上说什么、往服务器发什么,
@@ -14,6 +14,7 @@ const ViewportHUD = (() => {
   let hud = null;
   let hudBody = null;
   let probeBar = null;
+  let hudTick = 0;
   let sending = false;
   let flushTimer = 0;
 
@@ -52,12 +53,16 @@ const ViewportHUD = (() => {
   function show() {
     if (!hud) {
       const sheet = document.createElement("style");
-      sheet.textContent = "#doctor-hud{position:fixed;top:8px;left:8px;z-index:999;"
+      // 1.8.11: 挪出顶部刘海/状态栏的模糊地带 (1.8.10 弹在 top:8px, 用户
+      // 点不到); 整扇窗都可点 = 立即修复 (按钮只是个样子, 冒泡上来一样算)
+      sheet.textContent = "#doctor-hud{position:fixed;"
+        + "top:calc(env(safe-area-inset-top) + 8px);left:8px;z-index:999;"
         + "max-width:80vw;padding:8px 10px;border:1px solid #fa2d48;border-radius:8px;"
         + "background:rgba(0,0,0,.92);color:#f5f5f7;font:11px/1.6 ui-monospace,monospace;"
-        + "white-space:pre-wrap;word-break:break-all}"
-        + "#doctor-hud button{margin:0 0 8px;padding:4px 14px;"
-        + "border:1px solid #fa2d48;border-radius:999px;color:#fa2d48;font:inherit}"
+        + "white-space:pre-wrap;word-break:break-all;cursor:pointer}"
+        + "#doctor-hud button{display:block;margin:0 0 8px;padding:10px 26px;"
+        + "border:1px solid #fa2d48;border-radius:999px;color:#fa2d48;"
+        + "font:600 14px/1 ui-monospace,monospace;background:rgba(250,45,72,.12)}"
         + "#doctor-probe{position:fixed;left:0;right:0;height:5px;"
         + "background:#ff3b30;z-index:998}";
       document.head.appendChild(sheet);
@@ -66,9 +71,9 @@ const ViewportHUD = (() => {
       const fix = document.createElement("button");
       fix.type = "button";
       fix.textContent = "立即修复";
-      fix.addEventListener("click", repair);  // 点按钮 = 带手势的修复
       hudBody = document.createElement("div");
       hud.append(fix, hudBody);
+      hud.addEventListener("click", () => repair({ gesture: true, force: true }));
       probeBar = document.createElement("div");   // 画布探针: 画得进黑带说明
       probeBar.id = "doctor-probe";               // CSS 还能把页面撑满 (还有救)
       probeBar.style.top = `${full() - 6}px`;
@@ -77,10 +82,18 @@ const ViewportHUD = (() => {
     hudBody.textContent = stat();
     hud.hidden = false;
     probeBar.hidden = false;
-    send();                                    // 亮相的现场先送一批
+    clearInterval(hudTick);              // 亮着期间每秒刷现场数字
+    hudTick = setInterval(() => {
+      if (!hud.hidden) hudBody.textContent = stat();
+    }, 1000);
+    send();                              // 亮相的现场先送一批
   }
   function hide() {
-    if (hud) { hud.hidden = true; probeBar.hidden = true; }
+    if (hud) {
+      hud.hidden = true;
+      probeBar.hidden = true;
+      clearInterval(hudTick);
+    }
   }
   function wire(options) {
     stat = options.stat;                       // 医生注入: 现场数字/修复/满高
