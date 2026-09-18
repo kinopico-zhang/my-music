@@ -35,16 +35,18 @@ def test_music_187_keyboard_scroll_repair():
 
 def test_music_189_viewport_freeze_repair():
     """1.8.9 起「键盘没收起就右划关掉搜索, 底部一条黑带」的诊治线。
-    三轮回传把病根的数学都对上了 (1.8.13): iOS 18 独立模式键盘收起那一下,
-    WebKit 把「还原高度」记成 键盘弹起时 innerHeight + 收起起手时视口偏移
+    四轮回传把病根的数学都对上了: 独立模式键盘收起那一下, WebKit 把
+    「还原高度」记成 键盘弹起时 innerHeight + 收起起手时视口偏移
     (两回都是 415+356 → 冻在 771/776), 正确答案 812 = 415+397 (键盘整个
-    高度)。对策: ① 右划起手 (横向坐实) 就摘焦点; ② focusout 一到 (键盘还
-    开着) 就把视口偏移「按住」在键盘整个高度上, 一帧一帧跟系统的回滚抢,
-    innerHeight 回满 (账记对了) 或 1 秒上限才松手归位; ③ lift() 在按住期间
-    避让 (别把钉住的偏移抹了); ④ 冻矮 0.7s 实锤 → 体检窗给真话 (划掉重开
-    秒复原 —— 刷新实测无效, 坏值跟着 webview 走)。误诊修正 (1.8.11): 判据
-    看焦点在不在输入框, 不拿 vv 与 inner 互比 (恒相等)。流水全程回传
-    data/viewport-doctor.jsonl (见 test_music_viewport_log.py)。"""
+    高度)。收手抢账三连败 (翻面/meta 踢/键盘往返 1.8.11; 收键按住 1.8.13
+    —— 钉住的 397 在回传里看得见, 账还是记 356, 记账读的是系统自家的
+    数, 页面钉什么它不看), 1.8.14 换起手治: 病根在键盘弹起那一下 ——
+    焦点元素被挡住, 系统滚文档让位, 收起就按这个半路滚位记账; 借鉴
+    my-tesla 费用弹窗 (输入框屏幕居中, 同机同系统实测收键底部无恙):
+    键盘起手前把搜索栏预抬到屏幕上部, 焦点元素一直在明处, 让位一下都
+    不滚, 收键没账可记错。冻矮 0.7s 实锤 → 体检窗给真话 (再进搜索点
+    键盘收起键再返回当场复原 —— 回传实测; 划掉重开只有三成灵)。流水
+    全程回传 data/viewport-doctor.jsonl (见 test_music_viewport_log.py)。"""
     html = music_page_shell()
     ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
         encoding="utf-8")
@@ -53,8 +55,6 @@ def test_music_189_viewport_freeze_repair():
     swipe = (MUSIC_STATIC / "js" / "music-pane-swipe.js").read_text(
         encoding="utf-8")
     doctor = (MUSIC_STATIC / "js" / "music-viewport-doctor.js").read_text(
-        encoding="utf-8")
-    heal = (MUSIC_STATIC / "js" / "music-viewport-heal.js").read_text(
         encoding="utf-8")
     hud = (MUSIC_STATIC / "js" / "music-viewport-hud.js").read_text(
         encoding="utf-8")
@@ -67,10 +67,11 @@ def test_music_189_viewport_freeze_repair():
     assert "removePaneWhenSettled(pane);" in swipe         # 手势收层
     assert "ViewportDoctor.settled()" in panes
     assert "Date.now() - start > 1200" in panes   # 键盘赖着: 最多再等 1.2s
-    # 装载顺序: HUD 先载 (医生 wire 时在场), 再治疗手法, 再医生
-    assert ('music-viewport-hud.js?v=4' in html
-            and 'music-viewport-heal.js?v=3' in html
-            and 'music-viewport-doctor.js?v=4' in html)
+    # 装载顺序: HUD 先载 (医生 wire 时在场), 再医生 —— 1.8.14 治法挪进
+    # 全局事件层 (预抬), heal 模块整个退役, 装载少一件
+    assert ('music-viewport-hud.js?v=5' in html
+            and 'music-viewport-doctor.js?v=5' in html
+            and "music-viewport-heal" not in html)
     # 只医独立模式 iPhone: 浏览器 Safari 工具栏自己收放 (满高基准立不住),
     # 安卓 interactive-widget 布局自己缩 (是正常不是病)
     assert 'window.matchMedia("(display-mode: standalone)").matches' in doctor
@@ -86,27 +87,30 @@ def test_music_189_viewport_freeze_repair():
     assert "full - window.innerHeight > 12" in doctor
     assert "}, 700);" in doctor
     assert "declared = true;" in doctor
-    # 按住手法 (heal, 1.8.13 验方): focusout 同步把偏移钉到键盘整个高度
-    # (抢在收起动画起手前 —— 记账在起手那一下), rAF 一帧一帧跟系统回滚抢,
-    # 回满或 1 秒才松手归位; 焦点回来了 (键盘没走) 就撤手别搅局
-    assert ('window.scrollTo(0, overlap);' in heal
-            and "requestAnimationFrame(hold);" in heal
-            and 'holding: () => holding' in heal
-            and "撤手 (焦点回来了)" in heal)
-    assert ('松手 i${window.innerHeight} y${y}' in heal
-            and '" 回满"' in heal)      # 松手报数: i812=按住了, i771=没按住
-    # 医生调度: focusout 一到 (键盘还开着) 就按住; 修不好时窗口给真话
-    assert ('ViewportHeal.holdDuringDismissal('
-            'full - window.innerHeight, full, "收键");' in doctor)
-    assert '"治不了就划掉重开应用 (秒复原)"' in doctor
+    # ③ 预抬 (1.8.14, 在全局事件层): 焦点一进输入框立刻把搜索栏抬到屏幕
+    # 上部 (--kb-h: 60vh, 抢在键盘起手之前 —— 让位的判断在起手之后,
+    # 它看见的就是已在明处的输入框, 让位一下都不滚); 键盘缩到位
+    # (innerHeight 比起跑线矮过 40px) 才落回键盘上沿; 键盘已开着 (焦点
+    # 换了个框) 不抬; 650ms 没见矮 (实体键盘) 放回原位
+    assert 'document.addEventListener("focusin", (event) => {' in ge
+    assert 'document.documentElement.style.setProperty("--kb-h", "60vh");' in ge
+    assert "window.innerHeight >= focusInner - 40" in ge
+    assert "if (keyboardUp) return;" in ge
+    assert 'document.documentElement.style.setProperty("--kb-h", "0px");' in ge
+    assert "}, 650);" in ge
+    # 预抬也只医独立模式 iPhone (桌面/安卓的账不这么记)
+    assert 'if (!window.matchMedia("(display-mode: standalone)").matches' in ge
+    # 体检窗给实测真话 (回传数据: 键盘收起键那条路当场复原, 重启只有三成)
+    assert ('"治不了就再进搜索, 点键盘收起键收掉再返回 (重启不保证灵)"'
+            in doctor)
     assert 'ViewportHUD.wire({ stat });' in doctor
-    assert '"My Music 1.8.13 视口体检' in doctor
-    # lift() 避让: 按住期间归零复位 = 拆台 (松手时按住自己会归位)
-    assert "ViewportHeal.holding()" in ge
-    # 换新文档的路 1.8.12 试过死了 (归来还是矮的, 坏值跟着 webview 走):
-    # 刷新/深修那条线撤干净, 只留开局报数 (带这趟文档怎么来的, 拆连开谜团)
-    for dead in ("reloadDeep", "deepRepair", "deepRepairAt", "kb-repair"):
-        assert dead not in doctor and dead not in heal and dead not in hud, dead
+    assert '"My Music 1.8.14 视口体检' in doctor
+    # 走过的死路撤干净: 换新文档 (1.8.12: 归来还是矮的, 坏值跟着 webview
+    # 走) + 收键按住 (1.8.13: 记账不读页面实际滚动) —— heal 模块删了,
+    # 标识一个不留; 只留开局报数 (带这趟文档怎么来的, 拆连开谜团)
+    for dead in ("reloadDeep", "deepRepair", "deepRepairAt", "kb-repair",
+                 "holdDuringDismissal", "ViewportHeal"):
+        assert dead not in doctor and dead not in ge and dead not in hud, dead
     assert ("performance.getEntriesByType(\"navigation\")" in doctor
             and "开局 i${window.innerHeight} 满高${full} ${nav}" in doctor)
     # 体检窗 (HUD 管「说」): 挪出刘海/状态栏的模糊地带 (1.8.10 弹在

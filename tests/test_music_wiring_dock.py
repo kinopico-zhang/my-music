@@ -137,11 +137,11 @@ def test_music_top_fallback_removed():
     assert "margin-top: max(env(safe-area-inset-top, 0px), var(--top-floor));" in grab_css
     # 首帧兜底的独立模式媒体查询也撤了 (147px 黑罩那套, 别回来)
     assert "147px" not in html
-    # 脚本清单随行: 45 个模块全带版本参数 (1.8.1: +recent-pane; 1.8.3:
+    # 脚本清单随行: 模块全带版本参数 (1.8.1: +recent-pane; 1.8.3:
     # +search-pages; 1.8.5: +bubble-swipe; 1.8.6: +downloads-select,
-    # push-panes 拆出 pane-swipe)
+    # push-panes 拆出 pane-swipe; 1.8.14: -viewport-heal —— 按住验方退役)
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    assert len(scripts) == 48 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 47 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
     webapp_dir = Path(__file__).parent.parent / "app" / "music" / "webapp"

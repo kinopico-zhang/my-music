@@ -1,7 +1,7 @@
 // music-global-events — My Music 全局事件绑定 (船坞键/封面文件/Esc) + 蜂窝流量浏览器适配器。
 // 拆自 music.js (结构化重构), 1.8.0 页签栏撤掉: 搜索键/菜单键在这里接线。
 "use strict";
-/* global $, SCAN_POLL_INTERVAL_MS, ViewportHeal, bindDockMenu, checkScanStatus,
+/* global $, SCAN_POLL_INTERVAL_MS, bindDockMenu, checkScanStatus,
           closeDockMenu, closeFullPlayer, closePushStack, coverUploadPlaylistId,
           createCellularMonitor, navigate, playerOpen, pushStack,
           uploadPlaylistCover */
@@ -40,13 +40,25 @@ function bindGlobalEvents() {
   // 量出键盘高写进 --kb-h (CSS 把搜索栏抬到键盘上沿); 没有输入框在焦点上
   // 时归零 —— 捏拉缩放同样会缩 visualViewport, 别误抬。安卓
   // interactive-widget=resizes-content 布局自己缩, 量出来是 0, 两不误伤。
+  // 1.8.14 预抬 (借鉴 my-tesla 费用弹窗, 同机同系统实测无恙): iOS 只在
+  // 「焦点元素被键盘挡住」时才滚文档让位, 收键盘那笔记坏账 (黑带病根,
+  // 四轮回传实锤) 正是从这一滚记下的 —— 那边输入框在屏幕正中, 键盘来
+  // 之前就在明处, 一次都没滚过。所以键盘起手之前先把搜索栏预抬到屏幕
+  // 上部, 让位一下都不用滚; 键盘缩到位 (innerHeight 矮下去) 再落回来贴
+  // 着键盘坐。
   if (window.visualViewport) {
+    let focusInner = 0;     // 焦点进框那一刻的 innerHeight (键盘起跑线)
+    let keyboardUp = false; // 这轮焦点里键盘真来过 —— 焦点换框别再抬
     const lift = () => {
-      // 收键按住中 (1.8.13): 医生在收键盘动画里把视口偏移钉在键盘整个高度上
-      // (逼「还原高度」记成满高), 这会儿归零复位 = 拆台 —— 松手时按住自己会归位
-      if (window.ViewportHeal && ViewportHeal.holding()) return;
       const active = document.activeElement;
-      const typing = active && active.tagName === "INPUT";
+      const typing = active && (active.tagName === "INPUT"
+                                || active.tagName === "TEXTAREA");
+      if (typing && focusInner && window.innerHeight >= focusInner - 40) {
+        return;             // 键盘还在来的路上: 预抬保持住, 这会儿落回去 = 又送进键盘底下
+      }
+      if (typing && focusInner) keyboardUp = true;   // 矮过身了: 键盘真来了
+      focusInner = 0;
+      if (!typing) keyboardUp = false;
       const keyboard = typing
         ? Math.max(0, window.innerHeight - visualViewport.height
                    - visualViewport.offsetTop)
@@ -68,6 +80,23 @@ function bindGlobalEvents() {
     };
     visualViewport.addEventListener("resize", lift);
     visualViewport.addEventListener("scroll", lift);
+    // 预抬: 焦点一进输入框立刻抬 (抢在键盘起手之前 —— 让位的判断在起手
+    // 之后, 它看见的就是已在明处的输入框)
+    document.addEventListener("focusin", (event) => {
+      const el = event.target;
+      if (!el || (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA")) return;
+      if (keyboardUp) return; // 键盘已经开着 (焦点换了个框): 栏已贴着键盘, 别抬
+      if (!window.matchMedia("(display-mode: standalone)").matches
+          || !/iP(hone|ad|od)/.test(navigator.userAgent)) return;  // 桌面/安卓的账不这么记
+      focusInner = window.innerHeight;
+      document.documentElement.style.setProperty("--kb-h", "60vh");
+      setTimeout(() => {    // 650ms 没见矮 (实体键盘/起手被拦): 当无事放回
+        if (focusInner && window.innerHeight >= focusInner - 40) {
+          focusInner = 0;
+          document.documentElement.style.setProperty("--kb-h", "0px");
+        }
+      }, 650);
+    });
     // 键盘收走的收尾经常一声事件都不响 (最后那下 resize 响在收干净之前,
     // 从此再没人喊 lift): 焦点一离开输入框就迟几拍各补一次 —— 层滑出/
     // 移除的 420ms 也罩在这个窗口里, 搜索页键盘没收就右划关掉 (100%

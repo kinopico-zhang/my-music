@@ -1,17 +1,20 @@
-// music-viewport-doctor — My Music 视口体检 (1.8.13): 盯着「页面高度」本身。
-// 病 (三轮回传实锤, iOS 18.7 独立模式): 键盘弹起 innerHeight 跟着缩
+// music-viewport-doctor — My Music 视口体检 (1.8.14): 盯着「页面高度」本身。
+// 病 (四轮回传实锤, 独立模式 iPhone): 键盘弹起 innerHeight 跟着缩
 // (812→415), 收起那一下 WebKit 把「还原高度」记成 415+偏移半路值 (771/776,
-// 差的那截就是黑带), 页面里翻面/meta 踢/键盘往返全无效, 刷新换文档也不行
-// (坏值跟着 webview 走); 滚位/偏移两味 1.8.7 已治好。本模块管「诊断+调度」:
-//   ① 判据: 键盘开着 = 焦点在输入框 (iOS 18 独立模式里 vv 与 inner 永远
-//      相等, 互比是空转 —— 1.8.10 误诊过还抢了用户焦点);
-//   ② 治疗 (手法在 music-viewport-heal.js): 键盘一收就把视口偏移「按住」
-//      在键盘整个高度上, 让那笔记账记成满高 (验方见 heal 头注);
-//   ③ 体检窗 (music-viewport-hud.js 管「说」): 现场数字 + 回传服务器日志
-//      (data/viewport-doctor.jsonl); 治不了时直说 —— 划掉重开应用秒复原
-//      (回传实测: 换新文档没用, 坏值跟着 webview 走, 只有新 webview 干净)。
+// 差的那截就是黑带), 页面里翻面/meta 踢/键盘往返/收键按住全无效 (1.8.11/
+// 1.8.13 回传: 记账读的是苹果自家的数, 页面钉什么都没用), 刷新换文档也不行
+// (坏值跟着 webview 走), 划掉重开只有三成灵 (回传实测 5 次开局 3 次带病)。
+// 病根在起手不在收手: 键盘弹起时「焦点元素被挡住」→ iOS 滚文档让位 → 收起
+// 按这个半路滚位记账。1.8.14 的治法在 music-global-events.js (预抬: 键盘
+// 起手前把搜索栏抬到屏幕上部, 焦点元素一直在明处, 让位一下都不滚 —— 借鉴
+// my-tesla 费用弹窗, 输入框居中, 同机同系统实测无恙); 本模块管「诊断+回传」:
+//   ① 判据: 键盘开着 = 焦点在输入框 (独立模式里 vv 与 inner 永远相等,
+//      互比是空转 —— 1.8.10 误诊过还抢了用户焦点);
+//   ② 体检窗 (music-viewport-hud.js 管「说」): 现场数字 + 回传服务器日志
+//      (data/viewport-doctor.jsonl); 治不了时直说真话 —— 回传实测「再进
+//      一次搜索、点键盘收起键收掉、再返回」当场复原 (重启不保证灵)。
 "use strict";
-/* global ViewportHUD, ViewportHeal */
+/* global ViewportHUD */
 /* exported ViewportDoctor */
 
 const ViewportDoctor = (() => {
@@ -51,12 +54,12 @@ const ViewportDoctor = (() => {
   let said = [];                       // 流水留底 (拼进现场数字最后几行)
   function stat() {
     return [
-      "My Music 1.8.13 视口体检 (现场已回传)",
+      "My Music 1.8.14 视口体检 (现场已回传)",
       `screen ${window.screen.width}x${window.screen.height} dpr ${window.devicePixelRatio}`,
       `inner ${window.innerHeight} / 满高 ${full} (差 ${full - window.innerHeight})`,
       `vv ${vv ? `${Math.round(vv.height)} top ${Math.round(vv.offsetTop)}` : "无"}`,
       `scrollY ${window.scrollY} · 焦点 ${typing() ? "输入框" : "无"}`,
-      "治不了就划掉重开应用 (秒复原)",
+      "治不了就再进搜索, 点键盘收起键收掉再返回 (重启不保证灵)",
       "",
       ...said,
     ].join("\n");
@@ -98,7 +101,7 @@ const ViewportDoctor = (() => {
       clearTimeout(freezeTimer);
       freezeTimer = setTimeout(() => {
         freezeSnap = -1;
-        if (!patient() || typing() || window.innerHeight >= full - 12) return;
+        if (!patient() || typing() || !sick()) return;
         declared = true;
         say(`冻矮实锤 inner=${window.innerHeight} 差${full - window.innerHeight}`);
         ViewportHUD.show();
@@ -118,12 +121,6 @@ const ViewportDoctor = (() => {
   });
   document.addEventListener("focusout", () => {
     say("focusout");
-    // 收键按住 (1.8.13 验方): 键盘还开着 (innerHeight 矮着) 且焦点真走了,
-    // 就把偏移钉在键盘整个高度上陪它收完 —— 「还原高度」那笔记账只在收起
-    // 起手那一下记 (见 heal 头注), 钉住了就记成满高
-    if (patient() && !typing() && sick()) {
-      ViewportHeal.holdDuringDismissal(full - window.innerHeight, full, "收键");
-    }
     setTimeout(check, 350);
     setTimeout(check, 900);
     setTimeout(check, 1800);

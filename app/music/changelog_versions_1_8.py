@@ -7,6 +7,26 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.14", date="2026-09-18", items=[
+        ChangelogItem(kind="修复", text="底部黑带这回从起手治: 你提醒得准 —— "
+                                       "记账那边的应用输充电费也弹键盘, 收回去"
+                                       "底部好好的。对比两边代码找到差别: 那边"
+                                       "输入框在屏幕正中, 键盘来之前就在明处; "
+                                       "听歌的搜索框钉在屏幕最底, 键盘每次弹起"
+                                       "都先把它挡住, 系统就滚一下页面给它让位, "
+                                       "黑带正是这一滚在收键盘时记下的账。现在"
+                                       "键盘弹起前先把搜索框抬到屏幕上部, 让位"
+                                       "一下都不用滚, 收键盘时没账可记错 (键盘"
+                                       "到位后搜索框照旧落回键盘上沿坐好, 全程"
+                                       "自动)"),
+        ChangelogItem(kind="改进", text="上一版「收键盘时按住页面」的验方, 回传"
+                                       "数据实锤没按住 —— 系统记账读的是它自家"
+                                       "记的数, 页面实际钉在哪儿它不看, 这条路"
+                                       "整个撤了。体检窗的指路也换成实测真话: "
+                                       "万一还冻上, 「再进一次搜索、点键盘自带"
+                                       "的收起键、再返回」当场复原; 划掉重开实"
+                                       "测只有三成灵, 别指望它"),
+    ]),
     ChangelogVersion(version="1.8.13", date="2026-09-18", items=[
         ChangelogItem(kind="修复", text="底部黑带的病根这回连数学都对上了: "
                                        "回传数据里, 冻住的高度每次都正好等于"
