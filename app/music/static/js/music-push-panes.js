@@ -8,7 +8,7 @@
           renderSearchView, renderSettingsView, renderStatsView, saveLastRoute,
           ViewportDoctor */
 /* exported closePushStack, paneMotion, pushPaneTarget, removePaneWhenSettled,
-            renderRootView, routePushed, routeRoot, syncSearchDock, unlockRootScroll */
+            renderRootView, routePushed, routeRoot, unlockRootScroll */
 
 // ------------------------------------------------------------ 二级页推入层
 // 专辑/艺人/播放列表走 iOS 设置式二级页: 从右滑入盖住一级, 右划/返回键滑出。
@@ -102,7 +102,6 @@ function openPushPane(view, id) {
   pushStack.push({ view, id, pane });
   bindPaneSwipe(pane);
   paneMotion();                     // 滑入途中气泡暂撤磨砂 (重影对策)
-  syncSearchDock();                 // 搜索层到顶: 船坞让位给搜索框 (1.8.5)
   void pane.offsetWidth;   // 起点样式落地再放滑入 (rAF 在安静页会饿死, 不用它)
   pane.classList.add("open");
   return pane.querySelector(".pane-scroll");
@@ -149,16 +148,6 @@ function closePushStack(keep = 0) {
   if (!pushStack.length) {
     unlockRootScroll();
   }
-  syncSearchDock();                 // 换了顶层: 船坞/搜索框谁站岗重排 (1.8.5)
   saveLastRoute();                  // 收层后停在哪页也记下 (开局回跳)
-}
-
-/** 搜索层在不在栈顶 (1.8.5 用户点名「三个控件消失, 换成搜索框」): 在 —
-    船坞三件套让位 (CSS body.search-top), 搜索页的 .search-foot 钉到船坞位;
-    不在 — 船坞回来。 */
-function syncSearchDock() {
-  const top = pushStack[pushStack.length - 1];
-  document.body.classList.toggle("search-top",
-    Boolean(top) && top.view === "search");
 }
 

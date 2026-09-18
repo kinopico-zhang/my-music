@@ -1,5 +1,5 @@
 """My Music 页面静态接线测试: 统计页/主页/下载面/长按菜单/
-设置页/蜂窝流量的静态文件断言。"""
+设置页的静态文件断言。"""
 import re
 
 
@@ -7,14 +7,18 @@ from tests.music_static_files import MUSIC_STATIC, music_browser_js, music_page_
 
 
 def test_music_stats_page_wiring():
-    """统计页接线: 设置页「更多」段入口 + 推入层路由 + 渲染函数 (E2E 再验真数据)。"""
+    """统计页接线: 推入层路由 + 渲染函数 (E2E 再验真数据); 1.8.17 起也嵌进
+    设置页的「统计」子页 (查找收在 target 里 —— 同场叠着的独立统计层
+    #stats-body 撞名, 全局 $() 会写错层)。"""
     html = music_page_shell()
     assert "stat-grid" in html and "format-bar" in html   # 统计卡片 + 比例条
     js = music_browser_js()
     assert '"search", "settings", "stats", "changelog"];' in js
     assert "async function renderStatsView(" in js
     assert '"/music/api/stats"' in js
-    assert 'data-set-nav="stats"' in js                  # 设置页入口直通统计页
+    assert 'data-set-tab="stats"' in js                   # 设置页四滑页之一
+    assert 'renderStatsView(page("stats"));' in js        # 嵌进设置子页
+    assert 'const body = target.querySelector("#stats-body");' in js  # 收层内
 
 
 def test_music_home_page_wiring():
@@ -61,7 +65,12 @@ def test_music_downloads_wiring():
     assert "$(\"#dl-pane-body\")" in js            # 页容器独占 id, 进度刷新认得准
     assert "data-download-track" in js             # 曲目行下载标
     assert "storageUsage" in js and "formatBytes" in js    # 下载管理: 量大小并显示
-    assert "dl-clear-all" in js and "removeAll" in js      # 一键清空 (confirm 后)
+    # 1.8.17 改版 (用户点名): 行尾删除键换成左滑出删除 (与列表内曲目同一颗
+    # bindSwipeDelete), 「全部删除」撤掉只留右上角多选 —— 删除只动下载缓存,
+    # 曲库只读, 碰不到库里一个字节
+    assert "dl-clear-all" not in js and "removeAll" not in js
+    assert "bindSwipeDelete(target, async (wrap) => {" in js   # 左滑删除挂下载行
+    assert "await downloads.removeDownload(trackId);" in js    # 左滑/多选同一条删径
     assert "navigator.storage.estimate" in js      # 手机存储占用
     # 1.8.2: 下载中的进度从百分比文字换成圆环 (r=8.5 周长切 dashoffset,
     # 正上方顺时针画满; 已下载照旧是勾)
@@ -71,7 +80,7 @@ def test_music_downloads_wiring():
     # 就地补 (同一行只换圆环, 状态翻转才换行), 全清了才补统计行
     assert "function refreshDownloadsBody" in js
     assert "function downloadRowHTML" in js
-    assert 'body.querySelectorAll("[data-dl-row]")' in js
+    assert 'body.querySelectorAll("[data-dl-wrap]")' in js   # 行集合对照在 wrap 一级
     assert "ring.outerHTML = downloadRingHTML" in js
     # 已下载行也带封面: 曲目封面接口 + 裂图退音符 (和播放列表行同款)
     assert 'src="/music/media/tracks/${entry.track_id}/artwork"' in js
@@ -95,18 +104,24 @@ def test_music_downloads_wiring():
     assert "bindDownloadsSelect(target);" in js          # 挂 pane 层 (重铺不丢)
     assert 'id="dl-select-toggle"' in js and 'id="dl-select-delete"' in js
     assert "#dl-pane-body.selecting .dl-row.sel::after" in html  # 勾样式
+    # 1.8.17: 勾中出垃圾桶 (替「删除 N 首」文案钮); 多选模式压住左滑
+    # (行 transform 归零 + 左滑删除钮藏), 两套手势不打架
+    assert 'aria-label="删除选中"' in js
+    assert "#dl-pane-body.selecting .swipe-wrap > button:first-child" in html
+    assert "#dl-pane-body.selecting .swipe-del { display: none; }" in html
     scripts = re.findall(r'<script src="([^"]+)"', html)
     # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
     # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select, push-panes 拆出
-    # pane-swipe; 1.8.14: -viewport-heal —— 按住验方退役, 治法挪进全局
-    # 事件层), 引用一律带版本参数 (改哪个 bump 哪个)
+    # pane-swipe; 1.8.14: -viewport-heal —— 按住验方退役; 1.8.17:
+    # -cellular-usage —— 蜂窝流量采集整个撤了, +playlist-drag —— 播放
+    # 列表拖拽换序), 引用一律带版本参数 (改哪个 bump 哪个)
     assert len(scripts) == 47 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/music-downloads-select.js?v=" in html   # 1.8.6 已下载多选删除
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v19" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v20" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
@@ -121,7 +136,7 @@ def test_music_track_context_menu_wiring():
                  'data-track-action="download" id="track-menu-download"',
                  'id="track-menu-artist"', 'id="picker-sheet"',
                  'id="picker-list"', 'id="picker-create"', 'id="picker-name"',
-                 'id="picker-close"', 'id="picker-mask"',
+                 'id="picker-mask"',
                  "-webkit-touch-callout: none"]:
         assert frag in html, f"播放页缺少 {frag}"
     # 1.8.6: 播放页 ⋯ 菜单加「下载」—— 已下过的/下载不可用时藏掉,
@@ -158,34 +173,10 @@ def test_music_track_context_menu_wiring():
     assert "picker-sync" not in html and "picker-sync" not in js
     assert "picker-del" not in html and "picker-del" not in js
     assert "sync-playlists" not in html and "/playlists/sync" not in js
-
-
-def test_music_settings_view_wiring():
-    """设置页接线 (1.8.0: 上弹菜单「设置」进, 推入层铺开) + 表单三件
-    (曲库路径/歌词开关/API 地址) + 流量月账 + 原菜单职能 (账号/退出/重扫/
-    统计/更新日志入口); 普通账号只读 (开关/输入框锁着, 保存钮不出)。"""
-    html = music_page_shell()
-    js = music_browser_js()
-    assert 'data-pop-nav="settings"' in html             # 菜单直通设置页
-    assert ".settings-block" in html and ".switch" in html and ".month-row" in html
-    assert '"search", "settings", "stats", "changelog"];' in js
-    assert "async function renderSettingsView(" in js
-    assert 'fetchJSON("/music/api/settings")' in js
-    assert 'fetchJSON("/api/me")' in js and "editable" in js   # 按管理员分叉
-    assert "music_directory" in js and "lyrics_api_enabled" in js \
-        and "lyrics_api_base" in js
-    assert "monthRowHTML" in js and "cellular_months" in js   # 月账一段
-    assert 'const lock = editable ? "" : " disabled"' in js    # 只读锁
-    assert "仅管理员可修改" in js                              # 非管理员的落地面
-
-
-def test_music_cellular_wiring():
-    """蜂窝流量接线: 纯逻辑模块 (node 直测) + 安卓 connection.type 判定 +
-    keepalive 上报 + onHide 兜底 (切后台/离页都报)。"""
-    html = music_page_shell()
-    js = music_browser_js()
-    assert "cellular-usage.js?v=2" in html                     # 模块加载
-    assert "createCellularMonitor" in js
-    assert 'connection.type === "cellular"' in js              # 只有认得出的才记
-    assert '"/music/api/cellular-usage"' in js and "keepalive: true" in js
-    assert "pagehide" in js and "visibilitychange" in js       # 离页/切后台兜底
+    # 1.8.17: 选择单顶部的「添加到播放列表 完成」栏撤掉 (关闭只剩点遮罩);
+    # 列表按最后编辑时间排, 最近动过的在最前 (用户点名)
+    assert 'id="picker-close"' not in html
+    picker_js = (MUSIC_STATIC / "js" / "music-playlist-picker.js").read_text(
+        encoding="utf-8")
+    assert 'id="picker-close"' not in picker_js
+    assert "playlists.sort((a, b) => b.updated_at - a.updated_at);" in picker_js

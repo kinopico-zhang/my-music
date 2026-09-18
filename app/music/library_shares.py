@@ -27,6 +27,7 @@ class ShareScope:
     kind: str                          # "track" | "playlist"
     track_ids: frozenset[int]          # 能播的曲目
     album_ids: frozenset[int]          # 能取的专辑封面 (这些曲目的专辑)
+    artist_ids: frozenset[int]         # 能取的艺人海报 (1.8.17 标题行的歌手照)
     playlist_id: int                   # 能取的列表封面 (单曲分享 = 0)
 
 
@@ -82,10 +83,15 @@ def share_scope(session: Session, token: str) -> ShareScope | None:
     if link is None:
         return None
     tracks = _shared_tracks(session, link)
+    albums = {album.id: album for album in session.execute(
+        select(Album).where(Album.id.in_(
+            {track.album_id for track in tracks}))).scalars()}
     return ShareScope(
         kind=link.kind,
         track_ids=frozenset(track.id for track in tracks),
-        album_ids=frozenset(track.album_id for track in tracks),
+        album_ids=frozenset(albums),
+        artist_ids=frozenset(album.artist_id for album in albums.values()
+                             if album.artist_id),
         playlist_id=link.target_id if link.kind == "playlist" else 0)
 
 

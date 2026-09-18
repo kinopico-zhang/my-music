@@ -3,20 +3,16 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..library_database import Album, Playlist, PlaylistItem, Track
-from ..schemas import PlaylistBrief, PlaylistPage, PlaylistPageList
+from ..library_playlists import playlist_brief
+from ..schemas import PlaylistPage, PlaylistPageList
 from .browse_queries import track_brief
 
 
 def list_playlists(session: Session) -> PlaylistPageList:
-    """播放列表清单 (按同步顺序, 不分页 —— 就十几个)。"""
-    playlists = [PlaylistBrief(
-        playlist_id=playlist.id, name=playlist.name,
-        track_count=playlist.track_count,
-        duration_seconds=playlist.duration_seconds,
-        is_local=playlist.is_local,
-        cover_version=playlist.cover_version)
-        for playlist in session.execute(
-            select(Playlist).order_by(Playlist.position, Playlist.id)).scalars()]
+    """播放列表清单 (按同步顺序, 不分页 —— 就十几个)。行模型带 updated_at
+    (1.8.17: 选择单按最后编辑排, 主页一段仍按这里的顺序)。"""
+    playlists = [playlist_brief(playlist) for playlist in session.execute(
+        select(Playlist).order_by(Playlist.position, Playlist.id)).scalars()]
     return PlaylistPageList(playlists=playlists)
 
 
@@ -32,11 +28,4 @@ def playlist_page(session: Session, playlist_id: int) -> PlaylistPage | None:
                   .join(Album, Track.album_id == Album.id)
                   .where(PlaylistItem.playlist_id == playlist_id)
                   .order_by(PlaylistItem.position, PlaylistItem.id))]
-    return PlaylistPage(
-        playlist=PlaylistBrief(
-            playlist_id=playlist.id, name=playlist.name,
-            track_count=playlist.track_count,
-            duration_seconds=playlist.duration_seconds,
-            is_local=playlist.is_local,
-            cover_version=playlist.cover_version),
-        tracks=tracks)
+    return PlaylistPage(playlist=playlist_brief(playlist), tracks=tracks)

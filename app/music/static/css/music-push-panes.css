@@ -9,15 +9,13 @@
    歇下来再恢复磨砂。 */
 body.pane-anim #mini-player,
 body.pane-anim #dock-menu,
-body.pane-anim #dock-search,
-body.pane-anim .search-box {
+body.pane-anim #dock-search {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   /* 磨砂等效实底: rgba(44,44,46,.7) 盖在纯黑 (var(--bg)) 上 ≈
      (31.2,31.2,32.2) —— 运动期底下扫过的推入层是实色黑, 换算过来
      视觉不变 (1.8.1 立的规矩: 动画前后三件套深浅一致;
-     1.8.5 底色调回半透明一档, 等效实底跟着重算; 搜索框 1.8.5 起同住
-     船坞位, 一起换底) */
+     1.8.5 底色调回半透明一档, 等效实底跟着重算) */
   background: rgb(31,31,32);
 }
 .push-pane {
@@ -63,6 +61,12 @@ body.pane-anim .search-box {
 }
 .hero-txt { margin-top: 14px; max-width: 100%; }
 .hero-txt h2 { font-size: 20px; line-height: 1.3; }
+/* 播放列表标题可点改名 (1.8.17): 铅笔角标提示, 不另起小字占位 */
+.pl-name { cursor: pointer; }
+.pl-name::after {
+  content: "✎"; margin-left: 7px; font-size: 13px; font-weight: 400;
+  color: var(--ink-3); vertical-align: 1px;
+}
 .hero-artist { color: var(--ink-2); font-size: 14px; margin-top: 3px; }
 .hero-artist:active { color: var(--ink-1); }
 .hero-txt small, .artist-hero small { color: var(--ink-3); font-size: 12px; margin-top: 4px; }

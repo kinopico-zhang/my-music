@@ -1,14 +1,14 @@
-"""My Music 的播放列表路由: 清单/详情/建删/加删歌/自定义封面, 全在
-/api 下 (应用内自管, 不再与 Plex 同步)。"""
+"""My Music 的播放列表路由: 清单/详情/建删/改名/加删歌/重排/自定义封面,
+全在 /api 下 (应用内自管, 不再与 Plex 同步)。"""
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ... import database
 from ...schemas import OkResponse
-from .. import library_playlists, library_queries
+from .. import library_playlists, library_playlist_covers, library_queries
 from ..library_database import get_db
 from ..schemas import (PlaylistBrief, PlaylistCreateRequest,
-                       PlaylistPage, PlaylistPageList,
+                       PlaylistOrderRequest, PlaylistPage, PlaylistPageList,
                        PlaylistTrackRequest)
 from .common import _require_user
 
@@ -46,6 +46,40 @@ def music_playlist_create(request: Request,
     _require_user(request, users)
     try:
         return library_playlists.create_playlist(library, body.name)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.patch("/playlists/{playlist_id}", response_model=PlaylistBrief)
+def music_playlist_rename(request: Request,
+                          playlist_id: int,
+                          body: PlaylistCreateRequest,
+                          users: Session = Depends(database.get_users_db),
+                          library: Session = Depends(get_db)) -> PlaylistBrief:
+    """改播放列表名 (1.8.17 用户点名; 撞名/空名 409)。"""
+    _require_user(request, users)
+    try:
+        return library_playlists.rename_playlist(library, playlist_id,
+                                                 body.name)
+    except KeyError as exc:
+        raise HTTPException(404, "没有这个播放列表") from exc
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.put("/playlists/{playlist_id}/order", response_model=PlaylistBrief)
+def music_playlist_reorder(request: Request,
+                           playlist_id: int,
+                           body: PlaylistOrderRequest,
+                           users: Session = Depends(database.get_users_db),
+                           library: Session = Depends(get_db)) -> PlaylistBrief:
+    """整表重排曲目顺序 (1.8.17 拖拽落定的全量 id 顺序; 内容对不上 409)。"""
+    _require_user(request, users)
+    try:
+        return library_playlists.reorder_playlist_tracks(
+            library, playlist_id, body.track_ids)
+    except KeyError as exc:
+        raise HTTPException(404, "没有这个播放列表") from exc
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
 
@@ -88,12 +122,13 @@ def music_playlist_delete(request: Request,
                           playlist_id: int,
                           users: Session = Depends(database.get_users_db),
                           library: Session = Depends(get_db)) -> OkResponse:
-    """删掉播放列表 (连成员)。"""
+    """删掉播放列表 (连成员和封面文件)。"""
     _require_user(request, users)
     try:
         library_playlists.delete_playlist(library, playlist_id)
     except KeyError as exc:
         raise HTTPException(404, "没有这个播放列表") from exc
+    library_playlist_covers.purge_playlist_cover(playlist_id)
     return OkResponse(ok=True)
 
 
@@ -108,7 +143,7 @@ async def music_playlist_cover_upload(request: Request,
     _require_user(request, users)
     data = await request.body()
     try:
-        return library_playlists.set_playlist_cover(
+        return library_playlist_covers.set_playlist_cover(
             library, playlist_id, data,
             request.headers.get("content-type", ""))
     except KeyError as exc:
@@ -126,6 +161,7 @@ def music_playlist_cover_clear(request: Request,
     """撤掉自定义封面 (列表卡片回默认的渐变音符块)。"""
     _require_user(request, users)
     try:
-        return library_playlists.clear_playlist_cover(library, playlist_id)
+        return library_playlist_covers.clear_playlist_cover(library,
+                                                            playlist_id)
     except KeyError as exc:
         raise HTTPException(404, "没有这个播放列表") from exc

@@ -1,7 +1,9 @@
 // music-stats-view — My Music 统计视图 (听歌数据)。
 // 拆自 music.js (结构化重构), 1.8.0 起住推入层 (设置页「统计」进来), 渲染目标由调用方给。
+// 1.8.17 起也嵌进设置页的「统计」子页: #stats-body 的查找收在 target 里
+// (同场可能还叠着独立的统计层, 全局找会抓错层)。
 "use strict";
-/* global $, describeDuration, escapeHTML, fetchJSON */
+/* global describeDuration, escapeHTML, fetchJSON */
 /* exported renderStatsView */
 
 // ------------------------------------------------------------ 统计页
@@ -9,7 +11,7 @@
 async function renderStatsView(target) {
   target.innerHTML = '<div class="pane-title">统计</div><div id="stats-body">'
     + '<p class="stat-empty">正在统计…</p></div>';
-  const body = $("#stats-body");
+  const body = target.querySelector("#stats-body");
   let stats;
   try {
     stats = await fetchJSON("/music/api/stats");

@@ -17,12 +17,11 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v19 (2026-09-18 1.8.16 病愈定稿: 键盘期文档解锁 —— 七轮回传
-// 定案 iOS 让位就是滚文档, 病根在文档锁死, 让位滚成幽灵滚、收键把
-// 幽灵滚位记进还原高度 (黑带); 键盘期间解锁文档 + 给真高度, 高度回满
-// 回锁, 用户实测病愈。ge 换血 (?v=11) + 体检窗结论更新 (hud/doctor ?v=7),
-// 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v19";
+// 壳缓存 v20 (2026-09-18 1.8.17 批: 歌词放大换 transform 断根 + 清晰度
+// 分工; 分享页改版 (歌手照片/左右滑切歌词/播键入标题行); 已下载页左滑删除
+// + 多选垃圾桶; 设置页拆四滑页 + 蜂窝流量全撤 —— 换版本号让 activate
+// 清旧账)
+const SHELL_CACHE = "music-shell-v20";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档
