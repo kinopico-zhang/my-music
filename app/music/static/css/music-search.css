@@ -1,15 +1,30 @@
 /* music-search — My Music 搜索页布局 (1.8.3 重排 + 1.8.5 顶替船坞): 输入框
-   钉在页底船坞的位置 (1.8.5 搜索层到顶时三件套让位, 搜索框顶上, 用户点名),
-   有查询时结果分四子页左右滑切换。拆自 music-views.css 的搜索节。 */
-/* ---------- 页壳: 顶端完全交给滚动内容, 底部一条钉在船坞的位置 ---------- */
+   住在页底 (1.8.5 搜索层到顶时三件套让位, 搜索框顶上, 用户点名), 有查询时
+   结果分四子页左右滑切换。拆自 music-views.css 的搜索节。
+   1.8.15 键盘病换血: 页底一条从「fixed 钉死屏底」改成「住进页壳滚动流里
+   sticky 钉底」—— my-money 记账弹层同款 (那边输入框住 overflow-y:auto
+   的弹层里, 同机同系统实测键盘来回底部无恙)。iOS 键盘让位专滚焦点元素
+   的最近滚动祖先: 弹层里滚弹层, 文档纹丝不动; 原先 fixed 件四周没得滚,
+   让位只好硬滚锁死的文档, 收键盘那笔坏账 (底部黑带, 五轮回传实锤) 正是
+   从这一滚记下的。页壳自己变滚动器后让位的滚落在页壳里; 布局被键盘缩矮
+   时 sticky 的页底条自动贴在可视底 (键盘上沿), 键盘高度不用 JS 量。 */
+/* ---------- 页壳: 搜索层自己的滚动器 (my-money 弹层同款) ---------- */
+/* 抵掉 .pane-scroll 的上/左右衬: 安全区衬进各页内部, 滚动时内容从系统
+   磨砂带底下扫过去; 底衬清零 (层标记 data-view=search): 页底条住进流里,
+   船坞让位那截不再需要 */
+.push-pane[data-view="search"] .pane-scroll { padding-bottom: 0; }
 .search-shell {
-  /* 抵掉 .pane-scroll 的上/左右衬: 安全区衬进各页内部, 滚动时内容从
-     系统磨砂带底下扫过去; 底部衬保留 —— 输入框正好坐在船坞的位置 */
-  display: flex; flex-direction: column; height: 100%;
+  display: flex; flex-direction: column;
+  height: calc(100% + env(safe-area-inset-top) + 14px);
   margin: calc(-1 * (env(safe-area-inset-top) + 14px)) -16px 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
+/* 键盘期撑高 (--kb-full: music-global-events 在焦点进框时写满屏高, 键盘
+   走了就撤): 布局被键盘缩矮后页壳内容比可视区高出一截, 让位才有得滚
+   (滚的是页壳, 不是文档) */
 #search-body {
-  flex: 1; min-height: 0;
+  flex: 1; min-height: var(--kb-full, 0);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
   padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
 }
@@ -25,23 +40,18 @@
 .search-page {
   flex: 0 0 100%; min-width: 0; height: 100%;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
-  /* 底衬加厚: 页签也钉在这条里, 得从页签头顶让过去 (空查没页签不用让) */
-  padding: calc(env(safe-area-inset-top) + 14px) 16px 34px;
+  /* 页尾呼吸缝: 页签/搜索框都在流里的页底条上 (1.8.15 起不叠在页内容上) */
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
   scroll-snap-align: start;
   touch-action: pan-x pan-y;
 }
 
 /* ---------- 页底一条: 页签指示器 (有查询才出现) + 搜索框 ---------- */
-/* 1.8.5 钉死在船坞的位置: 推入层 will-change: transform 是 fixed 后代的
-   containing block, 层铺满全屏, fixed 坐标即屏幕坐标, 还随层一起滑入
-   滑出。--kb-h 是 iOS 键盘高度 (music-global-events 用 visualViewport
-   量, 键盘盖上来时把整条抬到键盘上沿; 没键盘/别的布局自己缩, 恒 0)。 */
+/* 1.8.15 sticky 钉底: 页壳滚动流里的最后一件, 平时贴在页壳可视底 (= 屏底);
+   键盘把布局缩矮时自动贴到键盘上沿 (env 安全区随键盘归零), 页壳里滚起来
+   时钉在可视底不走 —— 让位怎么滚, 输入框都在明处 */
 .search-foot {
-  position: fixed; left: 0; right: 0;
-  bottom: calc(4px + env(safe-area-inset-bottom) + var(--kb-h, 0));
-  /* 1.8.14 预抬的落回/抬升走动画 (键盘起手前抬到屏幕上部, 到位再落回
-     键盘上沿 —— 一抬一落都是 --kb-h 在动) */
-  transition: bottom .22s ease;
+  position: sticky; bottom: calc(4px + env(safe-area-inset-bottom));
   z-index: 2; pointer-events: none;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding-left: max(8px, env(safe-area-inset-left));
