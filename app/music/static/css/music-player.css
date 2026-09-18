@@ -50,22 +50,6 @@
   mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
   padding: 30% 28px;
 }
-/* 1.8.19 歌词页带封面 (用户点名「歌词页面要显示歌曲封面」): 封面不再
-   整块藏掉, 缩成顶部一枚小图居中, 歌词住它底下 (body 换竖排, 歌词从
-   罩满的浮层改回文档流里 flex 占余下高度); 队列视图还是整块换 (互斥
-   开关管着) */
-#full-player.lyrics .fp-body {
-  flex-direction: column; align-items: stretch; justify-content: flex-start;
-}
-#full-player.lyrics #fp-art-wrap {
-  width: 96px; max-width: none; max-height: none; flex: 0 0 auto;
-  align-self: center;
-}
-#full-player.lyrics #fp-art { box-shadow: 0 10px 28px rgba(0,0,0,.45); }
-#full-player.lyrics #fp-lyrics {
-  position: relative; inset: auto; z-index: auto; flex: 1; min-height: 0;
-  padding: 10% 28px;
-}
 #lyrics-resume {
   position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);
   z-index: 3; padding: 7px 16px; border-radius: 999px;

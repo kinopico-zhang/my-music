@@ -57,11 +57,23 @@ function bindPlaylistDrag(container, reorder) {
     const drag = playlistDrag;
     playlistDrag = null;
     if (!drag) return;
+    const commit = !cancelled && drag.moved && drag.target !== drag.from;
+    // 让位行清位移分两条路 (1.8.20 修「送手时让过位的行又抖一下」): 落定的
+    // 话换序的 DOM 挪动同帧发生, 让位行的自然位已经变了, 带着过渡清位移
+    // 会先跳一格再滑回来 —— 必须无过渡清 + 落帧钉死; 取消/没挪没有 DOM
+    // 挪动, 让过渡跑, 行顺滑滑回原位
+    if (commit) {
+      drag.wraps.forEach((wrap) => {
+        if (wrap !== drag.wrap) wrap.style.transition = "none";
+      });
+    }
     // 清位移时 .dragging 还挂着 (transition none) —— 与队列同款, 落定不弹跳
     drag.wrap.style.transform = "";
     drag.wrap.classList.remove("dragging");
     drag.wraps.forEach((wrap) => { wrap.style.transform = ""; });
-    if (cancelled || !drag.moved || drag.target === drag.from) return;
+    if (!commit) return;
+    void container.offsetHeight;   // 落帧: 让位行的无过渡清位移落账, 过渡别补放
+    drag.wraps.forEach((wrap) => { wrap.style.transition = ""; });
     playlistDragSwallowClick = true;
     // 先把 wrap 挪到落点位 (滚动位置纹丝不动), 再交给调用方持久化
     const reference = drag.target === drag.wraps.length - 1 ? null

@@ -8,19 +8,22 @@
             syncLyricsButton, toggleLyricsView */
 
 function openLyricsView() {
-  if (!lyricsViewOpen && !$("#fp-lyrics-btn").disabled) toggleLyricsView();
+  // 1.8.20 歌词键默认灰 (没探明 = 当没词), 程序化开页不再看键 —— 唯一
+  // 调用方是歌词搜索命中 (有词是搜索条件本身), 键还在灰着也得开
+  if (!lyricsViewOpen) toggleLyricsView();
 }
 
-/** 歌词键状态: 探明没歌词的置灰禁点 —— 视图关着时开不了; 视图开着
-    (1.8.17 换曲不再强关回封面, 空态「这首歌没有歌词」垫着) 键保持
-    可点, 好点回封面 (切歌后视图跟上一首保持一致, 用户点名)。 */
+/** 歌词键状态 (1.8.20 反转默认, 用户点名「默认是没歌词的, 有歌词再亮」):
+    没探明 = 灰着当没词, 探明确认有词才亮; 视图开着例外 —— 键是关回封面
+    的路, 必须可点 (1.8.17 换曲不关视图, 空态「这首歌没有歌词」垫着)。 */
 function syncLyricsButton() {
-  const noLyrics = currentTrack && lyricsCache.has(currentTrack.track_id)
-    && lyricsCache.get(currentTrack.track_id) === null;
-  $("#fp-lyrics-btn").disabled = !!noLyrics && !lyricsViewOpen;
+  const hasLyrics = currentTrack && lyricsCache.has(currentTrack.track_id)
+    && lyricsCache.get(currentTrack.track_id) !== null;
+  $("#fp-lyrics-btn").disabled = !lyricsViewOpen && !hasLyrics;
 }
 
-/** 换曲后台探一遍歌词: 结果进缓存, 歌词键跟着亮/灰 (探不到先不灰)。 */
+/** 换曲后台探一遍歌词: 结果进缓存, 歌词键跟着亮/灰 (1.8.20 默认灰着,
+    探明有词才亮; 探不到也灰着 —— 下次换曲/开视图再探)。 */
 function prefetchLyrics(track) {
   if (!track) return;
   fetchJSON(`/music/api/tracks/${track.track_id}/lyrics`)
@@ -28,7 +31,7 @@ function prefetchLyrics(track) {
       lyricsCache.set(track.track_id,
         response.lyrics ? parseLyrics(response.lyrics) : null);
     })
-    .catch(() => { /* 探不到就当还没探: 键保持可点, 开视图再试 */ })
+    .catch(() => { /* 探不到: 默认灰着 (当没词), 开视图时 loadLyrics 再试 */ })
     .finally(() => {
       if (currentTrack && currentTrack.track_id === track.track_id) {
         syncLyricsButton();
@@ -39,9 +42,10 @@ function prefetchLyrics(track) {
 function toggleLyricsView() {
   if (!lyricsViewOpen && queueViewOpen) closeQueueView();   // 同住封面区, 二选一
   lyricsViewOpen = !lyricsViewOpen;
-  // 封面不再藏 (1.8.19 用户点名「歌词页面要显示歌曲封面」): 歌词页里
-  // 封面缩成顶部小图 (.lyrics 的 CSS 管尺寸), 关回封面恢复大图
+  // 歌词页罩满封面区 (1.8.20 改回原样, 用户点名「不要封面缩略图」):
+  // 封面整块藏掉, 歌词独占; .lyrics 类留着管背景压暗 (模糊底图再暗一档)
   $("#fp-lyrics").hidden = !lyricsViewOpen;
+  $("#fp-art-wrap").hidden = lyricsViewOpen;
   $("#fp-lyrics-btn").classList.toggle("on", lyricsViewOpen);
   $("#full-player").classList.toggle("lyrics", lyricsViewOpen);
   lyricsFollowPaused = false;         // 开/关歌词都回到跟唱

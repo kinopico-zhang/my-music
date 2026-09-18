@@ -1,12 +1,12 @@
 // music-player-queue — My Music 队列驱动: 开播/暂停/上下曲/跳过不可播, loadTrack 换源, 下一曲预取。
 // 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global $, audioElement, createPlayQueue, currentTrack: writable, loadLyrics,
+/* global audioElement, createPlayQueue, currentTrack: writable, loadLyrics,
           lyricsActiveIndex: writable, lyricsCache, lyricsViewOpen, playQueue: writable,
           playRecorded: writable, prefetchLyrics, prefetchSequence: writable,
           prefetched: writable, queueAdvance, queueCurrent, queueGoBack, queueShuffleAll,
-          queueUpcoming, renderPlayerChrome, renderQueueView, savePlayerState, toast,
-          trackChangeListeners, updateMediaSession */
+          queueUpcoming, renderPlayerChrome, renderQueueView, savePlayerState,
+          syncLyricsButton, toast, trackChangeListeners, updateMediaSession */
 /* exported loadTrack, lyricsActiveIndex, onTrackChange, playRecorded, playerCurrentTrack,
             playerCurrentTrackId, playerIsPlaying, playerNext, playerPrevious, playerStart,
             playerToggle, prefetchNextTrack, startAudio */
@@ -83,8 +83,8 @@ function loadTrack(track, autoplay) {
   currentTrack = track;
   playRecorded = false;
   lyricsCache.delete(track.track_id);      // 每次换曲重取 (歌词可能刚扫描进来)
-  $("#fp-lyrics-btn").disabled = false;    // 探明前先恢复可点
-  prefetchLyrics(track);                   // 探明没有的把歌词键置灰
+  syncLyricsButton();    // 1.8.20 键默认灰 (当没词), 探明有词才亮 (视图开着保持可点)
+  prefetchLyrics(track);
   lyricsActiveIndex = -1;
   const audio = audioElement();
   const prefetchedURL = prefetched && prefetched.trackId === track.track_id

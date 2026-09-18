@@ -94,13 +94,10 @@ def test_music_queue_cover_view_wiring():
     # 互斥: 开队列先收歌词, 开歌词先收队列; 收起播放页两个都收
     assert "if (lyricsViewOpen) toggleLyricsView();" in player
     assert "if (!lyricsViewOpen && queueViewOpen) closeQueueView();" in player
-    # 1.8.19 歌词页带封面 (用户点名「歌词页面要显示歌曲封面」): 封面不再
-    # 整块藏掉 —— 歌词页里缩成顶部小图居中 (.lyrics 的 CSS 管尺寸), 歌词
-    # 回文档流占余下高度; 队列视图照旧整块换
-    assert '$("#fp-art-wrap").hidden = lyricsViewOpen;' not in player
-    assert "#full-player.lyrics .fp-body {" in html
-    assert "#full-player.lyrics #fp-art-wrap {" in html
-    assert "#full-player.lyrics #fp-lyrics {" in html
+    # 1.8.20 改回原样 (用户点名「歌词页不要封面缩略图」): 歌词页罩满封面
+    # 区, 封面整块藏掉; .lyrics 类只留背景压暗用 (缩略图那套 CSS 撤净)
+    assert '$("#fp-art-wrap").hidden = lyricsViewOpen;' in player
+    assert "#full-player.lyrics .fp-body {" not in html
 
 
 def test_music_queue_drag_wiring():

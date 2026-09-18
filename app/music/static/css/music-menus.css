@@ -86,8 +86,8 @@
   border-radius: 16px 16px 0 0; border: 1px solid var(--hairline);
 }
 /* 顶栏 = 正在加的那首歌 (1.8.18 用户点名): 封面 (trackArtHTML 的 .t-art,
-   44px 圆角小图) + 歌名/艺人两行 (.a-main 的 b/small 自带省略号),
-   选列表的提示文字撤了 */
+   44px 圆角小图) + 歌名/艺人·专辑两行 (.a-main 的 b/small 自带省略号,
+   专辑名 1.8.20 补上), 选列表的提示文字撤了 */
 .picker-track {
   display: flex; align-items: center; gap: 12px;
   padding: 14px 18px 12px; border-bottom: 1px solid var(--hairline);

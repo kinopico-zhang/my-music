@@ -95,15 +95,6 @@
     mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
     padding: 30% 28px;
   }
-  /* 1.8.19 歌词页带封面 (用户点名, app 同款): 封面不再整块藏掉, 缩成
-     顶部小图居中, 歌词住它底下 (body 换竖排, 歌词回文档流 flex 占余高) */
-  #fp.lyrics .fp-body { flex-direction: column; align-items: stretch;
-                        justify-content: flex-start; }
-  #fp.lyrics #fp-art-wrap { width: 96px; max-width: none; max-height: none;
-                            flex: 0 0 auto; align-self: center; }
-  #fp.lyrics #fp-art { box-shadow: 0 10px 28px rgba(0,0,0,.45); }
-  #fp.lyrics #fp-lyrics { position: relative; inset: auto; z-index: auto;
-                          flex: 1; min-height: 0; padding: 10% 28px; }
   /* 切歌封面方向滑入 (1.8.19 用户点名): 左滑/下一首从右进, 右滑/上一首
      从左进 —— 顺着滑的方向走 */
   @keyframes fp-art-next { from { transform: translateX(52px); opacity: 0; } }
