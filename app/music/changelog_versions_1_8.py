@@ -8,6 +8,16 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.24", date="2026-09-19", items=[
+        ChangelogItem(kind="改进", text="主页改成三段 (你点的): 最近播放"
+                                       "音乐 / 最新添加专辑 / 最近播放列表,"
+                                       " 每段 10 个; 段标题带 ›, 点一下"
+                                       "查看全部 (进对应的最近播放页/所有"
+                                       "专辑/播放列表页)。「最近播放列表」"
+                                       "按最近播过里面的歌排, 没播过的列表"
+                                       "按最近编辑排 —— 刚建/刚改的也在"
+                                       "前头"),
+    ]),
     ChangelogVersion(version="1.8.23", date="2026-09-19", items=[
         ChangelogItem(kind="新增", text="主页右划到头有了橡皮筋 (你点的):"
                                        " 主页是第一页, 右划本来没有可退的"

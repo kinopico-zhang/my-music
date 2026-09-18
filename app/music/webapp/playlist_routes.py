@@ -1,6 +1,6 @@
 """My Music 的播放列表路由: 清单/详情/建删/改名/加删歌/重排/自定义封面,
 全在 /api 下 (应用内自管, 不再与 Plex 同步)。"""
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import (APIRouter, Depends, HTTPException, Query, Request)
 from sqlalchemy.orm import Session
 
 from ... import database
@@ -22,6 +22,20 @@ def music_playlists(request: Request,
     """播放列表清单 (按排序位, 新建的在前)。"""
     _require_user(request, users)
     return library_queries.list_playlists(library)
+
+
+@router.get("/playlists/recent", response_model=PlaylistPageList)
+def music_recent_playlists(request: Request,
+                           limit: int = Query(default=10, ge=1, le=100),
+                           users: Session = Depends(database.get_users_db),
+                           library: Session = Depends(get_db)
+                           ) -> PlaylistPageList:
+    """最近播放的播放列表 (1.8.24 主页一段): 最近播过旗下曲目的在前,
+    没播过的按最后编辑时刻垫后, 按人记。"""
+    user = _require_user(request, users)
+    return PlaylistPageList(
+        playlists=library_queries.recent_playlists(library, user.uuid,
+                                                   limit))
 
 
 @router.get("/playlists/{playlist_id}", response_model=PlaylistPage)
