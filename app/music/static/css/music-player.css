@@ -20,11 +20,12 @@
   display: flex; flex-direction: column;
 }
 /* 顶部抓手条: 点一下 (或往下拖) 收起播放页 (1.8.1 起用 --top-floor 下限
-   躲独立模式的系统磨砂带)。下推走 margin 不走 padding: 命中区还是抓手
+   躲独立模式的系统磨砂带; 1.8.19 并进全局上边界 --top-clear —— 固定
+   控件一律不越过它)。下推走 margin 不走 padding: 命中区还是抓手
    那一条。队列视图住在 .fp-body 里, 天生排在抓手之下不会越过。 */
 #fp-grab {
   display: flex; justify-content: center; align-items: flex-start;
-  margin-top: max(env(safe-area-inset-top, 0px), var(--top-floor));
+  margin-top: var(--top-clear);
   padding: 3px 0 0;
   border: 0; background: none; touch-action: none;
 }
@@ -48,6 +49,22 @@
   -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
   mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
   padding: 30% 28px;
+}
+/* 1.8.19 歌词页带封面 (用户点名「歌词页面要显示歌曲封面」): 封面不再
+   整块藏掉, 缩成顶部一枚小图居中, 歌词住它底下 (body 换竖排, 歌词从
+   罩满的浮层改回文档流里 flex 占余下高度); 队列视图还是整块换 (互斥
+   开关管着) */
+#full-player.lyrics .fp-body {
+  flex-direction: column; align-items: stretch; justify-content: flex-start;
+}
+#full-player.lyrics #fp-art-wrap {
+  width: 96px; max-width: none; max-height: none; flex: 0 0 auto;
+  align-self: center;
+}
+#full-player.lyrics #fp-art { box-shadow: 0 10px 28px rgba(0,0,0,.45); }
+#full-player.lyrics #fp-lyrics {
+  position: relative; inset: auto; z-index: auto; flex: 1; min-height: 0;
+  padding: 10% 28px;
 }
 #lyrics-resume {
   position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%);

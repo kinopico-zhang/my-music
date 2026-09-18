@@ -29,3 +29,16 @@ def test_music_186_share_batch():
     # 封面修复: #fp-art 本尊是 <img>, 直接挂 src (app 同款), 不再走
     # 给容器 div 用的 setArt
     assert '$("#fp-art").src = artURL(track);' in share_all
+    # 1.8.19 切歌封面方向滑入 (用户问「滑动封面切歌怎么没有动画」):
+    # 下一首从右进/上一首从左进, 顺着滑的方向 —— 滑封面/上下曲键/点行通吃
+    assert 'artWrap.classList.add(pos > prevPos ? "art-in-next" : "art-in-prev");' \
+        in share_all
+    assert "@keyframes fp-art-next { from { transform: translateX(52px); opacity: 0; } }" \
+        in share
+    assert "@keyframes fp-art-prev { from { transform: translateX(-52px); opacity: 0; } }" \
+        in share
+    # 1.8.19 歌词页带封面 (用户点名, app 同款): 封面缩成顶部小图居中,
+    # 歌词住它底下 (#fp.lyrics 管两态尺寸)
+    assert '$("#fp").classList.toggle("lyrics", open);' in share_all
+    assert "#fp.lyrics .fp-body {" in share
+    assert "#fp.lyrics #fp-lyrics {" in share

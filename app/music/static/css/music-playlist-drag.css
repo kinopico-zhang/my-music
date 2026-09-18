@@ -2,7 +2,7 @@
    「允许调整列表歌曲的顺序」, JS 同名模块)。行住 .swipe-wrap 里 (与左滑
    删除同构): 把手盖在行按钮上 (行 z1/删除钮 z0, 把手 z2); touch-action
    none —— 按住把手上下拖不滚列表; 行尾让出一截给把手 (时长列收一点);
-   拖动跟手沿用 .swiping (transition none, 手势层挂)。 */
+   被拖的是 wrap 一级 (1.8.19: 行翻不出 wrap 的裁切, 见下)。 */
 #playlist-tracks .pl-grip {
   position: absolute; top: 0; right: 0; bottom: 0; width: 34px; z-index: 2;
   display: flex; align-items: center; justify-content: center;
@@ -11,9 +11,14 @@
 /* 行滑开露出删除钮时, 把手跟着藏 (visibility 不触发回流, 行高不动) */
 #playlist-tracks .swipe-wrap > button.revealed ~ .pl-grip { visibility: hidden; }
 #playlist-tracks .track-row { padding-right: 28px; }
-#playlist-tracks .track-row.dragging { background: var(--surface-2); }
 /* 让位平移的过渡 (队列行同款 .18s): wrap 平时没有 transform 过渡 (左滑那套
    在行 button 上), 拖拽让位要滑开跟手, 没有这条让位就是瞬跳 */
 #playlist-tracks .swipe-wrap { transition: transform .18s ease; }
-/* 被拖行抬到别行之上 (队列同款): 不抬的话下面的行会盖住它 */
-#playlist-tracks .track-row.dragging { z-index: 3; box-shadow: 0 8px 22px rgba(0,0,0,.5); }
+/* 被拖的整个 wrap 抬到别行之上 + 撤过渡 (1.8.19 修「被拖行被黑色空位
+   遮挡住」, 队列同款手法): wrap overflow:hidden (左滑删除的裁切), 行在
+   wrap 里竖移出界会被自家 wrap 裁掉, z-index 挂在行上也翻不出裁切 ——
+   位移/抬层/影子全落 wrap 一级, 行只管提亮 */
+#playlist-tracks .swipe-wrap.dragging {
+  transition: none; z-index: 3; box-shadow: 0 8px 22px rgba(0,0,0,.5);
+}
+#playlist-tracks .swipe-wrap.dragging .track-row { background: var(--surface-2); }

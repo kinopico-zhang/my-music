@@ -133,8 +133,11 @@ def test_music_top_fallback_removed():
     assert "calc(env(safe-area-inset-top) + 14px)" in scroll_css
     assert "--top-floor: 0px;" in html \
         and "@media (display-mode: standalone) and (orientation: portrait)" in html
+    # 1.8.19 起抓手并进全局上边界 --top-clear (= max(env+36, --top-floor),
+    # 见 test_music_wiring_viewport 的边界守卫) —— --top-floor 还在, 当其中
+    # 一条地界被 max() 取深
     grab_css = html[html.index("#fp-grab {"):html.index("#fp-grab span")]
-    assert "margin-top: max(env(safe-area-inset-top, 0px), var(--top-floor));" in grab_css
+    assert "margin-top: var(--top-clear);" in grab_css
     # 首帧兜底的独立模式媒体查询也撤了 (147px 黑罩那套, 别回来)
     assert "147px" not in html
     # 脚本清单随行: 模块全带版本参数 (1.8.1: +recent-pane; 1.8.3:

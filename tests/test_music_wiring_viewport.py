@@ -71,7 +71,7 @@ def test_music_189_viewport_freeze_repair():
     assert "Date.now() - start > 1200" in panes   # 键盘赖着: 最多再等 1.2s
     # 装载顺序: HUD 先载 (医生 wire 时在场), 再医生 —— 1.8.15 起治法在
     # 搜索页结构 + ge, heal 模块退役, 装载少一件
-    assert ('music-viewport-hud.js?v=7' in html
+    assert ('music-viewport-hud.js?v=8' in html
             and 'music-viewport-doctor.js?v=7' in html
             and "music-viewport-heal" not in html)
     # 只医独立模式 iPhone: 浏览器 Safari 工具栏自己收放 (满高基准立不住),
@@ -140,9 +140,10 @@ def test_music_189_viewport_freeze_repair():
     assert ("performance.getEntriesByType(\"navigation\")" in doctor
             and "开局 i${window.innerHeight} 满高${full} ${nav}" in doctor)
     # 体检窗 (HUD 管「说」): 挪出刘海/状态栏的模糊地带 (1.8.10 弹在
-    # top:8px 用户点不到); 没按钮了 —— 能治的自动治, 治不了的直说
+    # top:8px 用户点不到; 1.8.19 起改钉在全局上边界 --top-clear 之下);
+    # 没按钮了 —— 能治的自动治, 治不了的直说
     assert '"#doctor-hud{' in hud
-    assert "top:calc(env(safe-area-inset-top) + 8px)" in hud
+    assert "top:var(--top-clear)" in hud
     assert 'createElement("button")' not in hud
     assert "hudTick = setInterval" in hud
     # 回传通道: 每行流水排进发件箱, 攒 3 秒一批 POST /music/api/viewport-log
@@ -155,3 +156,42 @@ def test_music_189_viewport_freeze_repair():
     # 快照字段与后端 ViewportEvent 对齐 (inner/vv/top/left/scrollY + 时间戳)
     assert "function snapshot(line)" in hud
     assert "inner: window.innerHeight," in hud
+
+
+def test_music_top_clear_boundary():
+    """1.8.19 立的全局上边界 (用户令「固定的控件都不要超过这个边界」):
+    顶部系统磨砂带糊控件这事此前各修各的 (1.8.10 体检窗、1.8.17 页顶条、
+    1.8.19 搜索框都各自躲过一回), 这版归成一条规矩 —— 变量 --top-clear
+    定义在 music-base.css, 两条地界取深: 浏览器 env+36 (.pane-title 那条
+    1.8.17 实测干净)、独立模式 96px (--top-floor 老地界, iOS 26 磨砂带
+    env() 谎报 0)。固定控件全数钉在它之下: 搜索页顶条 / 播放页抓手
+    (app+share) / 体检窗 / 长按菜单 (拿隐形量尺 #top-clear-probe 的
+    offsetTop 读回边界值 —— CSS 变量进 JS 不用 getComputedStyle)。分享页
+    自包含, 自家 :root 同名 (没有独立模式地界, env+36 即可)。"""
+    html = music_page_shell()
+    css = {name: (MUSIC_STATIC / "css" / f"{name}.css").read_text(
+        encoding="utf-8") for name in
+        ("music-base", "music-search", "music-player", "music-menus",
+         "share-viewer-page", "share-viewer-player")}
+    js = {name: (MUSIC_STATIC / "js" / f"{name}.js").read_text(
+        encoding="utf-8") for name in ("music-viewport-hud",
+                                       "music-track-menus")}
+    # 变量本体: 两条地界取深 (浏览器 env+36 / 独立模式 --top-floor 96px)
+    assert ("--top-clear: max(calc(env(safe-area-inset-top, 0px) + 36px),"
+            in css["music-base"])
+    assert "var(--top-floor));" in css["music-base"]
+    # 固定控件挨个验钉
+    assert "padding: var(--top-clear) 16px 0;" in css["music-search"]
+    assert "margin-top: var(--top-clear);" in css["music-player"]
+    assert "padding: var(--top-clear) 0 0;" in css["share-viewer-player"]
+    assert "top:var(--top-clear)" in js["music-viewport-hud"]
+    # 长按菜单的竖向下限: 隐形量尺钉在边界上, JS 读 offsetTop 当下限
+    assert '<i id="top-clear-probe" aria-hidden="true">' in html
+    assert "#top-clear-probe {" in css["music-menus"]
+    assert 'const probe = $("#top-clear-probe");' in js["music-track-menus"]
+    assert "probe.offsetTop" in js["music-track-menus"]
+    assert ("menu.style.top = `${Math.max(minY, Math.round(y))}px`;"
+            in js["music-track-menus"])
+    # 分享页自包含: 自家 :root 同名变量 (没有独立模式地界, env+36 即可)
+    assert ("--top-clear: calc(env(safe-area-inset-top, 0px) + 36px);"
+            in css["share-viewer-page"])

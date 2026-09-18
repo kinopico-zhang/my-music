@@ -13,6 +13,9 @@
     --ink-3: rgba(235,235,245,.32);
     --hairline: rgba(255,255,255,.09);
     --accent: #fa2d48;
+    /* 全局上边界 (1.8.19, app 的 music-base.css 同一条规矩): 固定控件
+       不越过 —— 分享页没有独立模式那条深带, 取 env+36 即可 */
+    --top-clear: calc(env(safe-area-inset-top, 0px) + 36px);
   }
   /* app 思路: 全程不画滚动条 (手机本来就不画, 电脑上也干净) —— 能滚, 只是不显示 */
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent;

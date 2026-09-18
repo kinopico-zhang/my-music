@@ -150,12 +150,17 @@ function hideDownloadMenuItem(track) {
     || !downloads || downloads.isDownloaded(track.track_id);
 }
 
-/** 菜单定位: 触点下方, 出屏就翻到上方/收边 (fixed 元素, 坐标即视口)。 */
+/** 菜单定位: 触点下方, 出屏就翻到上方/收边 (fixed 元素, 坐标即视口)。
+    竖向下限取全局上边界 (1.8.19 用户令: 固定控件不越过它) —— 长按
+    首行时菜单也不会顶进磨砂带; #top-clear-probe 是边界的量尺 (钉在
+    边界上的隐形件, offsetTop 即边界值)。 */
 function placeMenuAt(menu, point) {
   menu.style.left = "0px";
   menu.style.top = "0px";
   const rect = menu.getBoundingClientRect();
   const margin = 10;
+  const probe = $("#top-clear-probe");
+  const minY = probe ? probe.offsetTop : margin;
   const width = document.documentElement.clientWidth;
   const height = document.documentElement.clientHeight;
   const x = Math.min(Math.max(point.x - rect.width / 2, margin),
@@ -163,7 +168,7 @@ function placeMenuAt(menu, point) {
   let y = point.y + 14;
   if (y + rect.height > height - margin) y = point.y - rect.height - 14;
   menu.style.left = `${Math.max(margin, Math.round(x))}px`;
-  menu.style.top = `${Math.max(margin, Math.round(y))}px`;
+  menu.style.top = `${Math.max(minY, Math.round(y))}px`;
 }
 
 function closeTrackMenu() {

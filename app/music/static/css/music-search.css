@@ -52,7 +52,10 @@
 .search-head {
   position: sticky; top: 0; z-index: 2; pointer-events: none;
   display: flex; flex-direction: column; gap: 10px;
-  padding: calc(env(safe-area-inset-top) + 14px) 16px 0;
+  /* 1.8.19 修「输入框太靠上进了模糊地带」(用户报): 原来只让开安全区
+     +14, 还在磨砂带里 —— 抬到全局上边界 --top-clear (music-base.css:
+     浏览器 env+36 / 独立模式 96, 1.8.17/1.8.19 实测干净的那条线) */
+  padding: var(--top-clear) 16px 0;
 }
 /* 编辑/落定两态互斥 (JS 按焦点切换 .editing): 默认落定态 (标题),
    船坞键点进来 focus 一到就翻编辑态 */
