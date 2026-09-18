@@ -131,6 +131,15 @@
 }
 .section-head small { font-size: 13px; color: var(--ink-3); font-weight: 500; }
 
+/* 1.8.24 主页段头: 整条可点 (› 查看全部) —— 按钮化的兜底重置 + › 靠右 */
+button.section-head {
+  width: 100%; padding: 0; border: 0; background: none; color: inherit;
+  font-family: inherit; text-align: left; align-items: center;
+}
+button.section-head .chev { margin-left: auto; font-size: 18px; color: var(--ink-3); }
+button.section-head:active { opacity: .6; }
+.album-grid .list-empty { grid-column: 1 / -1; }   /* 空态占满整行, 不挤一格 */
+
 /* ---------- 播放列表行 ---------- */
 .playlist-row {
   display: flex; align-items: center; gap: 12px; width: 100%;
