@@ -21,7 +21,7 @@ const DOWNLOAD_CACHE = "music-downloads-v1";
 // 分工; 分享页改版 (歌手照片/左右滑切歌词/播键入标题行); 已下载页左滑删除
 // + 多选垃圾桶; 设置页拆四滑页 + 蜂窝流量全撤 —— 换版本号让 activate
 // 清旧账)
-const SHELL_CACHE = "music-shell-v24";
+const SHELL_CACHE = "music-shell-v25";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档
