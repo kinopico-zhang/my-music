@@ -8,6 +8,17 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.25", date="2026-09-19", items=[
+        ChangelogItem(kind="改进", text="左滑删除的遮罩不再发红 (你点的"
+                                       "「遮罩不是红色的, 跟 item 一样」):"
+                                       " 删除钮左侧那片纱从红纱换成行背景"
+                                       "色的渐隐 —— 被盖着的时长/下载标"
+                                       "像自己沉进行底里, 红只剩删除钮自己"),
+        ChangelogItem(kind="改进", text="分享图标换成 iconfont「分享」搜索"
+                                       "的第 8 个 (你点的): 三节点互连的共享"
+                                       "网络画法; 播放列表页的分享钮和曲目"
+                                       "长按菜单的分享项一起换, 全站同一颗"),
+    ]),
     ChangelogVersion(version="1.8.24", date="2026-09-19", items=[
         ChangelogItem(kind="改进", text="主页改成三段 (你点的): 最近播放"
                                        "音乐 / 最新添加专辑 / 最近播放列表,"

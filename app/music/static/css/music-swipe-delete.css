@@ -2,9 +2,12 @@
    1.8.23 改款 (用户报「左滑时左边的信息不见了」): 早先行整体左移、
    删除钮从底下露出来 —— 封面跟着行左移, 从左缘被裁没了。改成行原地
    不动, 删除钮 (z3) 从右缘滑上来盖在行尾内容上; 钮的左侧再延伸一片
-   半透红纱 (wrap::after, z2), 拖开多少纱就显多少浓度 (--veil 由 JS
+   半透纱 (wrap::after, z2), 拖开多少纱就显多少浓度 (--veil 由 JS
    每帧喂 0→1), 被盖着的时长/下载标/词标只是罩暗不藏 —— 1.8.18 的
-   行尾整藏随之退役 (用户点名「信息不变, 半透明罩起来」)。 */
+   行尾整藏随之退役 (用户点名「信息不变, 半透明罩起来」)。
+   1.8.25 纱换色 (用户点名「遮罩不是红色的, 跟 item 一样」): 早先是
+   红纱, 盖着的行尾内容泛红很突兀 —— 换成行背景色 (var(--bg)) 的
+   渐隐, 像内容自己沉进行底里, 删除钮那一块红才是唯一的红。 */
 .swipe-wrap { position: relative; overflow: hidden; }
 .swipe-wrap > button:first-child {
   position: relative; z-index: 1; background: var(--bg); touch-action: pan-y;
@@ -21,11 +24,14 @@
 .swipe-del:active { background: #cf3942; }
 .swipe-wrap.swiping .swipe-del,
 .swipe-wrap.swiping::after { transition: none; }
-/* 删除钮延伸的半透红纱: 钮左缘往左渐隐, 罩着行尾内容 (不遮钮自己) */
+/* 删除钮延伸的半透纱 (1.8.25 起与行同色): 钮左缘往左渐隐, 罩着行尾
+   内容 (不遮钮自己)。纱的浓度是 --veil × 渐变两头 (50%→0), 所以拿
+   color-mix 给 var(--bg) 掺一半透明 —— 不支持 color-mix 的老浏览器
+   整条渐变作废, 纱不显示 (删除钮照常), 不算坏 */
 .swipe-wrap::after {
   content: ""; position: absolute; top: 0; bottom: 0; right: 72px;
   width: 84px; z-index: 2; opacity: var(--veil, 0);
-  background: linear-gradient(to left, rgba(229, 72, 77, .5),
-                                       rgba(229, 72, 77, 0));
+  background: linear-gradient(to left,
+    color-mix(in srgb, var(--bg) 50%, transparent), transparent);
   transition: opacity .25s cubic-bezier(.25,.1,.25,1);
 }
