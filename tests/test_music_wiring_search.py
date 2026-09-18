@@ -21,8 +21,16 @@ def test_music_183_search_restore_batch():
         assert frag in js, f"回跳缺 {frag}"
     assert js.count("saveLastRoute();") == 3       # 导航/收层/手势收层
     assert "// 手势收层也记停在哪页 (开局回跳)" in js
-    assert "const lastRoute = readLastRoute();" in js
-    assert '? lastRoute : "home");' in js          # 没记过回主页播放列表
+    # 1.8.8 整栈回跳: 档案记整条轨迹 (根领头 + 各层依序), 开局逐层重放;
+    # 旧格式单键档案/旧深链当一层处理, 前面垫上主页再走
+    assert "function stackKey(item)" in js
+    assert 'const journey = [pageState.rootView || "home",' in js
+    assert "...pushStack.map(stackKey)].join(\",\");" in js
+    assert "journey.forEach(navigate);" in js
+    assert 'if (!journey.length || journey[0] !== "home") journey = ["home", ...journey];' in js
+    # 层底下永远先铺根 (不变量): 谁在根没渲染时推层, 收层就露出「加载中」
+    # 死页 —— 返回逻辑等于失效 (用户点名)
+    assert 'if (!pageState.rootView) renderRootView("home");' in js
     assert "clearLastRoute();         // 上次停的页清档" in js   # 退出登录清档
     # 搜索页: 页底一条 (页签 + 输入框), 顶端全给滚动内容
     assert '<div class="search-foot">' in js and 'id="search-tabs"' in js
@@ -121,6 +129,7 @@ def test_music_187_keyboard_scroll_repair():
     assert 'document.addEventListener("focusout", () => {' in ge
     assert "setTimeout(lift, 350);" in ge
     assert "setTimeout(lift, 900);" in ge
+    assert "setTimeout(lift, 1800);" in ge   # 1.8.8 加长一拍 (100% 复现兜底)
     # iOS 会话恢复别把脏滚位带回来 (重启 app 黑区还在的元凶):
     # 滚动恢复关掉 + 页面一亮出来就清账 (开局/pageshow/回前台)
     assert 'if ("scrollRestoration" in history) history.scrollRestoration = "manual";' in ge
