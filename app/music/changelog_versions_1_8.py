@@ -1,12 +1,25 @@
-"""1.8 系列前半的版本条目 (1.8.5–1.8.9, 活跃段 —— 新的 1.8.x 补丁版加在这
-个文件顶上)。后半 (1.8.0–1.8.4) 冻结在 changelog_versions_1_8_0_to_1_8_4.py:
-1.8 一整线塞一个文件超了 200 行的硬上限 (2026-09-18 CI pylint 揪的), 按仓里
+"""1.8 系列的版本条目 · 活跃段 (1.8.5 起, 新的 1.8.x 补丁版加在文件顶上)。
+后半 (1.8.0–1.8.4) 冻结在 changelog_versions_1_8_0_to_1_8_4.py: 1.8 一整线
+塞一个文件超了 200 行的硬上限 (2026-09-18 CI pylint 揪的), 按仓里
 1_0_to_1_3 / 1_4_to_1_6 的先例分家。"""
 from typing import Final
 
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.10", date="2026-09-18", items=[
+        ChangelogItem(kind="修复", text="底部黑带那一味上一版没断根: 键盘收起"
+                                       "时连「页面该有多高」都在跟着走一小段"
+                                       "动画, 上一版等的信号在动画走完之前就"
+                                       "提前放行了, 收页面的时机还是撞进了半"
+                                       "路。这版改等页面高度真正回满才动手,"
+                                       " 键盘再磨蹭也陪它等到头"),
+        ChangelogItem(kind="新增", text="真又被垫矮了, 屏幕角落会自己弹出一个"
+                                       "红框小体检窗 (平时绝不出现): 带一个"
+                                       "「立即修复」按钮, 点一下就好; 体检的"
+                                       "现场数字也会自动记到服务器的日志里"
+                                       " —— 复现完说一声就行, 不用截图"),
+    ]),
     ChangelogVersion(version="1.8.9", date="2026-09-18", items=[
         ChangelogItem(kind="修复", text="键盘没收起就右划关掉搜索页, 底部那条"
                                        "黑带的病根找到了 (录屏逐帧量出来的): 键"
