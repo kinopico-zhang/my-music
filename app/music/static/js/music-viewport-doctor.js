@@ -1,13 +1,14 @@
-// music-viewport-doctor — My Music 视口体检 (1.8.14): 盯着「页面高度」本身。
-// 病 (四轮回传实锤, 独立模式 iPhone): 键盘弹起 innerHeight 跟着缩
+// music-viewport-doctor — My Music 视口体检 (1.8.15): 盯着「页面高度」本身。
+// 病 (五回回传实锤, 独立模式 iPhone): 键盘弹起 innerHeight 跟着缩
 // (812→415), 收起那一下 WebKit 把「还原高度」记成 415+偏移半路值 (771/776,
-// 差的那截就是黑带), 页面里翻面/meta 踢/键盘往返/收键按住全无效 (1.8.11/
-// 1.8.13 回传: 记账读的是苹果自家的数, 页面钉什么都没用), 刷新换文档也不行
-// (坏值跟着 webview 走), 划掉重开只有三成灵 (回传实测 5 次开局 3 次带病)。
-// 病根在起手不在收手: 键盘弹起时「焦点元素被挡住」→ iOS 滚文档让位 → 收起
-// 按这个半路滚位记账。1.8.14 的治法在 music-global-events.js (预抬: 键盘
-// 起手前把搜索栏抬到屏幕上部, 焦点元素一直在明处, 让位一下都不滚 —— 借鉴
-// my-tesla 费用弹窗, 输入框居中, 同机同系统实测无恙); 本模块管「诊断+回传」:
+// 差的那截就是黑带), 页面里翻面/meta 踢/键盘往返/收键按住/预抬全无效
+// (1.8.11/1.8.13/1.8.14 回传: 让位不看输入框在不在明处, 照滚), 刷新换文档
+// 也不行 (坏值跟着 webview 走), 划掉重开只有三成灵 (回传实测 5 次开局
+// 3 次带病)。1.8.15 定案: 让位专滚焦点元素的最近滚动祖先, 搜索栏原先
+// fixed 钉屏底四周没得滚, 才被硬滚了文档 —— 治法 = 搜索页换血 (页壳变
+// 滚动器 + 页底条 sticky 钉底, 在 music-search.css; ge 补 --kb-full 撑高),
+// my-money 记账弹层同款 (同机同系统实测键盘来回底部无恙)。本模块管
+// 「诊断+回传」:
 //   ① 判据: 键盘开着 = 焦点在输入框 (独立模式里 vv 与 inner 永远相等,
 //      互比是空转 —— 1.8.10 误诊过还抢了用户焦点);
 //   ② 体检窗 (music-viewport-hud.js 管「说」): 现场数字 + 回传服务器日志
@@ -54,7 +55,7 @@ const ViewportDoctor = (() => {
   let said = [];                       // 流水留底 (拼进现场数字最后几行)
   function stat() {
     return [
-      "My Music 1.8.14 视口体检 (现场已回传)",
+      "My Music 1.8.15 视口体检 (现场已回传)",
       `screen ${window.screen.width}x${window.screen.height} dpr ${window.devicePixelRatio}`,
       `inner ${window.innerHeight} / 满高 ${full} (差 ${full - window.innerHeight})`,
       `vv ${vv ? `${Math.round(vv.height)} top ${Math.round(vv.offsetTop)}` : "无"}`,

@@ -1,10 +1,11 @@
-// music-viewport-hud — 视口体检窗 + 回传 (1.8.14, 配合 music-viewport-doctor):
+// music-viewport-hud — 视口体检窗 + 回传 (1.8.15, 配合 music-viewport-doctor):
 // 冻矮时亮相的现场数字小窗 (平时绝不出现), 治不了时给一句真话 (再进搜索
 // 点键盘收起键收掉再返回当场复原; 重启不保证灵), 每行流水同时排进发件箱
 // 回传服务器 (data/viewport-doctor.jsonl) —— 手机上复现完, 日志已经在服务
 // 器上等人来读, 不用截图。本模块只管「说」: 屏幕上说什么、往服务器发
 // 什么, 病情的判断 (满高基准/冻矮判定) 都在医生那里, 通过 wire() 注入;
-// 治疗 (1.8.14 预抬) 在 music-global-events.js。
+// 治疗 (1.8.15 搜索页换血: 页壳变滚动器 + 页底条 sticky) 在
+// music-global-events.js + music-search.css。
 "use strict";
 /* exported ViewportHUD */
 

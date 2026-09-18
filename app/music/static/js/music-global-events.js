@@ -4,7 +4,7 @@
 /* global $, SCAN_POLL_INTERVAL_MS, bindDockMenu, checkScanStatus,
           closeDockMenu, closeFullPlayer, closePushStack, coverUploadPlaylistId,
           createCellularMonitor, navigate, playerOpen, pushStack,
-          uploadPlaylistCover */
+          uploadPlaylistCover, ViewportHUD */
 /* exported bindGlobalEvents */
 
 // ------------------------------------------------------------ 启动
@@ -36,34 +36,26 @@ function bindGlobalEvents() {
     else if (playerOpen) closeFullPlayer();
     else if (pushStack.length) closePushStack(pushStack.length - 1);
   });
-  // 键盘避让 (1.8.3 搜索栏钉页底): iOS 键盘只盖不缩布局, visualViewport
-  // 量出键盘高写进 --kb-h (CSS 把搜索栏抬到键盘上沿); 没有输入框在焦点上
-  // 时归零 —— 捏拉缩放同样会缩 visualViewport, 别误抬。安卓
-  // interactive-widget=resizes-content 布局自己缩, 量出来是 0, 两不误伤。
-  // 1.8.14 预抬 (借鉴 my-tesla 费用弹窗, 同机同系统实测无恙): iOS 只在
-  // 「焦点元素被键盘挡住」时才滚文档让位, 收键盘那笔记坏账 (黑带病根,
-  // 四轮回传实锤) 正是从这一滚记下的 —— 那边输入框在屏幕正中, 键盘来
-  // 之前就在明处, 一次都没滚过。所以键盘起手之前先把搜索栏预抬到屏幕
-  // 上部, 让位一下都不用滚; 键盘缩到位 (innerHeight 矮下去) 再落回来贴
-  // 着键盘坐。
+  // 键盘避让 (1.8.15 换血): 病根五轮回传实锤 —— iOS 让位专滚焦点元素的
+  // 最近滚动祖先; 搜索栏原先是钉死屏底的 fixed 件 (四周没有任何可滚的
+  // 东西, 文档又是固定壳), 让位只好硬滚锁死的文档, 收键盘那笔坏账 (底部
+  // 黑带) 就从这一滚记下。健康对照 (同机同系统实测): my-tesla 费用弹窗 /
+  // my-money 记账弹层的输入框都住在可滚容器里, 让位滚的是容器, 文档
+  // 纹丝不动。搜索页照此换血 (music-search.css: 页壳自己变滚动器, 页底
+  // 一条 sticky 钉底), 这层只补一件: 键盘起手前把满屏高写进 --kb-full ——
+  // 布局被键盘缩矮后页壳内容比可视区高, 让位的滚落在页壳里, 文档不沾账。
   if (window.visualViewport) {
-    let focusInner = 0;     // 焦点进框那一刻的 innerHeight (键盘起跑线)
-    let keyboardUp = false; // 这轮焦点里键盘真来过 —— 焦点换框别再抬
+    let kbFull = 0;   // 这轮焦点立下的满屏高 (--kb-full 的 JS 影子)
     const lift = () => {
       const active = document.activeElement;
       const typing = active && (active.tagName === "INPUT"
                                 || active.tagName === "TEXTAREA");
-      if (typing && focusInner && window.innerHeight >= focusInner - 40) {
-        return;             // 键盘还在来的路上: 预抬保持住, 这会儿落回去 = 又送进键盘底下
+      // 撑高只伺候键盘: 键盘收走了 (回到满屏高) 或焦点离开了就撤
+      if (kbFull && (!typing || window.innerHeight >= kbFull - 40)) {
+        kbFull = 0;
+        document.documentElement.style.removeProperty("--kb-full");
+        if (typeof ViewportHUD !== "undefined") ViewportHUD.say("键盘走撤撑");
       }
-      if (typing && focusInner) keyboardUp = true;   // 矮过身了: 键盘真来了
-      focusInner = 0;
-      if (!typing) keyboardUp = false;
-      const keyboard = typing
-        ? Math.max(0, window.innerHeight - visualViewport.height
-                   - visualViewport.offsetTop)
-        : 0;
-      document.documentElement.style.setProperty("--kb-h", `${keyboard}px`);
       // 键盘收走后 iOS 赖账的前两味, 哪种赖下都是回主页底部一块黑、页面
       // 没充满屏, 还会被 iOS 会话恢复原样带回来 (重启 app 也不消):
       // ① 键盘避让把文档滚了 (overflow:hidden 拦不住) —— 文档滚位
@@ -80,21 +72,19 @@ function bindGlobalEvents() {
     };
     visualViewport.addEventListener("resize", lift);
     visualViewport.addEventListener("scroll", lift);
-    // 预抬: 焦点一进输入框立刻抬 (抢在键盘起手之前 —— 让位的判断在起手
-    // 之后, 它看见的就是已在明处的输入框)
+    // 撑高: 焦点一进输入框立刻立满屏高 (抢在键盘起手之前 —— 页壳里的
+    // 滚动器先有得滚, 让位才有处落); 键盘已开着 (焦点换了个框) 不重立
     document.addEventListener("focusin", (event) => {
       const el = event.target;
       if (!el || (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA")) return;
-      if (keyboardUp) return; // 键盘已经开着 (焦点换了个框): 栏已贴着键盘, 别抬
       if (!window.matchMedia("(display-mode: standalone)").matches
           || !/iP(hone|ad|od)/.test(navigator.userAgent)) return;  // 桌面/安卓的账不这么记
-      focusInner = window.innerHeight;
-      document.documentElement.style.setProperty("--kb-h", "60vh");
-      setTimeout(() => {    // 650ms 没见矮 (实体键盘/起手被拦): 当无事放回
-        if (focusInner && window.innerHeight >= focusInner - 40) {
-          focusInner = 0;
-          document.documentElement.style.setProperty("--kb-h", "0px");
-        }
+      if (kbFull) return;
+      kbFull = window.innerHeight;
+      document.documentElement.style.setProperty("--kb-full", `${kbFull}px`);
+      if (typeof ViewportHUD !== "undefined") ViewportHUD.say(`撑高${kbFull}`);
+      setTimeout(() => {    // 650ms 没见矮 (实体键盘/起手被拦): 当无事撤撑
+        if (kbFull && window.innerHeight >= kbFull - 40) lift();
       }, 650);
     });
     // 键盘收走的收尾经常一声事件都不响 (最后那下 resize 响在收干净之前,
