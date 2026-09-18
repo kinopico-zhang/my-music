@@ -18,7 +18,7 @@
 async function renderSettingsView(target) {
   target.innerHTML = `
     <div class="settings-shell">
-      <div class="pane-title">设置</div>
+      <div class="pane-title">软件设置</div>
       <div class="set-tabs" id="set-tabs">
         <button type="button" class="on" data-set-tab="general">通用</button>
         <button type="button" data-set-tab="lyrics">歌词</button>

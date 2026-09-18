@@ -8,7 +8,7 @@ from app.music import changelog
 def test_versions_wellformed():
     """独立版本线从 1.0.0 起; 每版字段齐全, 文案是用户视角的一句话。"""
     vs = changelog.entries()
-    assert [v.version for v in vs] == ["1.8.20", "1.8.19", "1.8.18", "1.8.17", "1.8.16",
+    assert [v.version for v in vs] == ["1.8.21", "1.8.20", "1.8.19", "1.8.18", "1.8.17", "1.8.16",
                                        "1.8.15", "1.8.14",
                                        "1.8.13", "1.8.12", "1.8.11", "1.8.10",
                                        "1.8.9", "1.8.8",
@@ -28,7 +28,9 @@ def test_versions_wellformed():
             assert it.kind in ("新增", "改进", "修复")
             assert len(it.text) >= 4
             assert "api/" not in it.text and "http" not in it.text
-    assert vs[0].items[0].kind in ("新增", "修复")   # 头条是主打 (新功能或修的主 bug)
+    # 头条是主打 (新功能或修的主 bug); 纯改口/调措辞的版本条条都是改进, 不硬凑
+    assert vs[0].items[0].kind in ("新增", "修复") \
+        or {it.kind for it in vs[0].items} == {"改进"}
     assert "My Tesla" not in " ".join(it.text for v in vs for it in v.items)
 
 
@@ -41,7 +43,9 @@ def test_music_changelog_entries_endpoint(auth):
         assert e["date"] == v.date
         assert e["items"] == [{"kind": it.kind, "text": it.text}
                               for it in v.items]
-    assert es[0]["items"][0]["kind"] in ("新增", "修复")   # 头条是主打
+    # 头条是主打 (同上: 纯改口的版本整版都是改进)
+    assert es[0]["items"][0]["kind"] in ("新增", "修复") \
+        or {i["kind"] for i in es[0]["items"]} == {"改进"}
 
 
 # ---------------------------------------------------------------- 页面

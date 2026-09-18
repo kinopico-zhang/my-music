@@ -20,7 +20,7 @@ function resetLibraryLists() {
 /** 专辑页: 大标题 + 网格 (缓存有货直接铺, 不够的分页链自己续)。 */
 function renderAlbumsPane(target) {
   target.innerHTML = `
-    <div class="pane-title">专辑</div>
+    <div class="pane-title">所有专辑</div>
     <div class="lib-body"></div>`;
   mountSegmentList(target.querySelector(".lib-body"), "albums");
 }
@@ -28,7 +28,7 @@ function renderAlbumsPane(target) {
 /** 艺人页: 大标题 + 行列表 (与专辑页同一套分页链, 段名不同)。 */
 function renderArtistsPane(target) {
   target.innerHTML = `
-    <div class="pane-title">艺人</div>
+    <div class="pane-title">所有艺人</div>
     <div class="lib-body"></div>`;
   mountSegmentList(target.querySelector(".lib-body"), "artists");
 }
@@ -50,7 +50,7 @@ function mountSegmentList(body, segment) {
 /** 已下载页: 下载管理 (统计行/逐首大小/多选删除/左滑删除与取消)。 */
 function renderDownloadsPane(target) {
   target.innerHTML = `
-    <div class="pane-title">已下载</div>
+    <div class="pane-title">下载管理</div>
     <div class="lib-body" id="dl-pane-body"></div>`;
   const body = $("#dl-pane-body");
   bindLibraryBody(body);
