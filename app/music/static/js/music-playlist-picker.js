@@ -2,7 +2,9 @@
 // 拆自 music.js (结构化重构: 代码逐字节未动, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 // 1.8.17: 顶部「添加到播放列表 完成」顶栏撤掉 (关闭只剩点遮罩); 列表按最后
 // 编辑时间排, 最近编辑的在最前。1.8.18: 顶栏换成正在加的那首歌 —— 封面 +
-// 歌名 + 艺人 (选列表的提示文字撤了, 用户点名)。
+// 歌名 + 艺人 (选列表的提示文字撤了, 用户点名)。1.8.20: 顶栏小字补专辑名
+// (艺人 · 专辑); 行图标换顶栏封面同款 .t-art —— 列表自家封面照出, 没有的
+// 给灰音符占位, 不再是紫红渐变大块 (用户点名「合上面专辑封面图标一样」)。
 "use strict";
 /* global $, describeDuration, escapeHTML, fetchJSON, listPlaceholderHTML,
           pickerTrack: writable, playlistCoverURL, toast, trackArtHTML */
@@ -21,7 +23,10 @@ function openPlaylistPicker(track) {
   pickerTrack = track;
   $("#picker-track-art").innerHTML = trackArtHTML(track);   // 封面 (没图给音符)
   $("#picker-track-title").textContent = track.title;
-  $("#picker-track-artist").textContent = track.artist;
+  // 1.8.20 顶栏小字补专辑名 (用户点名「除了歌名还要显示专辑名称」):
+  // 艺人 · 专辑 一行, 哪个没有就只显另一个 (老下载索引没存专辑名)
+  $("#picker-track-artist").textContent = [track.artist, track.album_title]
+    .filter(Boolean).join(" · ");
   $("#picker-name").value = "";
   $("#picker-mask").hidden = false;
   $("#picker-sheet").hidden = false;
@@ -52,8 +57,8 @@ async function renderPlaylistPicker() {
     return `
     <button class="picker-row" data-picker-playlist="${playlist.playlist_id}">
       ${cover
-        ? `<img class="pl-icon art" loading="lazy" decoding="async" alt="" src="${cover}">`
-        : '<span class="pl-icon">♫</span>'}
+        ? `<img class="t-art" loading="lazy" decoding="async" alt="" src="${cover}">`
+        : '<span class="t-art">♪</span>'}
       <span class="a-main"><b>${escapeHTML(playlist.name)}</b>
         <small>${describeDuration(playlist.duration_seconds, playlist.track_count)}</small></span>
     </button>`;

@@ -37,8 +37,7 @@ def test_music_186_share_batch():
         in share
     assert "@keyframes fp-art-prev { from { transform: translateX(-52px); opacity: 0; } }" \
         in share
-    # 1.8.19 歌词页带封面 (用户点名, app 同款): 封面缩成顶部小图居中,
-    # 歌词住它底下 (#fp.lyrics 管两态尺寸)
-    assert '$("#fp").classList.toggle("lyrics", open);' in share_all
-    assert "#fp.lyrics .fp-body {" in share
-    assert "#fp.lyrics #fp-lyrics {" in share
+    # 1.8.20 改回原样 (用户点名「歌词页不要封面缩略图」, app 同款): 歌词
+    # 页罩满封面区, 封面整块藏掉 (缩略图那套 #fp.lyrics CSS 撤净)
+    assert '$("#fp-art-wrap").hidden = open;' in share_all
+    assert "#fp.lyrics .fp-body {" not in share

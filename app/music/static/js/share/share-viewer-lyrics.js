@@ -60,9 +60,9 @@ function renderLyricsView() {
   const open = lyricsViewOpen;                 // 开合只听用户/换曲前那首的态,
   box.classList.toggle("static", !lyrics || !lyrics.synced);   // 不随有没有词翻面
   box.hidden = !open;
-  // 封面不再藏 (1.8.19 用户点名「歌词页面要显示歌曲封面」): 歌词页里封面
-  // 缩成顶部小图 (#fp.lyrics 的 CSS 管尺寸), 关回封面恢复大图
-  $("#fp").classList.toggle("lyrics", open);
+  // 歌词页罩满封面区 (1.8.20 改回原样, 用户点名「不要封面缩略图」):
+  // 封面整块藏掉, 歌词独占 (app 同款)
+  $("#fp-art-wrap").hidden = open;
   // 歌词键 (1.8.17): 视图关着时没词灰掉 (开不了); 开着保持可点好关回封面
   const lyricsButton = $("#fp-meta-lyrics");
   lyricsButton.disabled = !lyrics && !lyricsViewOpen;
