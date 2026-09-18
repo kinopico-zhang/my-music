@@ -109,11 +109,11 @@ def test_music_downloads_wiring():
     assert "#dl-pane-body.selecting .dl-row.sel .dl-art::before" in html
     assert '<span class="dl-art">' in js                 # 封面裹层 (模板带出)
     assert "padding-left: 32px" not in html              # 左移出行那套撤了
-    # 1.8.17: 勾中出垃圾桶; 多选模式压住左滑 (行 transform 归零 +
-    # 左滑删除钮藏), 两套手势不打架
+    # 1.8.17: 勾中出垃圾桶; 多选模式压住左滑 (删除钮和延伸纱一起藏),
+    # 两套手势不打架
     assert 'aria-label="删除选中"' in js
-    assert "#dl-pane-body.selecting .swipe-wrap > button:first-child" in html
-    assert "#dl-pane-body.selecting .swipe-del { display: none; }" in html
+    assert "#dl-pane-body.selecting .swipe-del { display: none; }" in html \
+        and "#dl-pane-body.selecting .swipe-wrap::after { display: none; }" in html
     # 1.8.18 垃圾桶/多选并成右上一对黑白灰椭圆键 (原先 space-between
     # 隔在两头, 用户点名「距离太远了」)
     assert '<span class="dl-actions">' in js
@@ -121,17 +121,17 @@ def test_music_downloads_wiring():
     assert "border-radius: 999px;" in html and "min-height: 32px;" in html
     scripts = re.findall(r'<script src="([^"]+)"', html)
     # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
-    # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select, push-panes 拆出
-    # pane-swipe; 1.8.14: -viewport-heal —— 按住验方退役; 1.8.17:
-    # -cellular-usage —— 蜂窝流量采集整个撤了, +playlist-drag —— 播放
-    # 列表拖拽换序), 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 47 and all("?v=" in src for src in scripts)
+    # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select; 1.8.14:
+    # -viewport-heal; 1.8.17: -cellular-usage, +playlist-drag;
+    # 1.8.23: +root-rubber), 引用一律带版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 48 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/music-downloads-select.js?v=" in html   # 1.8.6 已下载多选删除
+    assert "js/music-root-rubber.js?v=" in html        # 1.8.23 根层橡皮筋
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v26" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v27" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
