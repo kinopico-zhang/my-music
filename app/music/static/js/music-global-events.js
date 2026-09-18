@@ -1,9 +1,10 @@
 // music-global-events — My Music 全局事件绑定 (船坞键/封面文件/Esc) + 蜂窝流量浏览器适配器。
 // 拆自 music.js (结构化重构), 1.8.0 页签栏撤掉: 搜索键/菜单键在这里接线。
 "use strict";
-/* global $, SCAN_POLL_INTERVAL_MS, bindDockMenu, checkScanStatus, closeDockMenu,
-          closeFullPlayer, closePushStack, coverUploadPlaylistId, createCellularMonitor,
-          navigate, playerOpen, pushStack, uploadPlaylistCover */
+/* global $, SCAN_POLL_INTERVAL_MS, ViewportHeal, bindDockMenu, checkScanStatus,
+          closeDockMenu, closeFullPlayer, closePushStack, coverUploadPlaylistId,
+          createCellularMonitor, navigate, playerOpen, pushStack,
+          uploadPlaylistCover */
 /* exported bindGlobalEvents */
 
 // ------------------------------------------------------------ 启动
@@ -41,6 +42,9 @@ function bindGlobalEvents() {
   // interactive-widget=resizes-content 布局自己缩, 量出来是 0, 两不误伤。
   if (window.visualViewport) {
     const lift = () => {
+      // 收键按住中 (1.8.13): 医生在收键盘动画里把视口偏移钉在键盘整个高度上
+      // (逼「还原高度」记成满高), 这会儿归零复位 = 拆台 —— 松手时按住自己会归位
+      if (window.ViewportHeal && ViewportHeal.holding()) return;
       const active = document.activeElement;
       const typing = active && active.tagName === "INPUT";
       const keyboard = typing
