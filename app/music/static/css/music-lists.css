@@ -84,16 +84,23 @@
 .bars i:nth-child(3) { animation-delay: .5s; }
 @keyframes bars-bounce { 0%, 100% { height: 4px; } 50% { height: 14px; } }
 .playing .bars { display: inline-flex; }
-/* 序号行: 播放中动条顶掉序号; 封面行 (播放列表/选择单) 封面不许被顶掉
-   —— 动条胶囊叠在封面中央, 深底衬着, 任何封面都看得清 */
+/* 序号行: 播放中动条顶掉序号; 封面行 (播放列表/选择单) 封面不许被顶掉。
+   1.8.20 重画 (用户点名「封面上的动态图标怪怪的」): 早先是一枚黑胶囊浮
+   在封面中央 + 三根红条 —— 胶囊只盖中间一块, 悬空一块补丁似的, 红条还
+   吃封面的色。改成整面半透纱罩贴满封面 (与 .t-art 同圆角), 白色动条
+   居中小弹幅 —— 压得住任何封面, 也是系统播放中的通用语言 */
 .playing .t-lead:not(.art) > :not(.bars) { display: none; }
 .t-lead.art { position: relative; }
 .playing .t-lead.art .bars {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  padding: 6px 5px; border-radius: 999px;
-  background: rgba(0, 0, 0, .58);
+  position: absolute; inset: 0; align-items: center; justify-content: center;
+  border-radius: 6px;               /* 与 .t-art 同圆角, 纱罩贴着封面边铺 */
+  background: rgba(0, 0, 0, .45);
 }
+.playing .t-lead.art .bars i {
+  background: #fff;                 /* 白条不吃封面的色, 纱底上最读得清 */
+  animation-name: bars-bounce-art;  /* 弹幅小一号 (14px 在 44px 图上太冲) */
+}
+@keyframes bars-bounce-art { 0%, 100% { height: 4px; } 50% { height: 11px; } }
 
 /* ---------- 艺人行 ---------- */
 .artist-row {

@@ -23,7 +23,7 @@ function renderSearchView(target) {
         <div class="search-box">
           <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m11 11 3.4 3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
           <input id="search-input" type="search" enterkeyhint="search" autocomplete="off"
-                 placeholder="歌曲、专辑、艺人、歌词 (拼音简繁都行)" maxlength="100"
+                 placeholder="歌曲、专辑、艺人、歌词" maxlength="100"
                  value="${escapeHTML(pageState.searchQuery)}">
           <button id="search-clear" hidden aria-label="清空">✕</button>
         </div>
@@ -130,8 +130,7 @@ async function runSearch(target) {
     pageState.searchResults = null;
     body.classList.remove("paged");
     shell.classList.remove("paged");
-    body.innerHTML = listPlaceholderHTML(
-      "搜歌名、艺人、专辑或一句歌词, 拼音简繁都行");
+    body.innerHTML = "";   // 1.8.20 框下的搜索提示撤了 (用户点名), 空查询就是空白
     return;
   }
   const controller = new AbortController();

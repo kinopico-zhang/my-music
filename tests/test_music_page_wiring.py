@@ -131,7 +131,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v23" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v24" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
@@ -190,11 +190,11 @@ def test_music_track_context_menu_wiring():
         encoding="utf-8")
     assert 'id="picker-close"' not in picker_js
     assert "playlists.sort((a, b) => b.updated_at - a.updated_at);" in picker_js
-    # 1.8.18: 顶栏换成正在加的那首歌 —— 封面 + 歌名 + 艺人 (用户点名),
-    # 「选一个列表…」提示撤了
+    # 1.8.18: 顶栏换成正在加的那首歌 —— 封面 + 歌名 + 艺人·专辑 (专辑名
+    # 1.8.20 补上, 用户点名), 「选一个列表…」提示撤了
     assert 'id="picker-track-art"' in html and 'id="picker-track-artist"' in html
     assert "$(\"#picker-track-art\").innerHTML = trackArtHTML(track);" in picker_js
-    assert "$(\"#picker-track-artist\").textContent = track.artist;" in picker_js
+    assert "textContent = [track.artist, track.album_title]" in picker_js
     assert "选一个列表" not in html and "选一个列表" not in picker_js
     # 1.8.19: 行间分割线撤了 (用户点名) —— 规则收尾在 text-align, 没挂 border-bottom
     assert "padding: 11px 6px; text-align: left;\n}" in html

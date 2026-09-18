@@ -79,8 +79,11 @@ def test_music_1817_lyrics_view_survives_track_change():
     player = music_player_js()
     # 旧强关路径撤了: syncLyricsButton 不再顺手把开着的歌词视图 toggle 掉
     assert "if (noLyrics && lyricsViewOpen) toggleLyricsView();" not in player
-    # 键的灰亮: 视图关着且没词才灰; 开着保持可点好关回封面
-    assert '$("#fp-lyrics-btn").disabled = !!noLyrics && !lyricsViewOpen;' in player
+    # 键的灰亮 (1.8.20 反转默认, 用户点名「默认是没歌词的, 有歌词再亮」):
+    # 没探明 = 灰着当没词, 探明确认有词才亮; 开着保持可点好关回封面
+    assert 'const hasLyrics = currentTrack && lyricsCache.has(currentTrack.track_id)' \
+        in player
+    assert '$("#fp-lyrics-btn").disabled = !lyricsViewOpen && !hasLyrics;' in player
     # 收视图时顺手重算键态: 关了且这首没词 → 灰回去 (再开开不了)
     assert "syncLyricsButton();    // 视图关了且这首没词: 键灰回去 (再开开不了)" \
         in player

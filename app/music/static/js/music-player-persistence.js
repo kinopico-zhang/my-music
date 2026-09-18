@@ -1,9 +1,10 @@
 // music-player-persistence — My Music 播放现场持久化: localStorage 存/恢复 (队列/曲目/进度)。
 // 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global $, PLAYER_STATE_KEY, audioElement, createPlayQueue, currentTrack: writable,
+/* global PLAYER_STATE_KEY, audioElement, createPlayQueue, currentTrack: writable,
           playQueue: writable, prefetchLyrics, prefetchNextTrack, queueCurrent,
-          renderPlayerChrome, renderQueueView, trackChangeListeners, updateMediaSession */
+          renderPlayerChrome, renderQueueView, syncLyricsButton, trackChangeListeners,
+          updateMediaSession */
 /* exported playerRestore, savePlayerState */
 
 // ------------------------------------------------------------ 持久化
@@ -56,8 +57,8 @@ function playerRestore() {
   renderQueueView();
   updateMediaSession();
   for (const listener of trackChangeListeners) listener(track);
-  $("#fp-lyrics-btn").disabled = false;    // 探明前先恢复可点 (与 loadTrack 同款)
-  prefetchLyrics(track);                   // 恢复现场也探一遍词: 没词的键灰掉
+  syncLyricsButton();    // 1.8.20 键默认灰 (当没词), 探明有词才亮 (与 loadTrack 同款)
+  prefetchLyrics(track);
   if (saved.time) audio.currentTime = saved.time;
   prefetchNextTrack();            // 恢复现场时也把下一曲备好
 }

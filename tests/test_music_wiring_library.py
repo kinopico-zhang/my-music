@@ -55,7 +55,7 @@ def test_music_share_link_wiring():
     # 视图关着时没词键灰掉; 开着保持可点好关回封面
     assert "lyricsViewOpen" in share_all
     assert "function toggleLyricsView" in share_all
-    assert '$("#fp").classList.toggle("lyrics", open);' in share_all
+    assert '$("#fp-art-wrap").hidden = open;' in share_all
     assert 'lyricsButton.disabled = !lyrics && !lyricsViewOpen;' in share_all
     assert 'lyricsButton.classList.toggle("on", open);' in share_all
     # 切歌后视图跟上一首保持一致 (1.8.17 用户点名): 开合只听用户的态,
