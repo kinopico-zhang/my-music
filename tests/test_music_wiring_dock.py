@@ -141,7 +141,7 @@ def test_music_top_fallback_removed():
     # +search-pages; 1.8.5: +bubble-swipe; 1.8.6: +downloads-select,
     # push-panes 拆出 pane-swipe)
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    assert len(scripts) == 47 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 48 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
     webapp_dir = Path(__file__).parent.parent / "app" / "music" / "webapp"

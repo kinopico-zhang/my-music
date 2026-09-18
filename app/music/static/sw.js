@@ -17,10 +17,10 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v12 (2026-09-18 1.8.10: 黑带三味修复没断根 —— 收稳判据改等
-// innerHeight 回满高 (视口医生模块), 冻矮自动弹体检窗; 静态资源地址变了
-// (?v= 各升), 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v12";
+// 壳缓存 v13 (2026-09-18 1.8.11: 黑带验方落地 —— 满高元素翻面 (新模块
+// music-viewport-heal), 医生误诊修正, 体检窗挪出刘海地带; 静态资源地址变
+// 了 (?v= 各升), 换版本号让 activate 清旧账)
+const SHELL_CACHE = "music-shell-v13";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档
