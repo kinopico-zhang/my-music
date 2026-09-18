@@ -7,6 +7,7 @@
 
 function playQueue(pos) {
   if (pos < 0 || pos >= queue.length) return;
+  const prevPos = queuePos;    // 切歌方向 = 新旧下标比 (滑/按键/点行通吃)
   queuePos = pos;
   const track = queue[pos];
   audio.src = `/music/share/${token}/stream/${track.track_id}`;
@@ -39,6 +40,15 @@ function playQueue(pos) {
   // src; 此前错用了给容器 div 用的 setArt —— 往 <img> 里塞子 <img> 永远
   // 不渲染, 封面就一直空着 (迷你条的 #p-art 是 div, setArt 没问题)
   $("#fp-art").src = artURL(track);
+  // 1.8.19 切歌封面方向滑入 (用户点名「滑动封面切歌怎么没有动画」):
+  // 下一首从右进 (左滑的方向), 上一首从左进; 重播本首不动。摘类→强制
+  // 回流→挂类, 连着切才重得起来
+  const artWrap = $("#fp-art-wrap");
+  artWrap.classList.remove("art-in-next", "art-in-prev");
+  if (pos !== prevPos) {
+    void artWrap.offsetWidth;
+    artWrap.classList.add(pos > prevPos ? "art-in-next" : "art-in-prev");
+  }
   const bgImg = $("#fp-bg-img");
   bgImg.onerror = () => { $("#fp-bg").classList.add("ph"); bgImg.removeAttribute("src"); };
   if (bgImg.getAttribute("src") !== artURL(track)) {

@@ -24,6 +24,14 @@
        and (pointer: coarse) {
   :root { --top-floor: 96px; }
 }
+/* 全局上边界 (1.8.19 用户令「搞一个全局上边界, 固定的控件都不要超过
+   这个边界」): 系统磨砂带的底沿 —— 固定/钉顶的控件 (搜索页 sticky 头 /
+   播放页抓手 / 体检窗 / 长按菜单) top 一律不低于它。取两种形态的深者:
+   浏览器 = env+36 (二级页大标题的文字高度 env+14+22, 1.8.17/1.8.19
+   两轮实测干净); 独立模式 = --top-floor 的 96px (那条带比安全区深一截,
+   见上)。流内内容不受限 (滚得走的照旧认糊)。 */
+:root { --top-clear: max(calc(env(safe-area-inset-top, 0px) + 36px),
+                         var(--top-floor)); }
 /* app 思路: 全程不画滚动条 (手机本来就不画, 电脑上也干净) —— 能滚, 只是不显示 */
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent;
     scrollbar-width: none; }

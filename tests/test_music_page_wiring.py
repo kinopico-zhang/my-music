@@ -131,7 +131,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v21" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v23" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
@@ -196,3 +196,5 @@ def test_music_track_context_menu_wiring():
     assert "$(\"#picker-track-art\").innerHTML = trackArtHTML(track);" in picker_js
     assert "$(\"#picker-track-artist\").textContent = track.artist;" in picker_js
     assert "选一个列表" not in html and "选一个列表" not in picker_js
+    # 1.8.19: 行间分割线撤了 (用户点名) —— 规则收尾在 text-align, 没挂 border-bottom
+    assert "padding: 11px 6px; text-align: left;\n}" in html
