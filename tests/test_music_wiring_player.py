@@ -184,9 +184,10 @@ def test_music_single_url_navigation_wiring():
     assert 'const pushed = view !== "home";' in js
     assert "function routeRoot" in js and "function routePushed" in js
     # 开局: 旧深链消化一次 → replaceState 洗 URL (不加条目) → 状态开局
+    # (1.8.8 起整条轨迹逐层重放, 详见搜索接线测试)
     assert 'const legacyHash = location.hash.replace(/^#\\/?/, "");' in js
     assert 'history.replaceState(null, "", location.pathname + location.search);' \
         in js
-    assert "navigate(legacyTarget);" in js
+    assert "journey.forEach(navigate);" in js
     # 层收尽 (按钮收/右划收) 回到根视图 = 主页; 页签点亮同步那套随页签栏撤了
     assert "syncViewTabs" not in js
