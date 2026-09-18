@@ -145,9 +145,9 @@ def test_music_top_fallback_removed():
     # +search-pages; 1.8.5: +bubble-swipe; 1.8.6: +downloads-select,
     # push-panes 拆出 pane-swipe; 1.8.14: -viewport-heal —— 按住验方
     # 退役; 1.8.17: -cellular-usage 蜂窝流量撤了, +playlist-drag 播放
-    # 列表拖拽换序)
+    # 列表拖拽换序; 1.8.23: +root-rubber 根层右划橡皮筋)
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    assert len(scripts) == 47 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 48 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
     assert "js/music-playlist-drag.js?v=" in html   # 1.8.17 拖拽换序

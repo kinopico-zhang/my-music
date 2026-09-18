@@ -1,6 +1,6 @@
-"""My Music 资料库接线测试: 分享链接, 左滑删除, 下载全部,
-更新日志应用内化, 前端结构守恒 —— 静态文本断言, 不碰数据库。
-拆自 test_music_wiring.py (结构化重构, 代码逐字节未动)。"""
+"""My Music 资料库接线测试: 分享链接, 下载全部, 更新日志应用内化,
+前端结构守恒 —— 静态文本断言, 不碰数据库。拆自 test_music_wiring.py
+(结构化重构); 左滑删除 1.8.23 批拆去 test_music_swipe_delete.py。"""
 import re
 from pathlib import Path
 
@@ -21,6 +21,13 @@ def test_music_share_link_wiring():
                  "async function sharePlaylist", 'id="playlist-share"',
                  "24 小时内有效"]:
         assert frag in js, f"music.js 分享缺 {frag}"
+    # 1.8.23 分享图标换 iOS 共享样式 (用户点名「太像上传了」): 方框顶边
+    # 带缺口 + 箭杆只到顶边 (上传画法是箭杆插进开口托盘深处)。图标定义
+    # 在公共件里, 直接读文件 (browser_js 口径不含 music-common)
+    common = (MUSIC_STATIC / "js" / "music-common.js").read_text(encoding="utf-8")
+    assert "M12 9.5v-6M8.5 7 12 3.5 15.5 7M9.4 10.5H6v8a2 2 0 0 0 2 2h8" \
+        "a2 2 0 0 0 2-2v-8h-3.4" in common
+    assert "M12 3.5v11M" not in common            # 旧的上传画法退役
     # 公开页: 拿 uuid 换数据 → 流地址播放, 失效态/滑进度/iOS 兜底都在
     for frag in ["/music/share/${token}/api",
                  "/music/share/${token}/stream/${track.track_id}",
@@ -93,46 +100,6 @@ def test_music_share_link_wiring():
     middleware = (Path(__file__).parent.parent / "app" / "home"
                   / "middleware.py").read_text(encoding="utf-8")
     assert '_PUBLIC_PREFIXES = ("/music/share/",)' in middleware
-
-
-def test_music_swipe_delete_wiring():
-    """左滑删除 (用户点名两处: 列表内曲目移出 + 主页列表整列删): iOS 同款
-    红色删除钮。与长按菜单共存 (阈值分家), 滚动让位 (touch-action pan-y +
-    捕获 scroll 即收), 尾随 click 吞掉, 同一时间只开一行。"""
-    html = music_page_shell()
-    js = music_browser_js()
-    for frag in [".swipe-wrap {", ".swipe-del {", "touch-action: pan-y;"]:
-        assert frag in html, f"左滑样式缺 {frag}"
-    assert "#e5484d" in html                          # 删除钮红底
-    for frag in ["const SWIPE_REVEAL = 72;",
-                 "function closeSwipeRow", "function bindSwipeDelete",
-                 'document.addEventListener("scroll", closeSwipeRow, true)',
-                 'data-swipe-track=', 'data-swipe-playlist=',
-                 "swipeSuppressClick",
-                 '`/music/api/playlists/${playlistId}/tracks/${trackId}`']:
-        assert frag in js, f"music.js 缺 {frag}"
-    # 两处挂载: 列表详情的曲目行 + 主页的列表行
-    assert 'bindSwipeDelete(target.querySelector("#playlist-tracks")' in js
-    assert 'bindSwipeDelete($("#home-playlists")' in js
-    # 手势地盘分家 (1.7.0 后遗症修): 左滑只认左移 (右移归推入层返回手势,
-    # 抢了会被 pointercancel 掐弹回); 左缘 24px 让给 iOS 系统边缘返回
-    assert "swipeDrag.horizontal = dx < 0 && Math.abs(dx) > Math.abs(dy);" in js
-    # 左缘返回的归属 (用户点名两轮 preventDefault 拦截, iPhone Safari 实测
-    # 都掐不住系统手势, 终版撤净): 苹果把屏幕最边一条握在系统手里, 网页
-    # 收不到那片触摸 (Navigation API 的 traverse 取消也未实现) —— 应用
-    # 自己的右滑从页面任意位置起手; 别再往 document 挂 touchstart 拦截,
-    # 那只剩左缘一小条不能起手滚动的副作用
-    assert "standaloneLaunch" not in js
-    assert "EDGE_STRIP_PX" not in js
-    assert 'document.addEventListener("touchstart"' not in js
-    assert 'document.addEventListener("touchend"' not in js
-    # 拖动跟手: 行上挂 .swiping 撤掉 transform 过渡, 松手回位才交给过渡
-    # (不撤的话每帧都在重定 250ms 补间, 手指拖着行像皮筋 —— 队列拖拽同款)
-    assert 'swipeDrag.row.classList.add("swiping")' in js
-    assert ".swipe-wrap > button:first-child.swiping { transition: none; }" in html
-    # 删除钮的点击走捕获层 (}, true); 行自己的冒泡 click 处理器看不到它
-    assert 'container.addEventListener("click", async (event) => {' in js
-    assert "}, true);" in js
 
 
 def test_music_download_all_wiring():

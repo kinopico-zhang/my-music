@@ -8,8 +8,9 @@
   display: flex; align-items: center; justify-content: center;
   color: var(--ink-3); touch-action: none;
 }
-/* 行滑开露出删除钮时, 把手跟着藏 (visibility 不触发回流, 行高不动) */
-#playlist-tracks .swipe-wrap > button.revealed ~ .pl-grip { visibility: hidden; }
+/* 行滑开露出删除钮时, 把手跟着藏 (visibility 不触发回流, 行高不动;
+   1.8.23 改款后 revealed 挂 wrap 一级 —— 删除钮会压上把手的位置) */
+#playlist-tracks .swipe-wrap.revealed .pl-grip { visibility: hidden; }
 #playlist-tracks .track-row { padding-right: 28px; }
 /* 让位平移的过渡 (队列行同款 .18s): wrap 平时没有 transform 过渡 (左滑那套
    在行 button 上), 拖拽让位要滑开跟手, 没有这条让位就是瞬跳 */

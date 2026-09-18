@@ -122,27 +122,8 @@
 .a-main small { font-size: 12px; color: var(--ink-2); }
 .artist-row .chev { color: var(--ink-3); font-size: 18px; }
 
-/* ---------- 左滑删除 (iOS 同款) ----------
-   .swipe-wrap 里第一个子元素是行 (横移跟手), .swipe-del 垫在右缘底下;
-   行透明会让删除钮透出来 → 行必须铺底色 (与页面同色)。 */
-.swipe-wrap { position: relative; overflow: hidden; }
-.swipe-wrap > button:first-child {
-  position: relative; z-index: 1; background: var(--bg);
-  transition: transform .25s cubic-bezier(.25,.1,.25,1); touch-action: pan-y;
-}
-/* 拖动跟手 (松手的回位/定住才交给上面的过渡) —— 队列拖拽同款手法 */
-.swipe-wrap > button:first-child.swiping { transition: none; }
-.swipe-del {
-  position: absolute; top: 0; right: 0; bottom: 0; z-index: 0;
-  width: 72px; display: flex; align-items: center; justify-content: center;
-  background: #e5484d; color: #fff; font-size: 14px; font-weight: 600;
-}
-.swipe-del:active { background: #cf3942; }
-/* 1.8.17 用户点名「左滑出删除键时, 旁边的 > 去掉」; 1.8.18 扩成行尾内容
-   全藏 (时长/下载标/词标/箭头都让开, 只留歌名 —— 删除钮顶上干净);
-   revealed 由 music-swipe-delete.js 挂/撤; visibility 不触发回流,
-   滑动全程行高纹丝不动 */
-.swipe-wrap > button.revealed > :not(.t-lead, .t-main) { visibility: hidden; }
+/* 左滑删除的样式独立成 music-swipe-delete.css (1.8.23 改款: 行不动,
+   删除钮从右缘带半透纱压上来 —— 本文件行数顶到 200 上限, 按域拆家) */
 
 .section-head {
   font-size: 20px; font-weight: 700; margin: 22px 0 12px;

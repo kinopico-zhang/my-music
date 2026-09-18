@@ -2,8 +2,8 @@
    1.8.18 改版「封面即复选框」—— 不再左移画选择圈, 选中的封面蒙暗 +
    中央打白勾 (勾画在 .dl-art 裹层上, img 是替换元素挂不了伪元素),
    行布局一毫米不动; 左滑删除让位 (拖不动也删不了, 点行只管勾选)。 */
-#dl-pane-body.selecting .swipe-wrap > button:first-child { transform: none !important; }
 #dl-pane-body.selecting .swipe-del { display: none; }
+#dl-pane-body.selecting .swipe-wrap::after { display: none; }
 .dl-art { position: relative; flex-shrink: 0; display: block; }
 /* 选中: 封面蒙暗 (半透黑) + 白勾居中, 与右上一对黑白灰键一个语言 */
 #dl-pane-body.selecting .dl-row.sel .dl-art::before {

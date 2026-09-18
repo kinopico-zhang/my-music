@@ -97,7 +97,21 @@ def test_music_playlist_rename_reorder_wiring():
     assert "#playlist-tracks .swipe-wrap.dragging {" in html
     assert "transition: none; z-index: 3; box-shadow: 0 8px 22px rgba(0,0,0,.5);" \
         in html
-    # 左滑露出删除钮时行尾内容全藏 (1.8.18 用户点名: 时长/下载标/词标/
-    # 箭头让开, 只留歌名)
-    assert ".swipe-wrap > button.revealed > :not(.t-lead, .t-main)" \
-        " { visibility: hidden; }" in html
+    # 1.8.23 改款 (用户报「左滑时左边的信息不见了」): 行不动了 —— 原先
+    # 行整体左移、封面从左缘被裁掉; 现在删除钮从右缘滑上来 (z3 压过行),
+    # 钮左侧延伸半透红纱 (wrap::after, 浓度 --veil 跟手), 行尾内容只是
+    # 罩暗不藏 —— 1.8.18 的行尾整藏 (visibility:hidden) 随之退役
+    swipe_css = (MUSIC_STATIC / "css" / "music-swipe-delete.css").read_text(
+        encoding="utf-8")
+    assert ".swipe-wrap > button:first-child {" in swipe_css
+    assert "transition: transform .25s" not in swipe_css[
+        swipe_css.index(".swipe-wrap > button:first-child {"):
+        swipe_css.index(".swipe-del {")]           # 行不再带过渡 (行不动了)
+    assert "transform: translateX(100%);" in swipe_css   # 钮原位藏在右缘外
+    assert "z-index: 3;" in swipe_css              # 钮压在行上 (不再垫底)
+    assert "opacity: var(--veil, 0);" in swipe_css  # 纱的浓度跟手
+    assert "rgba(229, 72, 77, .5)" in swipe_css     # 半透红纱 (删除钮延伸)
+    assert "visibility: hidden;" not in swipe_css   # 行尾整藏退役
+    assert "wrap.classList.toggle(\"revealed\"" in (
+        MUSIC_STATIC / "js" / "music-swipe-delete.js").read_text(encoding="utf-8")
+    assert "#playlist-tracks .swipe-wrap.revealed .pl-grip" in html  # 把手照旧让位
