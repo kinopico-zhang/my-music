@@ -59,10 +59,11 @@ def test_music_dock_wiring():
     assert '$("#mini-player").hidden = !track;' in chrome
     assert "setMarqueeLine($(\"#mini-title\")" in chrome
     assert "addEventListener(\"resize\"" in player[player.index("let marqueeResizeTimer"):]
-    # 上弹菜单: 六项带图标, 从键上方弹出 (缩放+上移入场动画)
-    for entry, label in [("playlists", "播放列表"), ("albums", "专辑"),
-                         ("artists", "艺人"), ("recent", "最近播放"),
-                         ("downloads", "已下载"), ("settings", "设置")]:
+    # 上弹菜单: 六项带图标, 从键上方弹出 (缩放+上移入场动画); 1.8.20 用户
+    # 点名改口: 专辑/艺人/已下载/设置 → 所有专辑/所有艺人/下载管理/软件设置
+    for entry, label in [("playlists", "播放列表"), ("albums", "所有专辑"),
+                         ("artists", "所有艺人"), ("recent", "最近播放"),
+                         ("downloads", "下载管理"), ("settings", "软件设置")]:
         assert f'data-pop-nav="{entry}"><svg' in html
         assert f"{label}</button>" in html
     assert '<div id="pop-mask" hidden></div>' in html

@@ -8,6 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.21", date="2026-09-18", items=[
+        ChangelogItem(kind="改进", text="菜单与页标题改口 (你点的): 已下载 →"
+                                       " 下载管理, 专辑 → 所有专辑, 艺人 →"
+                                       " 所有艺人, 设置 → 软件设置 —— 上弹"
+                                       "菜单和对应页的大标题一起改"),
+    ]),
     ChangelogVersion(version="1.8.20", date="2026-09-18", items=[
         ChangelogItem(kind="修复", text="拖动换序落定那一下, 让过位的行不再"
                                        "抖 (你报的): 病根是让位位移带着过渡"
