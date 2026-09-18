@@ -47,6 +47,10 @@ function renderSearchView(target) {
       ? `搜索：${pageState.searchQuery}` : "搜索";
   };
   syncTitle();
+  // 空查询开局即编辑态 (1.8.18 修「点放大镜进来没有输入框」): 框默认藏着
+  // (:not(.editing) display:none), 而藏着的框恰恰聚不上焦 —— 焦点进不去,
+  // .editing 就永远等不来。先亮框, 船坞键的 focus 才落得下去
+  if (!pageState.searchQuery) shell.classList.add("editing");
   // 编辑态 = 焦点在框里 (键盘在): 框钉页首; 一失焦 (回车/点别处/切页签)
   // 就算落定 —— 框撤下, 查询词顶上标题位
   input.addEventListener("focus", () => shell.classList.add("editing"));
@@ -55,7 +59,10 @@ function renderSearchView(target) {
     syncTitle();
     shell.scrollTo(0, 0);   // 让位滚过页壳的话归位, 标题底下别压着结果
   });
-  title.addEventListener("click", () => { input.focus(); input.select(); });
+  title.addEventListener("click", () => {
+    shell.classList.add("editing");   // 框先亮出来才聚焦得上 (隐藏的框 focus 不进)
+    input.focus(); input.select();
+  });
   let debounceTimer = 0;
   input.addEventListener("input", () => {
     pageState.searchQuery = input.value.trim();

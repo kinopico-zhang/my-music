@@ -90,9 +90,9 @@ def test_music_downloads_wiring():
     html = music_page_shell()
     assert ".dl-stats" in html and ".dl-clear" in html    # 统计行样式
     # 1.8.6 多选删除 (用户点名): 「多选」进选择模式, capture 阶段截下点行
-    # 改勾选 (不再开播), 统计条换「删除 N 首」, 删完/「完成」退出;
-    # 状态住模块, 整页重铺后 syncDownloadsSelect 按 state 补圈补勾
-    assert "music-downloads-select.css?v=" in html        # 选择圈样式
+    # 改勾选 (不再开播), 删完/「完成」退出; 状态住模块, 整页重铺后
+    # syncDownloadsSelect 按 state 补勾
+    assert "music-downloads-select.css?v=" in html        # 选择态样式
     select_js = (MUSIC_STATIC / "js" / "music-downloads-select.js").read_text(
         encoding="utf-8")
     for frag in ["function bindDownloadsSelect", "function syncDownloadsSelect",
@@ -103,12 +103,22 @@ def test_music_downloads_wiring():
         assert frag in select_js, f"多选删除缺 {frag}"
     assert "bindDownloadsSelect(target);" in js          # 挂 pane 层 (重铺不丢)
     assert 'id="dl-select-toggle"' in js and 'id="dl-select-delete"' in js
-    assert "#dl-pane-body.selecting .dl-row.sel::after" in html  # 勾样式
-    # 1.8.17: 勾中出垃圾桶 (替「删除 N 首」文案钮); 多选模式压住左滑
-    # (行 transform 归零 + 左滑删除钮藏), 两套手势不打架
+    # 1.8.18 改版 (用户点名「封面即复选框」): 不再左移出行画选择圈 —— 勾
+    # 画在封面上 (蒙暗 + 白勾, .dl-art 裹层挂伪元素), 行布局一毫米不动
+    assert '#dl-pane-body.selecting .dl-row.sel .dl-art::after' in html
+    assert "#dl-pane-body.selecting .dl-row.sel .dl-art::before" in html
+    assert '<span class="dl-art">' in js                 # 封面裹层 (模板带出)
+    assert "padding-left: 32px" not in html              # 左移出行那套撤了
+    # 1.8.17: 勾中出垃圾桶; 多选模式压住左滑 (行 transform 归零 +
+    # 左滑删除钮藏), 两套手势不打架
     assert 'aria-label="删除选中"' in js
     assert "#dl-pane-body.selecting .swipe-wrap > button:first-child" in html
     assert "#dl-pane-body.selecting .swipe-del { display: none; }" in html
+    # 1.8.18 垃圾桶/多选并成右上一对黑白灰椭圆键 (原先 space-between
+    # 隔在两头, 用户点名「距离太远了」)
+    assert '<span class="dl-actions">' in js
+    assert ".dl-actions { display: flex; align-items: center; gap: 8px;" in html
+    assert "border-radius: 999px;" in html and "min-height: 32px;" in html
     scripts = re.findall(r'<script src="([^"]+)"', html)
     # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
     # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select, push-panes 拆出
@@ -121,7 +131,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v20" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v21" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
@@ -180,3 +190,9 @@ def test_music_track_context_menu_wiring():
         encoding="utf-8")
     assert 'id="picker-close"' not in picker_js
     assert "playlists.sort((a, b) => b.updated_at - a.updated_at);" in picker_js
+    # 1.8.18: 顶栏换成正在加的那首歌 —— 封面 + 歌名 + 艺人 (用户点名),
+    # 「选一个列表…」提示撤了
+    assert 'id="picker-track-art"' in html and 'id="picker-track-artist"' in html
+    assert "$(\"#picker-track-art\").innerHTML = trackArtHTML(track);" in picker_js
+    assert "$(\"#picker-track-artist\").textContent = track.artist;" in picker_js
+    assert "选一个列表" not in html and "选一个列表" not in picker_js

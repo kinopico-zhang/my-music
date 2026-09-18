@@ -115,8 +115,10 @@ function renderDownloadsBody(body) {
         <strong id="dl-total">统计中…</strong>
         <small id="dl-quota"></small>
       </span>
-      <button class="dl-clear" id="dl-select-delete" hidden aria-label="删除选中"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.7 12.5h9.6l.7-12.5M10 10.5v6M14 10.5v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-      <button class="dl-clear" id="dl-select-toggle">多选</button>
+      <span class="dl-actions">
+        <button class="dl-clear" id="dl-select-delete" hidden aria-label="删除选中"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.7 12.5h9.6l.7-12.5M10 10.5v6M14 10.5v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="dl-clear" id="dl-select-toggle">多选</button>
+      </span>
     </div>
     ${entries.map(downloadRowHTML).join("")}`;
   syncDownloadsSelect(body);   // 选择模式开着时整页重铺: 圈/勾按 state 补
@@ -126,16 +128,15 @@ function renderDownloadsBody(body) {
 
 /** 单行模板 (整页重铺与原地补丁共用)。1.8.17 改左滑删除: 行住进
  *  .swipe-wrap (行本体必须是 button, 左滑那套样式/手势认它), 删除钮
- *  垫在右缘底下。 */
+ *  垫在右缘底下; 1.8.18 封面裹进 .dl-art (多选的勾画在封面上)。 */
 function downloadRowHTML(entry) {
   return `
     <div class="swipe-wrap" data-dl-wrap="${entry.track_id}">
       <button type="button" class="dl-row${entry.state ? " busy" : ""}" data-dl-row="${entry.track_id}">
-        ${entry.state
-          ? '<span class="t-art">♪</span>'
+        <span class="dl-art">${entry.state ? '<span class="t-art">♪</span>'
           : `<img class="t-art" loading="lazy" decoding="async" alt=""
                 src="/music/media/tracks/${entry.track_id}/artwork"
-                onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'t-art',textContent:'♪'}))">`}
+                onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'t-art',textContent:'♪'}))">`}</span>
         <span class="t-main">
           <span class="t-title"><span class="t-title-text">${escapeHTML(entry.title || `曲目 ${entry.track_id}`)}</span></span>
           <small>${escapeHTML(entry.artist || "下载中…")}</small>

@@ -14,12 +14,16 @@ function bindGlobalEvents() {
   // 底部船坞: 搜索键进搜索层 (顺手聚焦输入框 —— 老放大镜按钮的手感;
   // 导航是同步渲染, 走到这儿输入框已经在页面上了)。聚焦收窄到顶层层的
   // 输入框: 旧搜索层滑出还挂着 DOM 的 420ms 里, $() 全局找会抓到旧层
-  // 那枚 (聚焦即被移除, 键盘/视口状态全乱) —— 1.8.6 修重进搜索失灵
+  // 那枚 (聚焦即被移除, 键盘/视口状态全乱) —— 1.8.6 修重进搜索失灵。
+  // 1.8.18: 框先亮再聚焦 —— 编辑态外框是 display:none, 隐藏的框 focus
+  // 落不下 (点放大镜没有输入框的病根); 带着旧查询进来也直接亮框
   $("#dock-search").addEventListener("click", () => {
     navigate("search");
     const top = pushStack[pushStack.length - 1];
     const input = top && top.pane.querySelector("#search-input");
-    if (input) input.focus();
+    if (!input) return;
+    input.closest(".search-shell").classList.add("editing");
+    input.focus();
   });
   bindDockMenu();
   $("#cover-file").addEventListener("change", () => {
