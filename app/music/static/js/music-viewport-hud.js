@@ -1,15 +1,14 @@
-// music-viewport-hud — 视口体检窗 + 回传 (1.8.12, 配合 music-viewport-doctor):
-// 冻矮时亮相的现场数字小窗 (平时绝不出现), 窗里一颗「深度修复」按钮 (刷新
-// 复位, 手法在 music-viewport-heal), 每行流水同时排进发件箱回传服务器
-// (data/viewport-doctor.jsonl) —— 手机上复现完, 日志已经在服务器上等人来读,
-// 不用截图。本模块只管「说」: 屏幕上说什么、往服务器发什么, 病情的判断
-// (满高基准/冻矮判定/深修手法) 都在医生那里, 通过 wire() 注入。
+// music-viewport-hud — 视口体检窗 + 回传 (1.8.13, 配合 music-viewport-doctor):
+// 冻矮时亮相的现场数字小窗 (平时绝不出现), 治不了时给一句真话 (划掉重开
+// 秒复原), 每行流水同时排进发件箱回传服务器 (data/viewport-doctor.jsonl)
+// —— 手机上复现完, 日志已经在服务器上等人来读, 不用截图。本模块只管
+// 「说」: 屏幕上说什么、往服务器发什么, 病情的判断 (满高基准/冻矮判定)
+// 和治疗手法 (收键按住, music-viewport-heal) 都在医生那里, 通过 wire() 注入。
 "use strict";
 /* exported ViewportHUD */
 
 const ViewportHUD = (() => {
   let stat = () => "";
-  let deepRepair = () => {};
   let outbox = [];
   let hud = null;
   let hudBody = null;
@@ -53,25 +52,17 @@ const ViewportHUD = (() => {
     if (!hud) {
       const sheet = document.createElement("style");
       // 挪出顶部刘海/状态栏的模糊地带 (1.8.10 弹在 top:8px 用户点不到);
-      // 刷新是有分量的动作, 只认按钮那一下, 点窗别处不算 (别误触刷新)
+      // 1.8.13 起没有按钮了 —— 刷新复位实测无效, 真话是划掉重开
       sheet.textContent = "#doctor-hud{position:fixed;"
         + "top:calc(env(safe-area-inset-top) + 8px);left:8px;z-index:999;"
         + "max-width:80vw;padding:8px 10px;border:1px solid #fa2d48;border-radius:8px;"
         + "background:rgba(0,0,0,.92);color:#f5f5f7;font:11px/1.6 ui-monospace,monospace;"
-        + "white-space:pre-wrap;word-break:break-all}"
-        + "#doctor-hud button{display:block;margin:0 0 8px;width:100%;"
-        + "padding:12px 20px;border:1px solid #fa2d48;border-radius:999px;"
-        + "color:#fa2d48;font:600 14px/1 ui-monospace,monospace;"
-        + "background:rgba(250,45,72,.12)}";
+        + "white-space:pre-wrap;word-break:break-all}";
       document.head.appendChild(sheet);
       hud = document.createElement("div");
       hud.id = "doctor-hud";
-      const fix = document.createElement("button");
-      fix.type = "button";
-      fix.textContent = "深度修复 · 刷新复位";
-      fix.addEventListener("click", deepRepair);
       hudBody = document.createElement("div");
-      hud.append(fix, hudBody);
+      hud.appendChild(hudBody);
       document.body.appendChild(hud);
     }
     hudBody.textContent = stat();
@@ -89,8 +80,7 @@ const ViewportHUD = (() => {
     }
   }
   function wire(options) {
-    stat = options.stat;                       // 医生注入: 现场数字/深修手法
-    deepRepair = options.deepRepair;
+    stat = options.stat;                       // 医生注入: 现场数字
   }
   addEventListener("pagehide", send);
   document.addEventListener("visibilitychange", () => {

@@ -1,14 +1,15 @@
-// music-viewport-doctor — My Music 视口体检 (1.8.12): 盯着「页面高度」本身。
-// 病 (两轮回传实锤, iOS 18.7 独立模式): 键盘弹起 innerHeight 跟着缩
-// (812→415), 收起后冻在矮值 (771, 差的 41 就是黑带) 不回来 —— WebKit 把
-// 「键盘收起后的还原高度」记坏了, 页面里改不动它 (翻面/meta 踢/键盘往返
-// 全试过无效); 滚位/偏移两味 1.8.7 已治好。本模块管「诊断 + 调度」:
+// music-viewport-doctor — My Music 视口体检 (1.8.13): 盯着「页面高度」本身。
+// 病 (三轮回传实锤, iOS 18.7 独立模式): 键盘弹起 innerHeight 跟着缩
+// (812→415), 收起那一下 WebKit 把「还原高度」记成 415+偏移半路值 (771/776,
+// 差的那截就是黑带), 页面里翻面/meta 踢/键盘往返全无效, 刷新换文档也不行
+// (坏值跟着 webview 走); 滚位/偏移两味 1.8.7 已治好。本模块管「诊断+调度」:
 //   ① 判据: 键盘开着 = 焦点在输入框 (iOS 18 独立模式里 vv 与 inner 永远
 //      相等, 互比是空转 —— 1.8.10 误诊过还抢了用户焦点);
-//   ② 治疗 (手法在 music-viewport-heal.js): 只有深修 (换新文档复位) 一招,
-//      交给体检窗的按钮, 不自动刷 (正在听歌呢, 得用户点头);
+//   ② 治疗 (手法在 music-viewport-heal.js): 键盘一收就把视口偏移「按住」
+//      在键盘整个高度上, 让那笔记账记成满高 (验方见 heal 头注);
 //   ③ 体检窗 (music-viewport-hud.js 管「说」): 现场数字 + 回传服务器日志
-//      (data/viewport-doctor.jsonl), 开局/深修归来都报数, 灵不灵有账可查。
+//      (data/viewport-doctor.jsonl); 治不了时直说 —— 划掉重开应用秒复原
+//      (回传实测: 换新文档没用, 坏值跟着 webview 走, 只有新 webview 干净)。
 "use strict";
 /* global ViewportHUD, ViewportHeal */
 /* exported ViewportDoctor */
@@ -46,18 +47,16 @@ const ViewportDoctor = (() => {
   }
   const sick = () => full - window.innerHeight > 12;  // 冻矮: 比满高矮一截
 
-  // ---------- 体检窗接线 (现场数字/深修/满高由这里注入, 屏显+回传归 HUD) ----------
-  let deepRepairs = 0;
+  // ---------- 体检窗接线 (现场数字由这里注入, 屏显+回传归 HUD) ----------
   let said = [];                       // 流水留底 (拼进现场数字最后几行)
   function stat() {
     return [
-      "My Music 1.8.12 视口体检 (现场已回传)",
+      "My Music 1.8.13 视口体检 (现场已回传)",
       `screen ${window.screen.width}x${window.screen.height} dpr ${window.devicePixelRatio}`,
       `inner ${window.innerHeight} / 满高 ${full} (差 ${full - window.innerHeight})`,
       `vv ${vv ? `${Math.round(vv.height)} top ${Math.round(vv.offsetTop)}` : "无"}`,
       `scrollY ${window.scrollY} · 焦点 ${typing() ? "输入框" : "无"}`,
-      `深修 ${deepRepairs} 次`,
-      "页面里救不回: 点「深度修复」刷新复位",
+      "治不了就划掉重开应用 (秒复原)",
       "",
       ...said,
     ].join("\n");
@@ -67,12 +66,7 @@ const ViewportDoctor = (() => {
     said = said.slice(-9);
     ViewportHUD.say(line);             // HUD: 屏显刷新 + 排进回传发件箱
   }
-  function deepRepair() {
-    if (!patient() || !sick()) return;
-    deepRepairs += 1;
-    ViewportHeal.reloadDeep();         // 手法在 heal 模块: 标记 + 刷新
-  }
-  ViewportHUD.wire({ stat, deepRepair });
+  ViewportHUD.wire({ stat });
 
   // ---------- 冻矮判定: 焦点不在输入框 + 比满高矮 12px + 值定住 0.7s ----------
   let freezeTimer = 0;
@@ -107,7 +101,7 @@ const ViewportDoctor = (() => {
         if (!patient() || typing() || window.innerHeight >= full - 12) return;
         declared = true;
         say(`冻矮实锤 inner=${window.innerHeight} 差${full - window.innerHeight}`);
-        ViewportHUD.show();           // 深修按钮在窗上, 刷不刷新用户说了算
+        ViewportHUD.show();
       }, 700);
     }
   }
@@ -124,7 +118,12 @@ const ViewportDoctor = (() => {
   });
   document.addEventListener("focusout", () => {
     say("focusout");
-    // 键盘收起的实锤常迟半拍: 复查三遍 (350/900/1800ms)
+    // 收键按住 (1.8.13 验方): 键盘还开着 (innerHeight 矮着) 且焦点真走了,
+    // 就把偏移钉在键盘整个高度上陪它收完 —— 「还原高度」那笔记账只在收起
+    // 起手那一下记 (见 heal 头注), 钉住了就记成满高
+    if (patient() && !typing() && sick()) {
+      ViewportHeal.holdDuringDismissal(full - window.innerHeight, full, "收键");
+    }
     setTimeout(check, 350);
     setTimeout(check, 900);
     setTimeout(check, 1800);
@@ -140,16 +139,10 @@ const ViewportDoctor = (() => {
     return window.innerHeight >= full - 12;  // 高度真回满才算键盘收稳
   }
 
-  // 开局报数; 深修归来 (15 秒内带标记回来) 先报复位成没成, 再把标记清掉
-  say(`开局 i${window.innerHeight} 满高${full}`);
-  try {
-    const at = Number(localStorage.getItem("music.deepRepairAt") || 0);
-    if (at && Date.now() - at < 15000) {
-      say(`深修归来 i${window.innerHeight} 满高${full}`
-        + (window.innerHeight >= full - 12 ? " 复位成功" : " 还是矮的"));
-      localStorage.removeItem("music.deepRepairAt");
-    }
-  } catch (_error) { /* 读不了就当没标记 */ }
+  // 开局报数 (带上这趟文档怎么来的: 冷开 navigate/刷新 reload/回退
+  // back_forward —— 12:33 那趟连开三次 812/771/812 的谜团靠它拆)
+  const nav = (performance.getEntriesByType("navigation")[0] || {}).type || "?";
+  say(`开局 i${window.innerHeight} 满高${full} ${nav}`);
   check();
   return { settled, check };
 })();
