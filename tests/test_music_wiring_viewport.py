@@ -41,12 +41,12 @@ def test_music_189_viewport_freeze_repair():
     高度)。收手抢账三连败 (翻面/meta 踢/键盘往返 1.8.11; 收键按住 1.8.13
     —— 钉住的 397 在回传里看得见, 账还是记 356, 记账读的是系统自家的
     数, 页面钉什么它不看), 1.8.14 预抬也败 (输入框抬到屏幕上部, 让位
-    照滚原值 —— 让位根本不看输入框在哪), 1.8.15 定案换血: iOS 让位专滚
-    焦点元素的最近滚动祖先, 搜索栏 fixed 钉屏底四周没有任何滚动器, 才
-    被硬滚了锁死的文档; 健康对照 my-tesla 费用弹窗 / my-money 记账弹层
-    (同机同系统实测收键底部无恙) 的输入框都住可滚容器里 —— 搜索页照
-    my-money 弹层的结构重排 (页壳变滚动器, 页底条 sticky 钉底, ge 补
-    --kb-full 键盘期撑高)。冻矮 0.7s 实锤 → 体检窗给真话 (再进搜索点
+    照滚原值 —— 让位根本不看输入框在哪), 1.8.15 换血也败 (页壳变滚动
+    器 + ge 撑高咬合, 让位连层内新滚动器都不看, 照滚文档原值 —— 「最近
+    滚动祖先」理论死), 1.8.16 定案并实测病愈: 病根在文档本身锁死
+    (固定壳), 让位滚成幽灵滚、收键把幽灵滚位记进还原高度; 键盘期解锁
+    文档 + 给真高度, 高度回满回锁 (健康对照 my-tesla/my-money 的文档
+    天生可滚, 让位是合法滚动)。冻矮 0.7s 实锤 → 体检窗给真话 (再进搜索点
     键盘收起键再返回当场复原 —— 回传实测; 划掉重开只有三成灵)。流水
     全程回传 data/viewport-doctor.jsonl (见 test_music_viewport_log.py)。"""
     html = music_page_shell()
@@ -69,10 +69,10 @@ def test_music_189_viewport_freeze_repair():
     assert "removePaneWhenSettled(pane);" in swipe         # 手势收层
     assert "ViewportDoctor.settled()" in panes
     assert "Date.now() - start > 1200" in panes   # 键盘赖着: 最多再等 1.2s
-    # 装载顺序: HUD 先载 (医生 wire 时在场), 再医生 —— 1.8.15 治法是
-    # 搜索页换血 (music-search.css 重排 + ge 撑高), heal 模块退役, 装载少一件
-    assert ('music-viewport-hud.js?v=6' in html
-            and 'music-viewport-doctor.js?v=6' in html
+    # 装载顺序: HUD 先载 (医生 wire 时在场), 再医生 —— 1.8.15 起治法在
+    # 搜索页结构 + ge, heal 模块退役, 装载少一件
+    assert ('music-viewport-hud.js?v=7' in html
+            and 'music-viewport-doctor.js?v=7' in html
             and "music-viewport-heal" not in html)
     # 只医独立模式 iPhone: 浏览器 Safari 工具栏自己收放 (满高基准立不住),
     # 安卓 interactive-widget 布局自己缩 (是正常不是病)
@@ -89,20 +89,29 @@ def test_music_189_viewport_freeze_repair():
     assert "full - window.innerHeight > 12" in doctor
     assert "}, 700);" in doctor
     assert "declared = true;" in doctor
-    # ③ 换血 (1.8.15): 让位不看输入框在不在明处 (1.8.14 预抬照滚原值),
-    # 病根是没处滚 —— iOS 让位专滚焦点元素的最近滚动祖先, 搜索栏 fixed
-    # 钉屏底四周没有任何滚动器, 只好硬滚锁死的文档。健康对照 (同机实测
-    # 键盘来回底部无恙): my-tesla 费用弹窗 / my-money 记账弹层的输入框
-    # 都住 overflow-y:auto 的容器里, 让位滚容器文档不动。搜索页照此重排:
-    # 页壳自己变滚动器 + 页底条 sticky 钉底 (music-search.css); 全局事件
-    # 层只补一件 —— 焦点进框先把满屏高写进 --kb-full (键盘缩矮布局后
-    # 页壳内容比可视区高, 让位有处落), 键盘走了 (回满屏高) 或焦点离开就撤
+    # ③ 定案 (1.8.16): 1.8.15 换血那轮回传实锤也败 —— 撑高咬合, 让位连
+    # 层内新滚动器都不看, 照滚文档原值 (315/356), 「最近滚动祖先」理论
+    # 死; 病根在文档本身: 锁死的固定壳 (html/body overflow:hidden) 让让
+    # 位滚成幽灵滚, 收键把幽灵滚位记进还原高度。健康对照 (my-tesla 费用
+    # 弹窗 / my-money 记账弹层, 同机实测无恙) 的文档天生可滚, 让位是合法
+    # 滚动。治法 = 键盘期解锁文档 + 给真高度 (可见物全 fixed, 肉眼无感),
+    # 高度回满再锁回固定壳 (搜索页 1.8.15 的层内滚动结构留着没坏处)
     assert 'document.addEventListener("focusin", (event) => {' in ge
     assert 'document.documentElement.style.setProperty("--kb-full"' in ge
     assert "if (kbFull) return;" in ge            # 键盘已开着 (焦点换框) 不重立
     assert "window.innerHeight >= kbFull - 40" in ge   # 回满屏高 = 键盘走了, 撤撑
     assert 'document.documentElement.style.removeProperty("--kb-full")' in ge
     assert "}, 650);" in ge                       # 650ms 没见矮 (实体键盘): 撤撑
+    # 解锁: 拆文档锁 + 给文档真高度 (让位那一滚落在合法可滚的文档上)
+    assert 'root.style.overflow = "auto";' in ge
+    assert 'root.style.height = "auto";' in ge
+    assert "document.body.style.minHeight = `${kbFull}px`;" in ge
+    assert "ViewportHUD.say(`解锁${kbFull}`);" in ge
+    # 回锁: 高度回满或焦点离开超 2.5s 死线才锁 (抢在收键半路会重新毒化
+    # 还原 —— 右划返回时焦点先走键盘后收, 还原必须全程发生在可滚文档上)
+    assert 'document.documentElement.style.removeProperty("overflow");' in ge
+    assert "!typing && Date.now() - blurredAt > 2500" in ge
+    assert 'ViewportHUD.say("回锁");' in ge
     # CSS 侧的结构换血: 层标记 data-view=search 清底衬 (页底条住进流里,
     # 船坞让位那截不要了), 页壳变滚动器 (my-money 弹层同款), 页底条
     # sticky 钉底 (键盘缩矮布局时自动贴键盘上沿, 不用 JS 量高度)
@@ -119,7 +128,7 @@ def test_music_189_viewport_freeze_repair():
     assert ('"治不了就再进搜索, 点键盘收起键收掉再返回 (重启不保证灵)"'
             in doctor)
     assert 'ViewportHUD.wire({ stat });' in doctor
-    assert '"My Music 1.8.15 视口体检' in doctor
+    assert '"My Music 1.8.16 视口体检' in doctor
     # 走过的死路撤干净: 换新文档 (1.8.12: 归来还是矮的, 坏值跟着 webview
     # 走) + 收键按住 (1.8.13: 记账不读页面实际滚动) + 预抬 (1.8.14: 让位
     # 不看输入框位置, 抬了照滚) —— heal 模块删了, 标识一个不留; 只留

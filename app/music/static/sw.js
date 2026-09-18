@@ -17,13 +17,12 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v17 (2026-09-18 1.8.15: 搜索页换血 —— 五轮回传 + my-money 记账
-// 弹层对照定案, iOS 让位专滚焦点元素的最近滚动祖先, 搜索栏 fixed 钉屏底
-// 四周没得滚才被硬滚了文档 (黑带坏账的源头); 页壳 (.search-shell) 自己变
-// 滚动器 + 页底条 sticky 钉底 (my-money 弹层同款), ge 预抬退役改 --kb-full
-// 键盘期撑高, --kb-h 量键盘高那套整个撤了; 静态资源地址变了 (?v= 各升),
+// 壳缓存 v19 (2026-09-18 1.8.16 病愈定稿: 键盘期文档解锁 —— 七轮回传
+// 定案 iOS 让位就是滚文档, 病根在文档锁死, 让位滚成幽灵滚、收键把
+// 幽灵滚位记进还原高度 (黑带); 键盘期间解锁文档 + 给真高度, 高度回满
+// 回锁, 用户实测病愈。ge 换血 (?v=11) + 体检窗结论更新 (hud/doctor ?v=7),
 // 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v17";
+const SHELL_CACHE = "music-shell-v19";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档

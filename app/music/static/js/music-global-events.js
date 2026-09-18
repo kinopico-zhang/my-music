@@ -36,25 +36,37 @@ function bindGlobalEvents() {
     else if (playerOpen) closeFullPlayer();
     else if (pushStack.length) closePushStack(pushStack.length - 1);
   });
-  // 键盘避让 (1.8.15 换血): 病根五轮回传实锤 —— iOS 让位专滚焦点元素的
-  // 最近滚动祖先; 搜索栏原先是钉死屏底的 fixed 件 (四周没有任何可滚的
-  // 东西, 文档又是固定壳), 让位只好硬滚锁死的文档, 收键盘那笔坏账 (底部
-  // 黑带) 就从这一滚记下。健康对照 (同机同系统实测): my-tesla 费用弹窗 /
-  // my-money 记账弹层的输入框都住在可滚容器里, 让位滚的是容器, 文档
-  // 纹丝不动。搜索页照此换血 (music-search.css: 页壳自己变滚动器, 页底
-  // 一条 sticky 钉底), 这层只补一件: 键盘起手前把满屏高写进 --kb-full ——
-  // 布局被键盘缩矮后页壳内容比可视区高, 让位的滚落在页壳里, 文档不沾账。
+  // 键盘避让 (1.8.16 文档解锁 · 用户实测病愈): 六轮失败回传实锤 —— iOS
+  // 让位就是滚文档, 页面里
+  // 怎么布置都拦不住 (1.8.11 抢账 / 1.8.13 收键按住 / 1.8.14 预抬 / 1.8.15
+  // 给足层内滚动器+撑高, 让位照滚原值 315/356)。健康对照 (my-tesla 费用
+  // 弹窗 / my-money 记账弹层, 同机同系统实测无恙) 的差别只剩最后一个:
+  // 它们的文档本身可滚 (正常网页 min-height 那套), 让位滚文档是合法滚动,
+  // 收键走的是苹果日常百测的还原路径; 本应用文档是固定壳 (html/body
+  // overflow:hidden), 让位滚成幽灵滚, 收键把幽灵滚位记进还原高度
+  // (812 冻成 771 = 黑带)。对策 = 键盘期间解锁文档 + 给文档真高度 (一切
+  // 可见物都是 fixed, 解锁肉眼无感), 高度回满再锁回固定壳; 焦点走了键盘
+  // 赖着不收的 2.5s 死线强制回锁 (回锁绝不能抢在收键半路 —— 右划返回时
+  // 焦点先走键盘后收, 收键的还原必须全程发生在可滚文档上)。
   if (window.visualViewport) {
-    let kbFull = 0;   // 这轮焦点立下的满屏高 (--kb-full 的 JS 影子)
+    let kbFull = 0;    // 这轮键盘的满屏高 (--kb-full 撑高与文档解锁共用标尺)
+    let blurredAt = 0; // 焦点什么时候离开的 (键盘赖着不收的回锁死线用)
     const lift = () => {
       const active = document.activeElement;
       const typing = active && (active.tagName === "INPUT"
                                 || active.tagName === "TEXTAREA");
-      // 撑高只伺候键盘: 键盘收走了 (回到满屏高) 或焦点离开了就撤
-      if (kbFull && (!typing || window.innerHeight >= kbFull - 40)) {
+      // 撑高/解锁只伺候键盘: 高度回满 (键盘收走了) 或焦点离开超死线才撤
+      // (光看焦点离开就回锁会在右划返回的收键半路拆台)
+      if (kbFull && (window.innerHeight >= kbFull - 40
+                     || (!typing && Date.now() - blurredAt > 2500))) {
         kbFull = 0;
         document.documentElement.style.removeProperty("--kb-full");
-        if (typeof ViewportHUD !== "undefined") ViewportHUD.say("键盘走撤撑");
+        // 文档回锁: 还原固定壳 (html/body overflow:hidden + 100dvh)
+        document.documentElement.style.removeProperty("overflow");
+        document.documentElement.style.removeProperty("height");
+        document.body.style.removeProperty("height");
+        document.body.style.removeProperty("min-height");
+        if (typeof ViewportHUD !== "undefined") ViewportHUD.say("回锁");
       }
       // 键盘收走后 iOS 赖账的前两味, 哪种赖下都是回主页底部一块黑、页面
       // 没充满屏, 还会被 iOS 会话恢复原样带回来 (重启 app 也不消):
@@ -72,8 +84,9 @@ function bindGlobalEvents() {
     };
     visualViewport.addEventListener("resize", lift);
     visualViewport.addEventListener("scroll", lift);
-    // 撑高: 焦点一进输入框立刻立满屏高 (抢在键盘起手之前 —— 页壳里的
-    // 滚动器先有得滚, 让位才有处落); 键盘已开着 (焦点换了个框) 不重立
+    // 解锁: 焦点一进输入框立刻拆文档锁 (抢在键盘起手之前 —— 让位起手
+    // 那一滚必须落在可滚文档上) + 给文档真高度 + 层内撑高; 键盘已开着
+    // (焦点换了个框) 不重复拆
     document.addEventListener("focusin", (event) => {
       const el = event.target;
       if (!el || (el.tagName !== "INPUT" && el.tagName !== "TEXTAREA")) return;
@@ -81,9 +94,15 @@ function bindGlobalEvents() {
           || !/iP(hone|ad|od)/.test(navigator.userAgent)) return;  // 桌面/安卓的账不这么记
       if (kbFull) return;
       kbFull = window.innerHeight;
+      blurredAt = 0;
       document.documentElement.style.setProperty("--kb-full", `${kbFull}px`);
-      if (typeof ViewportHUD !== "undefined") ViewportHUD.say(`撑高${kbFull}`);
-      setTimeout(() => {    // 650ms 没见矮 (实体键盘/起手被拦): 当无事撤撑
+      const root = document.documentElement;
+      root.style.overflow = "auto";
+      root.style.height = "auto";
+      document.body.style.height = "auto";
+      document.body.style.minHeight = `${kbFull}px`;
+      if (typeof ViewportHUD !== "undefined") ViewportHUD.say(`解锁${kbFull}`);
+      setTimeout(() => {    // 650ms 没见矮 (实体键盘/起手被拦): 当无事回锁
         if (kbFull && window.innerHeight >= kbFull - 40) lift();
       }, 650);
     });
@@ -92,6 +111,7 @@ function bindGlobalEvents() {
     // 移除的 420ms 也罩在这个窗口里, 搜索页键盘没收就右划关掉 (100%
     // 复现的底部黑区) 赖下的账当场清
     document.addEventListener("focusout", () => {
+      blurredAt = Date.now();   // 回锁死线起算 (键盘赖着不收也有个头)
       setTimeout(lift, 350);
       setTimeout(lift, 900);
       setTimeout(lift, 1800);
