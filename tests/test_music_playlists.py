@@ -152,6 +152,15 @@ def test_music_playlist_cover_and_track_art_wiring():
     assert '`/music/api/playlists/${coverMenuPlaylistId}/cover`' in js  # 移除走菜单
     assert "trackArtHTML" in js and "has_artwork" in js        # 曲目封面 (含占位)
     assert 'onerror="this.replaceWith(' in js   # 封面取不到退回音符占位, 不裂图
+    # 播放中的白动条在封面几何正中 (1.8.22 修, 你报的「波动图标放在图片
+    # 正中」): 纱罩 inset:0 但不显式 height:auto 的话会吃基础 .bars 的
+    # 14px —— 绝对定位 top/height/bottom 全钉死是过约束, bottom 被忽略,
+    # 纱罩缩成封面顶上一条。height:auto 这行是回归守卫的核心, 少了它
+    # 白条就钉在封面顶上
+    assert ".playing .t-lead.art .bars {" in html
+    assert "position: absolute; inset: 0; height: auto;" in html
+    assert "align-items: center; justify-content: center;" in html
+    assert "bars-bounce-art" in html
     assert "function trackArtworkURL" in common and "artwork?v=" in common
     assert "function playlistCoverURL" in common \
         and "playlists/${playlist.playlist_id}/cover" in common

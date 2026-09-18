@@ -8,6 +8,15 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.22", date="2026-09-18", items=[
+        ChangelogItem(kind="修复", text="播放中的波动图标回到封面正中 (你报"
+                                       "的): 上一版的纱罩被自家基础样式钉的"
+                                       " 14px 高度坑了 —— 「贴满封面」与「高"
+                                       " 14px」同时生效时浏览器按钉顶不钉底"
+                                       "解, 纱罩缩成封面顶上的一条, 白条跟着"
+                                       "跑上去。显式放开高度, 纱罩重新贴满整"
+                                       "张封面, 白条居中回到几何正中"),
+    ]),
     ChangelogVersion(version="1.8.21", date="2026-09-18", items=[
         ChangelogItem(kind="改进", text="菜单与页标题改口 (你点的): 已下载 →"
                                        " 下载管理, 专辑 → 所有专辑, 艺人 →"

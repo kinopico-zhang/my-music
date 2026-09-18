@@ -88,11 +88,15 @@
    1.8.20 重画 (用户点名「封面上的动态图标怪怪的」): 早先是一枚黑胶囊浮
    在封面中央 + 三根红条 —— 胶囊只盖中间一块, 悬空一块补丁似的, 红条还
    吃封面的色。改成整面半透纱罩贴满封面 (与 .t-art 同圆角), 白色动条
-   居中小弹幅 —— 压得住任何封面, 也是系统播放中的通用语言 */
+   居中小弹幅 —— 压得住任何封面, 也是系统播放中的通用语言。
+   1.8.22 扶正 (你报的「波动图标要放在图片正中」): 基础 .bars 钉的
+   height:14px 让 inset:0 过约束忽略 bottom —— 纱罩缩成封面顶上一条;
+   height:auto 拉满整图, 白条居中才成真 */
 .playing .t-lead:not(.art) > :not(.bars) { display: none; }
 .t-lead.art { position: relative; }
 .playing .t-lead.art .bars {
-  position: absolute; inset: 0; align-items: center; justify-content: center;
+  position: absolute; inset: 0; height: auto;  /* auto 是药: 见上 */
+  align-items: center; justify-content: center;
   border-radius: 6px;               /* 与 .t-art 同圆角, 纱罩贴着封面边铺 */
   background: rgba(0, 0, 0, .45);
 }

@@ -131,7 +131,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v25" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v26" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
