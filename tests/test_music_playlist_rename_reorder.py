@@ -81,3 +81,15 @@ def test_music_playlist_rename_reorder_wiring():
     assert '`/music/api/playlists/${playlistId}/order`' in view_js
     assert 'method: "PUT"' in view_js
     assert "renderPlaylistView(playlistId);" in view_js
+    # 1.8.18 修让位 (用户报「拖到哪其他歌该让个位置, 现在没有」): 目标位只认
+    # 拖动距离 —— offsetTop 相对整个 offsetParent (头图/操作排的全高混进
+    # 来), 一起手目标位就整体偏飞; 让位平移的过渡在 wrap 上 (左滑那套
+    # 过渡在行 button 上, wrap 自己没有就是瞬跳)
+    assert "drag.from + Math.round(dy / drag.rowH)" in drag_js
+    assert "offsetTop" not in drag_js
+    assert "#playlist-tracks .swipe-wrap { transition: transform .18s ease; }" \
+        in html
+    # 左滑露出删除钮时行尾内容全藏 (1.8.18 用户点名: 时长/下载标/词标/
+    # 箭头让开, 只留歌名)
+    assert ".swipe-wrap > button.revealed > :not(.t-lead, .t-main)" \
+        " { visibility: hidden; }" in html

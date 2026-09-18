@@ -21,15 +21,15 @@
 <link rel="stylesheet" href="/music/static/css/music-base.css?v=3">
 <link rel="stylesheet" href="/music/static/css/music-bottom-bar.css?v=5">
 <link rel="stylesheet" href="/music/static/css/music-push-panes.css?v=5">
-<link rel="stylesheet" href="/music/static/css/music-lists.css?v=4">
-<link rel="stylesheet" href="/music/static/css/music-playlist-drag.css?v=1">
-<link rel="stylesheet" href="/music/static/css/music-views.css?v=7">
+<link rel="stylesheet" href="/music/static/css/music-lists.css?v=5">
+<link rel="stylesheet" href="/music/static/css/music-playlist-drag.css?v=2">
+<link rel="stylesheet" href="/music/static/css/music-views.css?v=8">
 <link rel="stylesheet" href="/music/static/css/music-settings.css?v=1">
 <link rel="stylesheet" href="/music/static/css/music-search.css?v=5">
-<link rel="stylesheet" href="/music/static/css/music-downloads-select.css?v=2">
+<link rel="stylesheet" href="/music/static/css/music-downloads-select.css?v=3">
 <link rel="stylesheet" href="/music/static/css/music-player.css?v=7">
 <link rel="stylesheet" href="/music/static/css/music-queue.css?v=1">
-<link rel="stylesheet" href="/music/static/css/music-menus.css?v=2">
+<link rel="stylesheet" href="/music/static/css/music-menus.css?v=3">
 </head>
 <body>
 
@@ -140,7 +140,7 @@
 <div id="picker-mask" hidden></div>
 <div id="picker-sheet" hidden>
   <div class="sheet-grab"><div></div></div>
-  <div class="picker-track"><b id="picker-track-title"></b><small>选一个列表, 或在下面新建</small></div>
+  <div class="picker-track"><span id="picker-track-art"></span><span class="a-main"><b id="picker-track-title"></b><small id="picker-track-artist"></small></span></div>
   <div id="picker-list"></div>
   <div class="picker-new">
     <input type="text" id="picker-name" placeholder="新列表的名字" maxlength="30" enterkeyhint="done">
@@ -171,7 +171,7 @@
 <script src="/music/static/js/music-player-boot.js?v=2"></script>
 <script src="/music/static/js/music-navigation.js?v=5"></script>
 <script src="/music/static/js/music-push-panes.js?v=12"></script>
-<script src="/music/static/js/music-pane-swipe.js?v=4"></script>
+<script src="/music/static/js/music-pane-swipe.js?v=5"></script>
 <script src="/music/static/js/music-bubble-swipe.js?v=1"></script>
 <script src="/music/static/js/music-downloads-integration.js?v=5"></script>
 <script src="/music/static/js/music-list-rendering.js?v=3"></script>
@@ -179,25 +179,25 @@
 <script src="/music/static/js/music-track-menus.js?v=4"></script>
 <script src="/music/static/js/music-menu-gestures.js?v=4"></script>
 <script src="/music/static/js/music-dock-menu.js?v=3"></script>
-<script src="/music/static/js/music-playlist-picker.js?v=4"></script>
+<script src="/music/static/js/music-playlist-picker.js?v=5"></script>
 <script src="/music/static/js/music-home-view.js?v=2"></script>
 <script src="/music/static/js/music-playlists-pane.js?v=2"></script>
 <script src="/music/static/js/music-recent-pane.js?v=1"></script>
 <script src="/music/static/js/music-downloads-select.js?v=2"></script>
-<script src="/music/static/js/music-library-views.js?v=6"></script>
+<script src="/music/static/js/music-library-views.js?v=7"></script>
 <script src="/music/static/js/music-library-pagination.js?v=2"></script>
 <script src="/music/static/js/music-album-artist-views.js?v=3"></script>
-<script src="/music/static/js/music-playlist-drag.js?v=1"></script>
+<script src="/music/static/js/music-playlist-drag.js?v=2"></script>
 <script src="/music/static/js/music-playlist-view.js?v=3"></script>
 <script src="/music/static/js/music-search-pages.js?v=2"></script>
-<script src="/music/static/js/music-search-view.js?v=6"></script>
+<script src="/music/static/js/music-search-view.js?v=7"></script>
 <script src="/music/static/js/music-stats-view.js?v=3"></script>
 <script src="/music/static/js/music-settings-view.js?v=4"></script>
 <script src="/music/static/js/music-changelog-view.js?v=2"></script>
 <script src="/music/static/js/music-scan-status.js?v=2"></script>
 <script src="/music/static/js/music-viewport-hud.js?v=7"></script>
 <script src="/music/static/js/music-viewport-doctor.js?v=7"></script>
-<script src="/music/static/js/music-global-events.js?v=12"></script>
+<script src="/music/static/js/music-global-events.js?v=13"></script>
 <script src="/music/static/js/music-app-boot.js?v=4"></script>
 </body>
 </html>

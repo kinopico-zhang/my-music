@@ -1,7 +1,7 @@
 // music-pane-swipe — My Music 推入层右划返回手势: 面板任意位置起手, 横竖先分家
 // (竖向交还滚动), 拖过三分之一或带甩劲松手就收层, 否则弹回。
-// 拆自 music-push-panes.js (1.8.6: 文件超 200 行按域再拆, 代码逐字节未动;
-// 手势回调时才解析, 后加载无碍)。
+// 拆自 music-push-panes.js (1.8.6: 文件超 200 行按域再拆); 1.8.18 加了
+// 分页容器的触摸看门 (最左页右划让回右划返回, 用户点名 —— 见 bindPaneSwipe)。
 "use strict";
 /* global paneMotion, pushStack, removePaneWhenSettled, saveLastRoute,
           unlockRootScroll */
@@ -15,11 +15,47 @@
     系统手里 (整页截图滑走, 网页收不到触摸, preventDefault/Navigation
     API 都掐不动 —— 试过两轮, 别再试), 那一条之外的左缘归这里。 */
 function bindPaneSwipe(pane) {
+  // 分页容器的手势分家 (搜索四子页 1.8.3 / 设置四子页 1.8.17) 分两层:
+  // 起手在页里的横拖归原生切页, 不归右划返回 —— 但 1.8.18 用户点名
+  // 「最左页右划要退出整个设置/搜索」: 原生平移会把横拖整个抢走
+  // (pointercancel), 右划返回死在半路。所以在最左页 (scrollLeft 0)
+  // 加一层触摸看门: 右向坐实 (过 6px, 抢在浏览器自家 slop 之前) 的
+  // 那一下 preventDefault 掐掉原生平移 —— 手势让回下面这层右划返回;
+  // 左向 (切去第二页)/竖向 (滚页)/不在最左页, 看门不掺和, 照旧全交原生
+  let guardId = null;       // 看门正盯的触摸; null = 没在看
+  let guardStartX = 0, guardStartY = 0;
+  let guardRight = false;   // 右向坐实后这个触摸的 touchmove 全掐
+  pane.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1) { guardId = null; return; }
+    const pager = event.target.closest("#search-body.paged, #settings-body");
+    if (!pager || pager.scrollLeft > 0) { guardId = null; return; }
+    guardId = event.touches[0].identifier;
+    guardStartX = event.touches[0].clientX;
+    guardStartY = event.touches[0].clientY;
+    guardRight = false;
+  }, { passive: true });
+  pane.addEventListener("touchmove", (event) => {
+    if (guardId === null) return;
+    const touch = [...event.changedTouches].find(
+      (item) => item.identifier === guardId);
+    if (!touch) return;
+    if (guardRight) { event.preventDefault(); return; }   // 右向: 归右划返回
+    const dx = touch.clientX - guardStartX;
+    const dy = touch.clientY - guardStartY;
+    if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+    guardRight = dx > 0 && Math.abs(dx) > Math.abs(dy);
+    if (guardRight) event.preventDefault();
+  }, { passive: false });
+  pane.addEventListener("touchend", (event) => {
+    if (guardId !== null && [...event.changedTouches].some(
+      (item) => item.identifier === guardId)) {
+      guardId = null;      // 这场看完, 下一场重新认方向
+    }
+  });
   pane.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    // 横向 snap 分页容器 (搜索四子页 1.8.3 / 设置四子页 1.8.17): 起手在
-    // 页里的横拖归切页, 不归右划返回 —— 最左页 (scrollLeft 0) 没得再往
-    // 左滚, 右划归返回 (用户点名); 滚到别的页上照旧归切页
+    // 滚到别的页上照旧归原生切页 (鼠标拖不动 snap 容器, 最左页不用看门
+    // 也能走下面这条右划返回)
     const pager = event.target.closest("#search-body.paged, #settings-body");
     if (pager && pager.scrollLeft > 0) return;
     const startX = event.clientX;

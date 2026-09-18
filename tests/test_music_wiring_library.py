@@ -72,6 +72,9 @@ def test_music_share_link_wiring():
     assert '$("#fp-prev").disabled = queuePos <= 0;' in share_all
     assert '$("#fp-next").disabled = queuePos >= queue.length - 1;' in share_all
     assert ".fp-keys > button:disabled { opacity: .3; pointer-events: none; }" in share_all
+    # 播放列表行歌名/艺人分两行 (1.8.18 用户点名): 行内 span 挤一行不吃省略号, block 化才各行其道
+    assert ".row .t { display: block;" in share_all \
+        and ".row .a { display: block;" in share_all
     assert "with-lyrics" not in share_all   # 常驻封面下面那套 (1.8.2) 撤了
     # 下拉收起扩到整页: 传输区/歌词键照常点, 词滚到中间先归滚词
     assert 'const sheet = $("#fp .fp-sheet");' in share_all

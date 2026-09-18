@@ -127,10 +127,11 @@
   background: #e5484d; color: #fff; font-size: 14px; font-weight: 600;
 }
 .swipe-del:active { background: #cf3942; }
-/* 1.8.17 用户点名「左滑出删除键时, 旁边的 > 去掉」: 行滑开露出删除钮时
-   藏掉行尾箭头 (revealed 由 music-swipe-delete.js 挂/撤;
-   visibility 不触发回流, 滑动全程行高纹丝不动) */
-.swipe-wrap > button.revealed .chev { visibility: hidden; }
+/* 1.8.17 用户点名「左滑出删除键时, 旁边的 > 去掉」; 1.8.18 扩成行尾内容
+   全藏 (时长/下载标/词标/箭头都让开, 只留歌名 —— 删除钮顶上干净);
+   revealed 由 music-swipe-delete.js 挂/撤; visibility 不触发回流,
+   滑动全程行高纹丝不动 */
+.swipe-wrap > button.revealed > :not(.t-lead, .t-main) { visibility: hidden; }
 
 .section-head {
   font-size: 20px; font-weight: 700; margin: 22px 0 12px;

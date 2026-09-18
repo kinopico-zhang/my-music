@@ -124,5 +124,14 @@
 .dl-stats-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .dl-stats-main strong { font-size: 15px; font-variant-numeric: tabular-nums; }
 .dl-stats-main small { font-size: 11px; color: var(--ink-3); }
-.dl-clear { font-size: 13px; color: #ff3b30; padding: 6px 8px; flex-shrink: 0; }
+/* 1.8.18 用户点名: 垃圾桶和多选并成右上一对 (原先 space-between 把它们
+   隔在两头), 黑白灰椭圆键 (灰底白字圆角 999px, 带图标的垃圾桶同规格) */
+.dl-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.dl-clear {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 32px; padding: 6px 14px; border: 0; border-radius: 999px;
+  background: var(--surface-2); color: var(--ink-1);
+  font-size: 13px; font-weight: 600; flex-shrink: 0;
+}
+.dl-clear:active { background: var(--surface-3); }
 

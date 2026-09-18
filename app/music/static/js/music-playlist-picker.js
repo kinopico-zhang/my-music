@@ -1,10 +1,11 @@
 // music-playlist-picker — My Music 添加到播放列表选择单: 弹层/列表渲染/加歌去重。
 // 拆自 music.js (结构化重构: 代码逐字节未动, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 // 1.8.17: 顶部「添加到播放列表 完成」顶栏撤掉 (关闭只剩点遮罩); 列表按最后
-// 编辑时间排, 最近编辑的在最前。
+// 编辑时间排, 最近编辑的在最前。1.8.18: 顶栏换成正在加的那首歌 —— 封面 +
+// 歌名 + 艺人 (选列表的提示文字撤了, 用户点名)。
 "use strict";
 /* global $, describeDuration, escapeHTML, fetchJSON, listPlaceholderHTML,
-          pickerTrack: writable, playlistCoverURL, toast */
+          pickerTrack: writable, playlistCoverURL, toast, trackArtHTML */
 /* exported openPlaylistPicker */
 
 
@@ -18,7 +19,9 @@ function closePlaylistPicker() {
 
 function openPlaylistPicker(track) {
   pickerTrack = track;
+  $("#picker-track-art").innerHTML = trackArtHTML(track);   // 封面 (没图给音符)
   $("#picker-track-title").textContent = track.title;
+  $("#picker-track-artist").textContent = track.artist;
   $("#picker-name").value = "";
   $("#picker-mask").hidden = false;
   $("#picker-sheet").hidden = false;
