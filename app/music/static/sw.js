@@ -17,11 +17,10 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v20 (2026-09-18 1.8.17 批: 歌词放大换 transform 断根 + 清晰度
-// 分工; 分享页改版 (歌手照片/左右滑切歌词/播键入标题行); 已下载页左滑删除
-// + 多选垃圾桶; 设置页拆四滑页 + 蜂窝流量全撤 —— 换版本号让 activate
-// 清旧账)
-const SHELL_CACHE = "music-shell-v26";
+// 壳缓存 v27 (2026-09-19 1.8.23 批: 根层右划橡皮筋 + 左滑删除改款
+// (行不动, 删除钮带半透纱压上来) + 分享图标换 iOS 共享样式 —— 换版本号
+// 让 activate 清旧账)
+const SHELL_CACHE = "music-shell-v27";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档

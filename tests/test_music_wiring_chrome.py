@@ -161,3 +161,36 @@ def test_music_172_fix_batch():
     assert ".chip {" not in html and "chipsHTML" not in js
     # 1.8.0 界面重构的「全撤」: 顶罩首帧兜底 (独立竖屏 147px) 不在了
     assert "--sys-top-inset: 147px;" not in html
+
+
+def test_music_123_root_rubber_band():
+    """1.8.23 根层右划到头的橡皮筋 (用户点名): 主页是唯一根层, 右划没有
+    可退的层 —— 内容跟手阻尼让位 (越拉越费劲), 松手带回弹曲线弹回,
+    拉过 36px 底部提示「到头了」。移动的是 #main (根视图在它里面, 子元素
+    横移会把滚动器撑出横向滚动条); 拖动期 paneMotion() 持续续期 (变换层
+    从磨砂气泡底下扫过是 WebKit 重影配方); 有层盖着 (pushStack 非空) /
+    左滑删除正开着的行, 橡皮筋让开。"""
+    html = music_page_shell()
+    js = music_browser_js()
+    rubber = (MUSIC_STATIC / "js" / "music-root-rubber.js").read_text(
+        encoding="utf-8")
+    assert 'js/music-root-rubber.js?v=' in html
+    assert "bindRootRubber();" in js                  # 挂在全局事件绑定里
+    # 阻尼公式: 渐近 140px (拉到天边也只让这么多)
+    assert "const ROOT_RUBBER_MAX = 140;" in rubber
+    assert "ROOT_RUBBER_MAX * (1 - 1 / (dx / ROOT_RUBBER_MAX + 1))" in rubber
+    # 只在根层: 有层盖着 (收不到触摸也再兜一道) / 删除钮开着的行都让开
+    assert "if (pushStack.length) return;" in rubber
+    assert 'wrap.classList.contains("revealed")' in rubber
+    # 移动 #main 不是 #root-view (root-view 在滚动器里, 横移撑横向滚动条)
+    assert "main.style.transform" in rubber
+    assert "root.style.transform" not in rubber
+    # 拖动中磨砂暂撤续期 + 弹回也是运动 (重影对策罩全程)
+    assert rubber.count("paneMotion();") == 2
+    assert 'cubic-bezier(.3, 1.3, .4, 1)' in rubber    # 回弹曲线 (过冲再稳)
+    # 提示与尾随 click 吞除: 拉过 36px 出「到头了」; 拖过的 click 不开播
+    assert 'toast("到头了")' in rubber
+    assert "ev.clientX - startX >= 36" in rubber
+    assert "swallowClick = false;" in rubber           # 新按下翻篇 (触屏无尾随 click)
+    # 弹回后过渡清场不残留: 下一次拖动起手先掐过渡 (跟手不走过渡)
+    assert 'main.style.transition = "none";' in rubber

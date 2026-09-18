@@ -2,7 +2,7 @@
 // 拆自 music.js (结构化重构), 1.8.0 页签栏撤掉: 搜索键/菜单键在这里接线。
 // (1.8.17 蜂窝流量上报整个撤了 —— 设置页改版, 月账没了消费方。)
 "use strict";
-/* global $, SCAN_POLL_INTERVAL_MS, bindDockMenu, checkScanStatus,
+/* global $, SCAN_POLL_INTERVAL_MS, bindDockMenu, bindRootRubber, checkScanStatus,
           closeDockMenu, closeFullPlayer, closePushStack, coverUploadPlaylistId,
           navigate, playerOpen, pushStack,
           uploadPlaylistCover, ViewportHUD */
@@ -26,6 +26,7 @@ function bindGlobalEvents() {
     input.focus();
   });
   bindDockMenu();
+  bindRootRubber();   // 1.8.23 根层右划到头的橡皮筋 + 「到头了」提示
   $("#cover-file").addEventListener("change", () => {
     if (coverUploadPlaylistId) uploadPlaylistCover(coverUploadPlaylistId);
   });
