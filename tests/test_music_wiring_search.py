@@ -151,7 +151,6 @@ def test_music_189_viewport_freeze_repair():
     隐形输入框走一趟 focus→blur 逼视口重算 (定时器没手势未必唤得动
     iOS 键盘, 再埋一手借用户下次触屏补一趟; 一回赖账最多修三次)。"""
     html = music_page_shell()
-    js = music_browser_js()
     ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
         encoding="utf-8")
     panes = (MUSIC_STATIC / "js" / "music-push-panes.js").read_text(
