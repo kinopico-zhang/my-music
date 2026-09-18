@@ -53,10 +53,11 @@ const ViewportHUD = (() => {
   function show() {
     if (!hud) {
       const sheet = document.createElement("style");
-      // 挪出顶部刘海/状态栏的模糊地带 (1.8.10 弹在 top:8px 用户点不到);
-      // 1.8.13 起没有按钮了 —— 刷新复位实测无效, 真话是划掉重开
+      // 挪出顶部刘海/状态栏的模糊地带 (1.8.10 弹在 top:8px 用户点不到;
+      // 1.8.19 并进全局上边界 --top-clear); 1.8.13 起没有按钮了 ——
+      // 刷新复位实测无效, 真话是划掉重开
       sheet.textContent = "#doctor-hud{position:fixed;"
-        + "top:calc(env(safe-area-inset-top) + 8px);left:8px;z-index:999;"
+        + "top:var(--top-clear);left:8px;z-index:999;"
         + "max-width:80vw;padding:8px 10px;border:1px solid #fa2d48;border-radius:8px;"
         + "background:rgba(0,0,0,.92);color:#f5f5f7;font:11px/1.6 ui-monospace,monospace;"
         + "white-space:pre-wrap;word-break:break-all}";

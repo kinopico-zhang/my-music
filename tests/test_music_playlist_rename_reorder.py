@@ -89,6 +89,14 @@ def test_music_playlist_rename_reorder_wiring():
     assert "offsetTop" not in drag_js
     assert "#playlist-tracks .swipe-wrap { transition: transform .18s ease; }" \
         in html
+    # 1.8.19 修「被拖行被黑色空位遮挡住」(用户报): wrap overflow:hidden
+    # (左滑删除的裁切), 行在 wrap 里竖移出界被自家裁掉, z-index 挂在行上
+    # 也翻不出裁切 —— 位移/抬层/影子全落 wrap 一级, 行只管提亮
+    assert 'wrap.classList.add("dragging");' in drag_js
+    assert "drag.row.style.transform" not in drag_js
+    assert "#playlist-tracks .swipe-wrap.dragging {" in html
+    assert "transition: none; z-index: 3; box-shadow: 0 8px 22px rgba(0,0,0,.5);" \
+        in html
     # 左滑露出删除钮时行尾内容全藏 (1.8.18 用户点名: 时长/下载标/词标/
     # 箭头让开, 只留歌名)
     assert ".swipe-wrap > button.revealed > :not(.t-lead, .t-main)" \

@@ -39,7 +39,8 @@ function prefetchLyrics(track) {
 function toggleLyricsView() {
   if (!lyricsViewOpen && queueViewOpen) closeQueueView();   // 同住封面区, 二选一
   lyricsViewOpen = !lyricsViewOpen;
-  $("#fp-art-wrap").hidden = lyricsViewOpen;
+  // 封面不再藏 (1.8.19 用户点名「歌词页面要显示歌曲封面」): 歌词页里
+  // 封面缩成顶部小图 (.lyrics 的 CSS 管尺寸), 关回封面恢复大图
   $("#fp-lyrics").hidden = !lyricsViewOpen;
   $("#fp-lyrics-btn").classList.toggle("on", lyricsViewOpen);
   $("#full-player").classList.toggle("lyrics", lyricsViewOpen);

@@ -63,9 +63,10 @@
     position: relative; height: 100%; max-width: 520px; margin: 0 auto;
     display: flex; flex-direction: column;
   }
-  #fp-grab {                 /* 抓手条: 点一下收起 */
+  #fp-grab {                 /* 抓手条: 点一下收起; 1.8.19 钉在全局上边界
+                               --top-clear 之下 (固定控件不越过, app 同款) */
     display: flex; justify-content: center; align-items: flex-start;
-    padding: calc(env(safe-area-inset-top, 0px) + 3px) 0 0;
+    padding: var(--top-clear) 0 0;
     border: 0; background: none; cursor: pointer;
   }
   #fp-grab span { width: 60px; height: 5px; border-radius: 2.5px;
@@ -94,6 +95,21 @@
     mask-image: linear-gradient(transparent, #000 18%, #000 82%, transparent);
     padding: 30% 28px;
   }
+  /* 1.8.19 歌词页带封面 (用户点名, app 同款): 封面不再整块藏掉, 缩成
+     顶部小图居中, 歌词住它底下 (body 换竖排, 歌词回文档流 flex 占余高) */
+  #fp.lyrics .fp-body { flex-direction: column; align-items: stretch;
+                        justify-content: flex-start; }
+  #fp.lyrics #fp-art-wrap { width: 96px; max-width: none; max-height: none;
+                            flex: 0 0 auto; align-self: center; }
+  #fp.lyrics #fp-art { box-shadow: 0 10px 28px rgba(0,0,0,.45); }
+  #fp.lyrics #fp-lyrics { position: relative; inset: auto; z-index: auto;
+                          flex: 1; min-height: 0; padding: 10% 28px; }
+  /* 切歌封面方向滑入 (1.8.19 用户点名): 左滑/下一首从右进, 右滑/上一首
+     从左进 —— 顺着滑的方向走 */
+  @keyframes fp-art-next { from { transform: translateX(52px); opacity: 0; } }
+  @keyframes fp-art-prev { from { transform: translateX(-52px); opacity: 0; } }
+  #fp-art-wrap.art-in-next { animation: fp-art-next .3s cubic-bezier(.25,.1,.25,1); }
+  #fp-art-wrap.art-in-prev { animation: fp-art-prev .3s cubic-bezier(.25,.1,.25,1); }
   .lyrics-line {
     /* 1.8.17 与应用同款断根法 (见 music-player.css 注): 字号恒 21px、
        行宽恒 80%, 放大走 transform: scale(1.24) —— 布局盒尺寸不变,

@@ -90,10 +90,13 @@ def test_music_185_search_top_pin():
     assert "border-radius: 23px; padding: 0 14px;" in html
     assert "max-width: 860px;" in html            # 与 .dock-row 同宽
     # 页顶钉位: sticky 钉页壳顶 (= 屏幕顶), 自家 padding 顶开系统磨砂带
-    # (输入框不进模糊区域); 结果的尾衬铺到三件套上头
+    # (结果的尾衬铺到三件套上头); 1.8.19 修「输入框太靠上进了模糊地带」:
+    # 只让开安全区+14 还在磨砂带里, 抬到二级页大标题同一高度 (env+14+22,
+    # .pane-title 那条 1.8.17 实测过是干净的) —— 同版改走全局上边界变量
+    # --top-clear (见 test_music_wiring_viewport 的边界守卫)
     assert ".search-head {" in html
     assert "position: sticky; top: 0;" in html
-    assert "padding: calc(env(safe-area-inset-top) + 14px) 16px 0;" in html
+    assert "padding: var(--top-clear) 16px 0;" in html
     assert "padding: 8px 16px calc(var(--dock-clear) + 12px);" in html
     # 编辑/落定两态 (JS 按焦点切 .editing): 焦点在框里 = 编辑 (框钉页首);
     # 失焦 = 落定 (查询词升作页标题); 点标题回来改 —— 原词全选直接打字即替换
