@@ -65,11 +65,13 @@ function bindGlobalEvents() {
     visualViewport.addEventListener("resize", lift);
     visualViewport.addEventListener("scroll", lift);
     // 键盘收走的收尾经常一声事件都不响 (最后那下 resize 响在收干净之前,
-    // 从此再没人喊 lift): 焦点一离开输入框就迟两拍各补一次 —— 层滑出/
-    // 移除的 420ms 也罩在这个窗口里, 搜索页开关几回赖下的账当场清
+    // 从此再没人喊 lift): 焦点一离开输入框就迟几拍各补一次 —— 层滑出/
+    // 移除的 420ms 也罩在这个窗口里, 搜索页键盘没收就右划关掉 (100%
+    // 复现的底部黑区) 赖下的账当场清
     document.addEventListener("focusout", () => {
       setTimeout(lift, 350);
       setTimeout(lift, 900);
+      setTimeout(lift, 1800);
     });
     // 开局/回前台/会话恢复: iOS 可能在页面亮出来之后才把脏滚位塞回来
     // (重启 app 黑区还在的元凶) —— 页面一亮相就清一次账

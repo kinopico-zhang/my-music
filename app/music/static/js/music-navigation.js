@@ -80,6 +80,9 @@ function navigate(target) {
 // 用户点名「打开 app 自动回最后一个页面」: 导航/收层后各存一次, 开局读档
 // 回去 (没记过 = 头一回, 回主页播放列表); 退出登录清档, 下个人别落进
 // 我上次停的页。隐私模式 localStorage 会抛, 存读都兜住。
+// 1.8.8 起记整条轨迹 (根视图 + 各层依序): 只记栈顶的话, 开局把顶层直接
+// 盖在没渲染过的根上 —— 从那页收层返回, 露出的是「加载中」死页 (用户
+// 点名「返回逻辑要有效」)。
 
 const LAST_ROUTE_KEY = "music.lastRoute";
 
@@ -91,8 +94,18 @@ function routeKey(route) {
   return route.view;
 }
 
+/** 层栈条目 → 档案键 ({view:"album", id:5} → "album/5")。 */
+function stackKey(item) {
+  if (item.view === "album" || item.view === "artist"
+      || item.view === "playlist") return `${item.view}/${item.id}`;
+  return item.view;
+}
+
+/** 存整条导航轨迹: 根视图领头, 各层按叠放顺序 (开局逐层重放用)。 */
 function saveLastRoute() {
-  try { localStorage.setItem(LAST_ROUTE_KEY, routeKey(currentRoute())); }
+  const journey = [pageState.rootView || "home",
+                   ...pushStack.map(stackKey)].join(",");
+  try { localStorage.setItem(LAST_ROUTE_KEY, journey); }
   catch (_error) { /* 隐私模式存不进就算了 */ }
 }
 

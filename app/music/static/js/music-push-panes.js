@@ -90,6 +90,9 @@ function paneMotion() {
 
 function openPushPane(view, id) {
   lockRootScroll();
+  // 层底下永远先铺好根 (1.8.8 不变量): 谁在根没渲染时推层 (开局回跳
+  // 直落二级页), 收层就会露出「加载中」占位死页 —— 返回逻辑等于失效
+  if (!pageState.rootView) renderRootView("home");
   const pane = document.createElement("div");
   pane.className = "push-pane";
   pane.innerHTML = '<div class="pane-scroll"></div>';

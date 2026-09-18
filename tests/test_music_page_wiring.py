@@ -45,9 +45,10 @@ def test_music_home_page_wiring():
     assert '"/music/api/plays/recent?limit=100"' in js
     assert "pageState.recentPane" in js                   # 点行开播的队列语境
     assert "`×${track.play_count}`" in js                 # 行右缘 = 播过几次
-    # 默认进主页 (单地址批: 旧深链开局消化一次, URL 洗成光杆 /music)
+    # 默认进主页 (单地址批: 旧深链开局消化一次, URL 洗成光杆 /music);
+    # 1.8.8 起档案记整条轨迹, 开局逐层重放 (详见搜索接线测试)
     assert 'history.replaceState(null, "", location.pathname + location.search);' in js
-    assert 'navigate(legacyTarget);' in js
+    assert "journey.forEach(navigate);" in js
 
 
 def test_music_downloads_wiring():
@@ -104,7 +105,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v9" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v10" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
