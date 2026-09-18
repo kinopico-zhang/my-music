@@ -1,89 +1,26 @@
-// music-viewport-heal — 视口治疗的手法 (1.8.11, 医生是 music-viewport-doctor):
-// 病: iOS 独立模式键盘一开 innerHeight 跟着缩, 收起后冻在矮值不回来
-// (1.8.10 回传实锤 812→771, 差的 41 就是黑带)。WebKit 上游老病 (cordova
-// #1575 都标了 webkit bug), scrollTo/摘焦点/visualViewport 监听/换 100%
-// 高度链, 都是社区试过没用的路。验方 (cederhook, dev.to「Fixing the iOS
-// standalone-PWA keyboard bug that shrinks your viewport for good」): 对
-// 满视口高的元素做 display none→'' 翻面, 中间夹一次同步 reflow, 逼 WebKit
-// 把视口高度重算回来; 翻面有一帧闪, 磨砂罩子罩严再动手。被翻的元素必须
-// 真满高且在文档流里 (fixed 的不算), 所以翻 #main / body。本模块只有
-// 「手」: 病情由医生判, 现场数字由 HUD 记 (每步成效都会落服务器日志)。
+// music-viewport-heal — 视口治疗的手法 (1.8.12, 医生是 music-viewport-doctor)。
+// 病 (1.8.11 回传实锤, iOS 18.7 独立模式): 键盘收起那一下, WebKit 把「还原
+// 高度」记坏成 771 (满高 812, 差的 41 就是黑带), 之后页面里什么招都掰不动
+// 它 —— 翻面/meta 踢十一连发全是 771 原地不动, 连用户真实开合键盘三轮也只
+// 回落到 771 (键盘落下永远认那个坏值)。社区验方 (cederhook 翻面) 在这台
+// 机器上无效, 键盘往返也死了。能清这笔账的只剩换一份新文档: 开局回传实测
+// 是干净的 812。所以手法只剩一招「深修」: 存个标记刷新页面, 医生读到标记
+// 报数, 回传日志里看它灵不灵 (不灵的话下一步只剩重启应用, 也让日志说话)。
 "use strict";
 /* global ViewportHUD */
 /* exported ViewportHeal */
 
 const ViewportHeal = (() => {
-  let veil = null;
-  function ensureVeil() {       // 磨砂罩: 淡入罩严 → 动手 → 缓缓掀开
-    if (veil) return;
-    const sheet = document.createElement("style");
-    sheet.textContent = "#kb-veil{position:fixed;inset:0;z-index:900;"
-      + "opacity:0;pointer-events:none;background:rgba(20,18,21,.3);"
-      + "backdrop-filter:blur(26px);transition:opacity .22s ease-out}";
-    document.head.appendChild(sheet);
-    veil = document.createElement("div");
-    veil.id = "kb-veil";
-    document.body.appendChild(veil);
+  // 深修: 刷新换新文档 (布局视口随新文档复位)。播放现场本来就有 5 秒一存的
+  // 档 (队列/曲目/进度, pagehide 也存), 回来停在原曲原秒, 点播放键接着听;
+  // 页面路径有记忆, 回到原来那页。深修前后的数字都进回传, 复位成没成一目了然。
+  function reloadDeep() {
+    try {
+      localStorage.setItem("music.deepRepairAt", String(Date.now()));
+    } catch (_error) { /* 存不进也照样刷, 只是归来没标记可报 */ }
+    ViewportHUD.say(`深修 开工 i${window.innerHeight} (刷新复位)`);
+    ViewportHUD.send();              // 刷新前当场送 (keepalive 能扛过卸载)
+    location.reload();
   }
-
-  // 翻面 (验方原样): 满高元素 display none→'' 夹同步 reflow, 滚位存还
-  function flip(el, note) {
-    if (!el) return;
-    ensureVeil();
-    veil.style.transition = "opacity .22s ease-out";
-    veil.style.opacity = "1";
-    setTimeout(() => {          // 罩子淡入 .22s, 严实了才动手
-      const keep = el.style.display;
-      const st = el.scrollTop;
-      el.style.display = "none";
-      void el.offsetHeight;     // 同步 reflow, 两步之间不绘制
-      el.style.display = keep;
-      el.scrollTop = st;
-      ViewportHUD.say(`${note} 翻面 i${window.innerHeight}`);
-      setTimeout(() => {        // 掀罩放慢半拍, 掩住回弹的顿挫
-        veil.style.transition = "opacity .55s cubic-bezier(.32,.72,0,1)";
-        veil.style.opacity = "0";
-      }, 160);
-    }, 240);
-  }
-
-  // 键盘往返: 手势上下文才唤得动键盘 (定时器唤不动, 1.8.10 回传实锤),
-  // 真弹起来了稳一拍再收 —— 收键盘肯走完整动画, 高度才还得回来
-  function roundtrip(probe, note) {
-    if (!probe) return;
-    const start = window.innerHeight;
-    probe.focus();
-    let waited = 0;
-    const poll = setInterval(() => {
-      waited += 100;
-      if (start - window.innerHeight > 100) {  // 键盘真起来了: 稳一拍再收
-        clearInterval(poll);
-        setTimeout(() => {
-          probe.blur();
-          setTimeout(() => ViewportHUD.say(
-            `${note} 键盘往返 i${window.innerHeight}`), 700);
-        }, 300);
-      } else if (waited > 1500) {              // 唤不动: 认了, 别干等
-        clearInterval(poll);
-        probe.blur();
-        ViewportHUD.say(`${note} 键盘唤不动 i${window.innerHeight}`);
-      }
-    }, 100);
-  }
-
-  // meta 踢: 视口 meta 摘 80ms 再戴回去, 逼整块视口重算 (压箱底的大锤,
-  // 有一瞬整页重排 —— 排在翻面之后, 前面成了它就不用出场)
-  function metaKick(note) {
-    const meta = document.querySelector('meta[name="viewport"]');
-    if (!meta) return;
-    const parent = meta.parentNode;
-    const next = meta.nextElementSibling;
-    meta.remove();
-    setTimeout(() => {
-      parent.insertBefore(meta, next);
-      ViewportHUD.say(`${note} meta踢 i${window.innerHeight}`);
-    }, 80);
-  }
-
-  return { flip, roundtrip, metaKick };
+  return { reloadDeep };
 })();

@@ -17,10 +17,11 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v13 (2026-09-18 1.8.11: 黑带验方落地 —— 满高元素翻面 (新模块
-// music-viewport-heal), 医生误诊修正, 体检窗挪出刘海地带; 静态资源地址变
-// 了 (?v= 各升), 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v13";
+// 壳缓存 v14 (2026-09-18 1.8.12: 黑带治法换深修 —— 回传实锤翻面/键盘往返/
+// meta 踢全无效 (连真实开合键盘三轮都只回落到记坏的 771), 只有换新文档能
+// 复位; 体检窗只留「深度修复 · 刷新复位」一颗按钮, 开局/深修归来都报数;
+// 静态资源地址变了 (?v= 各升), 换版本号让 activate 清旧账)
+const SHELL_CACHE = "music-shell-v14";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档
