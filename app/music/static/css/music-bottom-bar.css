@@ -40,10 +40,9 @@
   transform: translateZ(0);   /* 自家合成层: 邻居层动起来时防复印 */
 }
 #dock-menu:active, #dock-search:active { transform: translateZ(0) scale(.92); }
-/* 搜索层到顶 (1.8.5 用户点名「三个控件消失, 换成搜索框」): 三件套让位给
-   搜索页的磨砂搜索框 (music-search.css 的 .search-foot 钉在船坞位, JS
-   的 syncSearchDock 切这枚开关); 扫描进度条不在行里, 照常站岗。 */
-body.search-top .dock-row > * { visibility: hidden; }
+/* 1.8.17 搜索框上移页顶 (用户点名「键盘弹出时搜索框在屏幕最上方」) 后,
+   1.8.5 那套「搜索层到顶三件套让位」(body.search-top) 整个撤了 —— 三件套
+   在搜索页也常驻; 扫描进度条不在行里, 照常站岗。 */
 
 /* ---------- 扫描进度条 (吊在船坞行上沿的浮层, 不挤布局) ---------- */
 #scan-strip {

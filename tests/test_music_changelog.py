@@ -8,7 +8,7 @@ from app.music import changelog
 def test_versions_wellformed():
     """独立版本线从 1.0.0 起; 每版字段齐全, 文案是用户视角的一句话。"""
     vs = changelog.entries()
-    assert [v.version for v in vs] == ["1.8.16", "1.8.15", "1.8.14",
+    assert [v.version for v in vs] == ["1.8.17", "1.8.16", "1.8.15", "1.8.14",
                                        "1.8.13", "1.8.12", "1.8.11", "1.8.10",
                                        "1.8.9", "1.8.8",
                                        "1.8.7", "1.8.6", "1.8.5", "1.8.4",
@@ -65,7 +65,7 @@ def test_music_changelog_page_skeleton(auth):
 
 def test_changelog_link_in_music_menu(auth):
     """听歌应用的更新日志入口: 顶栏菜单撤了 (导航挪去底部页签栏), 入口进
-    设置页的「更多」段 (应用内视图, 不再整页跳走)。"""
+    设置页「更新」子页 (1.8.17 起设置拆四个左右滑的子页; 应用内视图,
+    不再整页跳走)。"""
     js = auth.get("/music/static/js/music-settings-view.js").text
-    assert 'data-set-nav="changelog"' in js
-    assert "更新日志" in js
+    assert 'data-set-tab="changelog">更新</button>' in js   # 「更新」子页的页签

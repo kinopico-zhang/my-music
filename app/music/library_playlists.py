@@ -1,46 +1,69 @@
-"""播放列表: 应用内自建自管 (建 / 加歌 / 删 / 自定义封面)。
+"""播放列表成员管理: 建列 / 改名 / 加歌 / 移歌 / 整表重排 / 删列
+(2026-09-15 起应用内自建自管, 不再从 Plex 同步)。
 
-2026-09-15 起不再从 Plex 同步 (用户要求, 界面与接口同步全撤): 撤之前
-同步过来的列表原地保留为普通列表, 与自建的没有区别 —— 都能加歌、能删。
-自定义封面原图直存库文件旁的缓存目录 (playlist-{id}.jpg/png/webp),
-库里只记版本号, 换图加一, URL 带 ?v={版本} 长缓存。
+每次编辑 (建 / 改名 / 加歌 / 移歌 / 重排) 都记 updated_at (epoch 秒):
+「添加到播放列表」选择单按它排, 最近编辑的在最前 (1.8.17 用户点名)。
+自定义封面拆去了 library_playlist_covers (按域分家)。
 """
+import time
+
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from .library_database import (Playlist, PlaylistItem, Track,
-                               artwork_cache_directory)
-from .library_media import playlist_cover_file
+from .library_database import Playlist, PlaylistItem, Track
 from .schemas import PlaylistBrief
-
-_MAX_COVER_BYTES = 10 * 1024 * 1024      # 封面上限 10 MB (手机照片直传够用)
-
-
-def _sniff_image_extension(data: bytes) -> str | None:
-    """字节流魔数 → 扩展名 (认不出返回 None; 文件名/头都不算数, 只信内容)。"""
-    if data.startswith(b"\x89PNG\r\n\x1a\n"):
-        return ".png"
-    if data.startswith(b"\xff\xd8\xff"):
-        return ".jpg"
-    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
-        return ".webp"
-    return None
 
 
 def create_playlist(session: Session, name: str) -> PlaylistBrief:
     """新建空的播放列表 (position=0: 新建的排在已有列表前面)。
 
     名字撞车报 ValueError, 由路由层转 409。"""
-    cleaned = name.strip()
-    if not cleaned:
-        raise ValueError("播放列表的名字不能是空的")
-    if session.scalar(select(Playlist).where(Playlist.name == cleaned)) is not None:
-        raise ValueError("已经有叫这个名字的播放列表了")
-    playlist = Playlist(name=cleaned, position=0, plex_playlist_id=0,
-                        is_local=True)
+    playlist = Playlist(name=_clean_name(session, None, name), position=0,
+                        plex_playlist_id=0, is_local=True,
+                        updated_at=time.time())
     session.add(playlist)
     session.commit()
     return playlist_brief(playlist)
+
+
+def require_playlist(session: Session, playlist_id: int) -> Playlist:
+    """取列表; 不在库 KeyError (路由层转 404)。covers 也用, 别再手抄。"""
+    playlist = session.get(Playlist, playlist_id)
+    if playlist is None:
+        raise KeyError(playlist_id)
+    return playlist
+
+
+def commit_playlist_edit(session: Session, playlist: Playlist) -> PlaylistBrief:
+    """记一笔编辑时刻 (updated_at, 选择单按它排) 落库, 回列表行形状。"""
+    playlist.updated_at = time.time()
+    session.commit()
+    return playlist_brief(playlist)
+
+
+def rename_playlist(session: Session, playlist_id: int,
+                    name: str) -> PlaylistBrief:
+    """改列表名 (1.8.17 用户点名「允许编辑播放列表的标题」)。
+
+    校验与建列表同一套 (_clean_name); 列表不在库 KeyError → 404。"""
+    playlist = require_playlist(session, playlist_id)
+    playlist.name = _clean_name(session, playlist_id, name)
+    return commit_playlist_edit(session, playlist)
+
+
+def _clean_name(session: Session, playlist_id: int | None,
+                name: str) -> str:
+    """列表名收边 + 非空 + 不撞名 (撞别人的报 ValueError; playlist_id
+    给 None = 建列表, 否则改名时要把自己排除在撞名检查外)。"""
+    cleaned = name.strip()
+    if not cleaned:
+        raise ValueError("播放列表的名字不能是空的")
+    query = select(Playlist).where(Playlist.name == cleaned)
+    if playlist_id is not None:
+        query = query.where(Playlist.id != playlist_id)
+    if session.scalar(query) is not None:
+        raise ValueError("已经有叫这个名字的播放列表了")
+    return cleaned
 
 
 def add_track_to_playlist(session: Session, playlist_id: int,
@@ -49,9 +72,7 @@ def add_track_to_playlist(session: Session, playlist_id: int,
     重复行会让两行一起亮播放态、连播两遍, 2026-09-15 用户点名)。
 
     已在列表里报 ValueError, 由路由层转 409。"""
-    playlist = session.get(Playlist, playlist_id)
-    if playlist is None:
-        raise KeyError(playlist_id)
+    playlist = require_playlist(session, playlist_id)
     if session.get(Track, track_id) is None:
         raise KeyError(track_id)
     already = session.scalar(select(PlaylistItem.id).where(
@@ -65,6 +86,7 @@ def add_track_to_playlist(session: Session, playlist_id: int,
     session.add(PlaylistItem(playlist_id=playlist_id, track_id=track_id,
                              position=next_position, added_locally=True))
     playlist.track_count += 1
+    playlist.updated_at = time.time()
     session.commit()
     _refresh_playlist_aggregates(session)
     session.expire(playlist, ["track_count", "duration_seconds"])
@@ -75,90 +97,58 @@ def remove_track_from_playlist(session: Session, playlist_id: int,
                                track_id: int) -> PlaylistBrief:
     """从列表里移出一首 (左滑删除); 列表里没有这首 KeyError → 404。
 
-    position 留洞不补 (查询按 ORDER BY position, 顺序不受影响)。"""
-    playlist = session.get(Playlist, playlist_id)
-    if playlist is None:
-        raise KeyError(playlist_id)
+    position 留洞不补 (查询按 ORDER BY position, 顺序不受影响);
+    重排 (reorder_playlist_tracks) 会顺手把洞补平。"""
+    playlist = require_playlist(session, playlist_id)
     item = session.scalar(select(PlaylistItem).where(
         PlaylistItem.playlist_id == playlist_id,
         PlaylistItem.track_id == track_id))
     if item is None:
         raise KeyError(track_id)
     session.delete(item)
+    playlist.updated_at = time.time()
     session.commit()
     _refresh_playlist_aggregates(session)
     session.expire(playlist, ["track_count", "duration_seconds"])
     return playlist_brief(playlist)
 
 
+def reorder_playlist_tracks(session: Session, playlist_id: int,
+                            track_ids: list[int]) -> PlaylistBrief:
+    """整表重排 (1.8.17 用户点名「允许调整列表歌曲的顺序」): 请求体给
+    全量曲目 id 的新顺序, 服务端照单重写 position —— 越界/重复/混进
+    非成员的一律 ValueError → 409 (客户端列表过期了, 重拉详情再说);
+    列表不在库 KeyError → 404。顺手把 position 的洞补平 (1..N 连号)。"""
+    playlist = require_playlist(session, playlist_id)
+    items = session.scalars(select(PlaylistItem).where(
+        PlaylistItem.playlist_id == playlist_id)).all()
+    by_track = {item.track_id: item for item in items}
+    if (len(track_ids) != len(by_track) or len(set(track_ids)) != len(track_ids)
+            or any(track_id not in by_track for track_id in track_ids)):
+        raise ValueError("列表内容对不上, 刷新后再试")
+    for position, track_id in enumerate(track_ids, start=1):
+        by_track[track_id].position = position
+    return commit_playlist_edit(session, playlist)
+
+
 def delete_playlist(session: Session, playlist_id: int) -> None:
-    """删掉播放列表 (连成员和封面文件一起)。"""
-    playlist = session.get(Playlist, playlist_id)
-    if playlist is None:
-        raise KeyError(playlist_id)
+    """删掉播放列表 (连成员一起); 封面文件由路由层清场
+    (library_playlist_covers.purge_playlist_cover)。"""
+    playlist = require_playlist(session, playlist_id)
     session.execute(
         delete(PlaylistItem).where(PlaylistItem.playlist_id == playlist_id))
     session.delete(playlist)
-    _unlink_cover(playlist_id)
     session.commit()
-
-
-def set_playlist_cover(session: Session, playlist_id: int, data: bytes,
-                       content_type: str) -> PlaylistBrief:
-    """换自定义封面 (内容按魔数认类型, 原图直存; 版本号 +1)。
-
-    列表不在库 KeyError; 不是图片/太大/类型不对 ValueError (路由层转 404/400)。"""
-    playlist = session.get(Playlist, playlist_id)
-    if playlist is None:
-        raise KeyError(playlist_id)
-    if not (content_type or "").lower().startswith("image/"):
-        raise ValueError("封面要传图片文件 (JPG / PNG / WebP)")
-    if len(data) > _MAX_COVER_BYTES:
-        raise ValueError("封面太大了 (上限 10 MB)")
-    extension = _sniff_image_extension(data)
-    if extension is None:
-        raise ValueError("认不出这张图 (只收 JPG / PNG / WebP)")
-    path = artwork_cache_directory() / f"playlist-{playlist_id}{extension}"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    existing = playlist_cover_file(playlist_id)
-    if existing is not None and existing != path:
-        existing.unlink()          # 旧扩展名的文件别留着 (png 换成 jpg 之类)
-    temporary_path = path.with_suffix(".tmp")
-    temporary_path.write_bytes(data)
-    temporary_path.replace(path)
-    playlist.cover_version = max(1, playlist.cover_version + 1)
-    session.commit()
-    return playlist_brief(playlist)
-
-
-def clear_playlist_cover(session: Session, playlist_id: int) -> PlaylistBrief:
-    """撤掉自定义封面 (回渐变音符块); 文件删不干净也不挡 (版本已归零)。"""
-    playlist = session.get(Playlist, playlist_id)
-    if playlist is None:
-        raise KeyError(playlist_id)
-    _unlink_cover(playlist_id)
-    playlist.cover_version = 0
-    session.commit()
-    return playlist_brief(playlist)
-
-
-def _unlink_cover(playlist_id: int) -> None:
-    """封面文件尽力删 (删不掉就算了, 版本号不再引用它)。"""
-    cover = playlist_cover_file(playlist_id)
-    if cover is not None:
-        try:
-            cover.unlink()
-        except OSError:
-            pass
 
 
 def playlist_brief(playlist: Playlist) -> PlaylistBrief:
-    """列表行/卡片的数据形状 (queries / shares 也用它, 别再手抄这份构造)。"""
+    """列表行/卡片的数据形状 (queries / shares / covers 也用它, 别再手抄这份构造)。"""
     return PlaylistBrief(playlist_id=playlist.id, name=playlist.name,
                          track_count=playlist.track_count,
                          duration_seconds=playlist.duration_seconds,
                          is_local=playlist.is_local,
-                         cover_version=playlist.cover_version)
+                         cover_version=playlist.cover_version,
+                         updated_at=playlist.updated_at)
 
 
 def _refresh_playlist_aggregates(session: Session) -> None:

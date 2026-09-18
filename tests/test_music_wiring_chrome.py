@@ -72,8 +72,8 @@ def test_music_pane_fixed_chrome_wiring():
     assert "#push-stack::after" not in html
     assert "body.pane-anim #mini-player," in html
     assert "body.pane-anim #dock-menu," in html
-    # 1.8.5 搜索框同住船坞位, 一起换实底 (列表尾是 .search-box)
-    assert "body.pane-anim .search-box {" in html
+    assert "body.pane-anim #dock-search {" in html   # 1.8.17 列表尾 (三件套)
+    assert "body.pane-anim .search-box" not in html  # 搜索框搬页顶了 (1.8.17)
     assert "backdrop-filter: none;" in html
     assert "function paneMotion" in js
     open_pane = js[js.index("function openPushPane"):js.index("function closePushStack")]
@@ -148,13 +148,14 @@ def test_music_172_fix_batch():
                       :js.index("function playDownloadedRow")]
     assert "bindTrackLists" not in library_bind
     # 搜索框 1.8.3 重排 (用户点名): 输入框钉页底船坞上方, 顶端不再有
-    # 钉死的内容 —— 1.7.2 立的 sticky 钉顶那套整个退役 (样式与 markup 全撤)
+    # 钉死的内容 —— 1.7.2 立的 sticky 钉顶那套整个退役 (样式与 markup 全撤);
+    # 1.8.15 页底一条住进页壳滚动流 (my-money 弹层同款), 键盘让位滚页壳
+    # 不滚文档 (黑带病根); 1.8.17 再上顶 (用户点名「键盘弹出时搜索框在
+    # 屏幕最上方」): sticky 钉页壳顶 (= 屏幕顶), 自家 padding 顶开系统磨砂带
     assert "sticky-head" not in js and ".sticky-head" not in html
-    assert '<div class="search-foot">' in js        # 页底一条: 页签 + 搜索框
-    assert ".search-shell {" in html                # 页壳 (抵掉层衬, 顶端全给滚动内容)
-    # 1.8.15 页底一条住进页壳滚动流 (my-money 弹层同款): sticky 钉底,
-    # 键盘让位滚页壳不滚文档 (黑带病根), JS 量键盘高那套退役
-    assert "position: sticky; bottom: calc(4px + env(safe-area-inset-bottom));" in html
+    assert '<div class="search-head">' in js        # 页顶一条: 搜索框/标题 + 页签
+    assert ".search-shell {" in html                # 页壳 (抵掉层衬, 键盘让位滚页壳)
+    assert "position: sticky; top: 0;" in html      # 1.8.17 钉页顶 (键盘盖不住顶端)
     # 资料库段选择条 (.seg) 与语种 chips 随拆页撤掉: markup 不再产出, 样式一并清场
     assert 'class="seg"' not in js and ".seg {" not in html
     assert ".chip {" not in html and "chipsHTML" not in js

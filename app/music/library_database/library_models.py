@@ -85,7 +85,10 @@ class Playlist(MusicLibraryBase):
     遗留列, 存量行已全部转 True, 新建恒 True)。
 
     cover_version: 自定义封面的版本号, 0 = 没传过; 每次换封面 +1,
-    封面 URL 带 ?v={版本} 长缓存, 换图即换址。"""
+    封面 URL 带 ?v={版本} 长缓存, 换图即换址。
+
+    updated_at: 最后编辑时刻 (建/加歌/移歌/换封面都算, epoch 秒);
+    0 = 老行没记过 —— 选择单按它排, 没记过的垫底 (1.8.17)。"""
 
     __tablename__ = "playlists"
 
@@ -97,6 +100,7 @@ class Playlist(MusicLibraryBase):
     plex_playlist_id: Mapped[int] = mapped_column(default=0)   # 源库 id (溯源/幂等)
     is_local: Mapped[bool] = mapped_column(default=False)  # 同步时代遗留, 恒 True
     cover_version: Mapped[int] = mapped_column(default=0)  # 自定义封面版本 (0 = 无)
+    updated_at: Mapped[float] = mapped_column(default=0.0)  # 最后编辑时刻 (epoch 秒)
 
 
 class PlaylistItem(MusicLibraryBase):
@@ -141,16 +145,6 @@ class MusicSetting(MusicLibraryBase):
     music_directory: Mapped[str] = mapped_column(default="")     # 曲库根目录 (空 = 默认)
     lyrics_api_enabled: Mapped[bool] = mapped_column(default=True)
     lyrics_api_base: Mapped[str] = mapped_column(default="")     # 空 = LRCLIB 默认
-
-
-class CellularUsage(MusicLibraryBase):
-    """蜂窝流量月账 (一月一行): 客户端认得出蜂窝网络时按月上报,
-    设置页看这几个月听歌走了多少流量。"""
-
-    __tablename__ = "cellular_usage"
-
-    month: Mapped[str] = mapped_column(String(7), primary_key=True)   # "2026-09"
-    bytes: Mapped[int] = mapped_column(default=0)
 
 
 class ShareLink(MusicLibraryBase):

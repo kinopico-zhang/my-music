@@ -1,0 +1,14 @@
+/* music-playlist-drag — 播放列表详情页曲目拖拽换序 (1.8.17 用户点名
+   「允许调整列表歌曲的顺序」, JS 同名模块)。行住 .swipe-wrap 里 (与左滑
+   删除同构): 把手盖在行按钮上 (行 z1/删除钮 z0, 把手 z2); touch-action
+   none —— 按住把手上下拖不滚列表; 行尾让出一截给把手 (时长列收一点);
+   拖动跟手沿用 .swiping (transition none, 手势层挂)。 */
+#playlist-tracks .pl-grip {
+  position: absolute; top: 0; right: 0; bottom: 0; width: 34px; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink-3); touch-action: none;
+}
+/* 行滑开露出删除钮时, 把手跟着藏 (visibility 不触发回流, 行高不动) */
+#playlist-tracks .swipe-wrap > button.revealed ~ .pl-grip { visibility: hidden; }
+#playlist-tracks .track-row { padding-right: 28px; }
+#playlist-tracks .track-row.dragging { background: var(--surface-2); }

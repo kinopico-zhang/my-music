@@ -12,14 +12,14 @@ from .library_engine import (DEFAULT_DATABASE_URL, DEFAULT_MUSIC_DIRECTORY,
 from .library_migrations import ensure_columns
 from .library_models import (AUDIO_EXTENSION_FORMATS,
                              BROWSER_PLAYABLE_FORMATS, Album, Artist,
-                             CellularUsage, MusicLibraryBase, MusicSetting,
+                             MusicLibraryBase, MusicSetting,
                              PlayStat, Playlist, PlaylistItem, ShareLink,
                              Track)
 
 __all__ = [
     "AUDIO_EXTENSION_FORMATS", "BROWSER_PLAYABLE_FORMATS",
     "DEFAULT_DATABASE_URL", "DEFAULT_MUSIC_DIRECTORY", "PROJECT_DIR",
-    "Album", "Artist", "CellularUsage", "MusicLibraryBase", "MusicSetting",
+    "Album", "Artist", "MusicLibraryBase", "MusicSetting",
     "PlayStat", "Playlist", "PlaylistItem", "ShareLink", "Track",
     "artwork_cache_directory", "artwork_cache_directory_for", "create_all",
     "database_url", "dispose_engine", "engine", "ensure_columns", "get_db",

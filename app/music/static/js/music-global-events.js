@@ -1,9 +1,10 @@
-// music-global-events — My Music 全局事件绑定 (船坞键/封面文件/Esc) + 蜂窝流量浏览器适配器。
+// music-global-events — My Music 全局事件绑定 (船坞键/封面文件/Esc)。
 // 拆自 music.js (结构化重构), 1.8.0 页签栏撤掉: 搜索键/菜单键在这里接线。
+// (1.8.17 蜂窝流量上报整个撤了 —— 设置页改版, 月账没了消费方。)
 "use strict";
 /* global $, SCAN_POLL_INTERVAL_MS, bindDockMenu, checkScanStatus,
           closeDockMenu, closeFullPlayer, closePushStack, coverUploadPlaylistId,
-          createCellularMonitor, navigate, playerOpen, pushStack,
+          navigate, playerOpen, pushStack,
           uploadPlaylistCover, ViewportHUD */
 /* exported bindGlobalEvents */
 
@@ -127,36 +128,5 @@ function bindGlobalEvents() {
   // 滚动自己管: iOS 重启/回退会"恢复"上次的滚位 —— 固定壳应用能被恢复的
   // 只有脏账 (文档本来就不该滚), 关掉恢复, 清账的活 lift() 包了
   if ("scrollRestoration" in history) history.scrollRestoration = "manual";
-}
-
-// ------------------------------------------------------------ 蜂窝流量
-// 只有能认出蜂窝网络的浏览器 (安卓 Chrome 的 navigator.connection) 才上报,
-// iPhone 的 Safari 认不出网络类型, 记不上 (设置页有说明)。收口/上报的
-// 节奏在 cellular-usage.js, 这里只给浏览器适配器。
-if (window.performance && performance.getEntriesByType
-    && typeof createCellularMonitor === "function") {
-  createCellularMonitor({
-    isCellular: () => {
-      const connection = navigator.connection
-        || navigator.mozConnection || navigator.webkitConnection;
-      return !!connection && connection.type === "cellular";
-    },
-    takeEntries: () => performance.getEntriesByType("resource"),
-    report: async (bytes) => {
-      const response = await fetch("/music/api/cellular-usage", {
-        method: "POST", keepalive: true,      // 离开页面那一笔也要送到
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bytes }),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    },
-    onHide: (flush) => {
-      window.addEventListener("pagehide", flush);
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden) flush();     // 切后台就报, 别等系统杀页
-      });
-    },
-    now: () => Date.now(),
-  }).start();
 }
 

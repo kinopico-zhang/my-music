@@ -13,10 +13,11 @@ class PlaylistBrief(BaseModel):
     duration_seconds: float
     is_local: bool = False   # 应用内列表 (2026-09-15 起全量如此, 历史同步列表也已转正)
     cover_version: int = 0   # 自定义封面版本 (0 = 没传过)
+    updated_at: float = 0.0  # 最后编辑时刻 (epoch 秒, 0 = 老数据没记过)
 
 
 class PlaylistCreateRequest(BaseModel):
-    """POST /api/playlists 的请求体 (本地新建列表)。"""
+    """POST /api/playlists (新建) 与 PATCH /api/playlists/{id} (改名) 的请求体。"""
 
     name: str
 
@@ -25,6 +26,12 @@ class PlaylistTrackRequest(BaseModel):
     """POST /api/playlists/{id}/tracks 的请求体 (往本地列表里加一首)。"""
 
     track_id: int
+
+
+class PlaylistOrderRequest(BaseModel):
+    """PUT /api/playlists/{id}/order 的请求体 (整表新顺序, 全量曲目 id)。"""
+
+    track_ids: list[int]
 
 
 class PlaylistPageList(BaseModel):

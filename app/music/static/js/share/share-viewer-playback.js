@@ -24,6 +24,17 @@ function playQueue(pos) {
   $("#fp-title").textContent = track.title;
   $("#fp-artist").textContent =
     [track.artist, track.album_title].filter(Boolean).join(" | ");
+  // 1.8.17 标题行的歌手照片 (用户点名「在歌名和艺人旁边加歌手照片」):
+  // 走公开艺人海报路由 (门禁按这份分享里的艺人放行), 没传过海报的 404
+  // —— onerror 藏图, 布局不塌
+  const artistArt = $("#fp-artist-art");
+  if (track.artist_id) {
+    artistArt.onerror = () => { artistArt.hidden = true; };
+    artistArt.src = `/music/share/${token}/artwork/artist/${track.artist_id}`;
+    artistArt.hidden = false;
+  } else {
+    artistArt.hidden = true;
+  }
   // 1.8.6 修「全屏页看不到封面」: #fp-art 本尊是 <img> (app 同款), 直接挂
   // src; 此前错用了给容器 div 用的 setArt —— 往 <img> 里塞子 <img> 永远
   // 不渲染, 封面就一直空着 (迷你条的 #p-art 是 div, setArt 没问题)

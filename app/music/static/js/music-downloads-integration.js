@@ -136,7 +136,7 @@ async function downloadTrackFromUI(track) {
   }
 }
 
-let downloadAllCancelled = false;   // 下载管理「全部删除」置位, 整批叫停
+let downloadAllCancelled = false;   // 下载管理里取消在下的那首时置位, 整批叫停
 
 /** 「下载全部」: 一首下完再下下一首 (几十个 40MB 并发请求在手机上必炸),
     已在库/正在下的跳过; 单首失败不断批, 收尾一并报数。 */

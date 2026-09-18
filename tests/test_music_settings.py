@@ -1,20 +1,20 @@
-"""音乐设置测试: 权限与蜂窝账本, 保存与曲库目录热切换, 启动读
+"""音乐设置测试: 权限, 保存与曲库目录热切换, 启动读
 设置里的曲库目录。歌词测试拆去了 test_music_lyrics.py。
 拆自原 test_music_settings.py (结构化重构, 代码逐字节未动)。"""
-from datetime import datetime
 
 from fastapi.testclient import TestClient
 
 import app.main as m
-from app import account_store, config
+from app import account_store
 from app.music import service
 from app.music.library_database import session_factory
 from app.music import library_settings
 from tests.music_audio_seed import _write_plain_track
 from tests.music_library_helpers import _wait_scan_done
 
-def test_settings_permissions_and_cellular_ledger(auth, usersdb):
-    """设置接口: 普通用户能读不能写, 未登录 401; 流量月账按月累加。"""
+
+def test_settings_permissions(auth, usersdb):
+    """设置接口: 普通用户能读不能写, 未登录 401 (蜂窝月账 1.8.17 撤了)。"""
     anon = TestClient(m.app)
     assert anon.get("/music/api/settings").status_code == 401
     account_store.create_user(usersdb, "试听丙", "password123")
@@ -34,23 +34,10 @@ def test_settings_permissions_and_cellular_ledger(auth, usersdb):
     assert state["lyrics_api_enabled"] is True
     assert state["lyrics_api_base"] == ""
     assert state["lyrics_api_default"] == library_settings.LYRICS_API_DEFAULT
-    assert state["cellular_months"] == []
-
-    # 流量上报: 谁登录都能报 (报的是自己这台设备的消耗), 按月累加
+    # 蜂窝流量上报接口 1.8.17 整个撤了 (月账/采集一起拆): 回归守卫
+    # (路由没了, 匿名打这个路径被鉴权中间件先拦下 → 401)
     assert anon.post("/music/api/cellular-usage",
                      json={"bytes": 1}).status_code == 401
-    assert other.post("/music/api/cellular-usage",
-                      json={"bytes": 1234}).json() == {"ok": True}
-    assert auth.post("/music/api/cellular-usage",
-                     json={"bytes": 100}).json() == {"ok": True}
-    months = auth.get("/music/api/settings").json()["cellular_months"]
-    assert months == [{"month": datetime.now(config.LOCAL_TZ).strftime("%Y-%m"),
-                       "bytes": 1334}]
-    # 校验: 负数 / 超单次上限 422 (schema 兜住)
-    assert auth.post("/music/api/cellular-usage",
-                     json={"bytes": -1}).status_code == 422
-    assert auth.post("/music/api/cellular-usage",
-                     json={"bytes": 2 ** 30 + 1}).status_code == 422
 
 
 def test_settings_save_and_directory_switch(auth, tmp_path):

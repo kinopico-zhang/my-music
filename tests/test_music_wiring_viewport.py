@@ -113,13 +113,12 @@ def test_music_189_viewport_freeze_repair():
     assert "!typing && Date.now() - blurredAt > 2500" in ge
     assert 'ViewportHUD.say("回锁");' in ge
     # CSS 侧的结构换血: 层标记 data-view=search 清底衬 (页底条住进流里,
-    # 船坞让位那截不要了), 页壳变滚动器 (my-money 弹层同款), 页底条
-    # sticky 钉底 (键盘缩矮布局时自动贴键盘上沿, 不用 JS 量高度)
+    # 船坞让位那截不要了), 页壳变滚动器 (my-money 弹层同款); 1.8.17 页顶
+    # 条 sticky 钉页壳顶 (= 屏幕顶, 键盘盖不住顶端, 不用 JS 量高度)
     assert "pane.dataset.view = view;" in panes
     assert '.push-pane[data-view="search"] .pane-scroll { padding-bottom: 0; }' \
         in html
-    assert "position: sticky; bottom: calc(4px + env(safe-area-inset-bottom));" \
-        in html
+    assert "position: sticky; top: 0;" in html
     assert "min-height: var(--kb-full, 0);" in html
     assert "overscroll-behavior-y: contain;" in html
     # 撑高也只医独立模式 iPhone (桌面/安卓的账不这么记)

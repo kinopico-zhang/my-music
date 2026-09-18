@@ -1,23 +1,18 @@
-"""运行时设置 (曲库路径 / 歌词 API) + 蜂窝流量月账。
+"""运行时设置 (曲库路径 / 歌词 API)。
 
 设置恒单行 id=1, 空字段回落 env 默认; 改曲库路径由服务层
 (service.apply_music_directory) 换扫描根目录并起全量重扫, 这里只管
-存取与校验。蜂窝流量是客户端能认出蜂窝网络时按月上报的账, 一月一行。
+存取与校验。(1.8.17 蜂窝流量月账撤了 —— 设置页改版, 没了消费方。)
 """
-from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from .. import config
-from .library_database import (DEFAULT_MUSIC_DIRECTORY, CellularUsage,
-                               MusicSetting)
-from .schemas import CellularMonth, MusicSettingsState
+from .library_database import DEFAULT_MUSIC_DIRECTORY, MusicSetting
+from .schemas import MusicSettingsState
 
 # 歌词 API 的默认地址 (LRCLIB: 免费, 兼容 /get?artist_name=…&track_name=…)
 LYRICS_API_DEFAULT = "https://lrclib.net/api"
-_MONTHS_SHOWN = 12        # 设置页流量账看最近这几个月
 
 
 def settings_row(session: Session) -> MusicSetting:
@@ -44,15 +39,14 @@ def effective_lyrics_api(session: Session) -> tuple[bool, str]:
 
 
 def settings_state(session: Session) -> MusicSettingsState:
-    """设置页状态 (现值 + 默认值参照 + 流量月账)。"""
+    """设置页状态 (现值 + 默认值参照)。"""
     row = settings_row(session)
     return MusicSettingsState(
         music_directory=row.music_directory,
         music_directory_default=DEFAULT_MUSIC_DIRECTORY,
         lyrics_api_enabled=row.lyrics_api_enabled,
         lyrics_api_base=row.lyrics_api_base,
-        lyrics_api_default=LYRICS_API_DEFAULT,
-        cellular_months=cellular_months(session))
+        lyrics_api_default=LYRICS_API_DEFAULT)
 
 
 def save_settings(session: Session, music_directory: str | None,
@@ -79,24 +73,3 @@ def save_settings(session: Session, music_directory: str | None,
             new_directory = effective_music_directory(session)
     session.commit()
     return new_directory
-
-
-def record_cellular_bytes(session: Session, amount: int) -> str:
-    """往当月账上记一笔 (月份按本地时区); 返回记进的月份。"""
-    month = datetime.now(config.LOCAL_TZ).strftime("%Y-%m")
-    row = session.get(CellularUsage, month)
-    if row is None:
-        session.add(CellularUsage(month=month, bytes=amount))
-    else:
-        row.bytes += amount
-    session.commit()
-    return month
-
-
-def cellular_months(session: Session,
-                    limit: int = _MONTHS_SHOWN) -> list[CellularMonth]:
-    """流量月账 (新→老, 最多这几个月)。"""
-    return [CellularMonth(month=month, bytes=bytes_amount)
-            for month, bytes_amount in session.execute(
-                select(CellularUsage.month, CellularUsage.bytes)
-                .order_by(CellularUsage.month.desc()).limit(limit))]

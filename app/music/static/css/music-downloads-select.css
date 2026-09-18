@@ -1,8 +1,10 @@
 /* music-downloads-select — My Music 已下载页多选删除 (1.8.6, 用户点名):
-   选择模式里行左缘出选择圈, 单行「删除/取消」和「全部删除」让位。 */
+   选择模式里行左缘出选择圈; 1.8.17 行删除改左滑, 选择模式里左滑让位
+   (拖不动也删不了, 点行只管勾选)。 */
 #dl-pane-body.selecting .dl-row { padding-left: 32px; position: relative; }
-#dl-pane-body.selecting #dl-clear-all,
-#dl-pane-body.selecting .dl-remove { display: none; }
+/* 选择模式里点行 = 勾选, 左滑删除让位 (拖不动也删不了) */
+#dl-pane-body.selecting .swipe-wrap > button:first-child { transform: none !important; }
+#dl-pane-body.selecting .swipe-del { display: none; }
 /* 未选: 空圈; 选中: 实心圈带勾 (accent 底黑勾, 圆键同款对比) */
 #dl-pane-body.selecting .dl-row::before {
   content: ""; position: absolute; left: 4px; top: 50%;

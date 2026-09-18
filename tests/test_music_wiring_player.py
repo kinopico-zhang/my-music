@@ -153,10 +153,10 @@ def test_music_player_dismiss_wiring():
     # —— 自己滚在半路才让路 (滚到顶时下拉归收起); 让路名单里其余照旧
     assert '"#fp-grab, #fp-art-wrap, .fp-scrub,"' in player
     assert 'event.target.closest("#fp-lyrics, #queue-list");' in player
-    # Esc = 电脑上的返回: 先收播放页, 没开收顶层二级页
+    # Esc = 电脑上的返回: 先收播放页, 没开收顶层二级页 (1.8.17 蜂窝流量
+    # 那段撤了, Esc 处理器后面的节标记换成键盘避让)
     esc_handler = js[js.index('event.key !== "Escape"'):
-                     js.index("// ------------------------------------------------------------"
-                              " 蜂窝流量")]
+                     js.index("// 键盘避让")]
     assert "if (playerOpen) closeFullPlayer();" in esc_handler
     assert "closePushStack(pushStack.length - 1)" in esc_handler
 

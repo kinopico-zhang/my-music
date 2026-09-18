@@ -31,24 +31,47 @@ def test_music_share_link_wiring():
     # 整页不画滚动条 (与应用同款: 星规则 + 伪元素)
     assert "scrollbar-width: none;" in share
     assert "::-webkit-scrollbar { display: none; }" in share
-    # 全屏播放页 1.8.5 与 app 一致 (用户点名): 大封面 + 标题/作者·专辑行,
-    # ⋯ 菜单位换成字幕引号键 (点开看歌词), 传输三键 + 细进度条 (无旋钮,
-    # 填充走 --fill), 下拉收起整页都能拉; 歌词视图罩住封面区 (app 同款
-    # 距离模糊/当前句放大), 歌词解析借公开的 lyrics-parser.js
+    # 全屏播放页 1.8.5 与 app 一致 (用户点名): 大封面 + 标题/作者·专辑行;
+    # 1.8.17 播放区改版 (用户点的布局): 传输区两行 —— 细进度条 (无旋钮,
+    # 填充走 --fill) 一行, 上一首/播放/下一首三键站进度条上一行;
+    # 标题行旁边的键改成歌词键 (歌词只走它, 封面点开不再切歌词), 歌词
+    # 视图罩住封面区 (app 同款距离模糊/当前句放大), 歌词解析借公开的
+    # lyrics-parser.js
     for frag in ['id="fp"', 'id="fp-play"', 'id="fp-prev"', 'id="fp-next"',
-                 'id="fp-lyrics"', 'id="fp-lyrics-btn"', 'id="fp-scrub"',
+                 'id="fp-lyrics"', 'id="fp-meta-lyrics"', 'id="fp-scrub"',
                  'id="fp-grab"', 'id="fp-bg"', "openFullPlayer",
                  "closeFullPlayer", "bindPullClose", "updateMediaSession",
                  "/music/share/${token}/lyrics/${track.track_id}",
                  'src="/music/static/js/lyrics-parser.js',
-                 ".lyrics-line.near-1", ".lyrics-line.active"]:
+                 ".lyrics-line.upnext", ".lyrics-line.active"]:
         assert frag in share_all, f"share.html 缺 {frag}"
+    # 1.8.17 结构: 进度行 (.fp-scrub-row) 在上, 三键行 (.fp-keys) 在下
+    assert '<div class="fp-transport">' in share_all
+    assert share_all.index('<div class="fp-scrub-row">') < share_all.index('<div class="fp-keys">')
+    assert "fp-controls" not in share_all      # 旧键行 (键在进度条旁) 撤了
     # 作者行并专辑名 (「下面是标题和作者专辑名称」)
     assert '[track.artist, track.album_title].filter(Boolean).join(" | ")' in share_all
-    # 歌词视图开关 (1.8.5): 引号键开合, 开着封面让位; 没词键灰掉
+    # 歌词视图开关 (1.8.17 只走标题行的歌词键): 开着封面让位, 键点亮;
+    # 视图关着时没词键灰掉; 开着保持可点好关回封面
     assert "lyricsViewOpen" in share_all
+    assert "function toggleLyricsView" in share_all
     assert '$("#fp-art-wrap").hidden = open;' in share_all
-    assert '$("#fp-lyrics-btn").disabled = !lyrics;' in share_all
+    assert 'lyricsButton.disabled = !lyrics && !lyricsViewOpen;' in share_all
+    assert 'lyricsButton.classList.toggle("on", open);' in share_all
+    # 切歌后视图跟上一首保持一致 (1.8.17 用户点名): 开合只听用户的态,
+    # 不随有没有词翻面 —— 没词不强关, 空态垫着 (还在取词时空白, 不闪
+    # 「没有歌词」的错话)
+    assert "const open = lyricsViewOpen;" in share_all
+    assert "lyricsSettled" in share_all
+    assert '<div class="lyrics-empty">这首歌没有歌词</div>' in share_all
+    # 封面左右滑切歌 (左滑下一首, 右滑上一首): 横向显著位移才认
+    # (竖向下拉归收起, 互不抢)
+    assert "bindCoverSwipe" in share_all
+    assert "if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {" in share_all
+    # 队列两头切歌键灰掉点不动 (1.8.17 用户点名)
+    assert '$("#fp-prev").disabled = queuePos <= 0;' in share_all
+    assert '$("#fp-next").disabled = queuePos >= queue.length - 1;' in share_all
+    assert ".fp-keys > button:disabled { opacity: .3; pointer-events: none; }" in share_all
     assert "with-lyrics" not in share_all   # 常驻封面下面那套 (1.8.2) 撤了
     # 下拉收起扩到整页: 传输区/歌词键照常点, 词滚到中间先归滚词
     assert 'const sheet = $("#fp .fp-sheet");' in share_all
@@ -133,18 +156,19 @@ def test_music_download_all_wiring():
 def test_music_changelog_in_app_wiring():
     """更新日志改应用内视图 (用户点名"看日志别断歌"): 原来是整页跳转
     /music/changelog, 卸载 SPA 音频就停; 改应用内推入层铺开,
-    播放气泡常驻。入口在设置页「更多」段 (1.8.0 起设置从上弹菜单进)。
+    播放气泡常驻。入口在设置页「更新」子页 (1.8.17 起设置拆四个
+    左右滑的子页, 更新日志是其一)。
     独立日志页保留 (直达链接仍可用)。"""
     html = music_page_shell()
     js = music_browser_js()
-    assert 'data-set-nav="changelog"' in js          # 设置页「更多」段的入口
+    assert 'data-set-tab="changelog"' in js         # 设置页「更新」子页的入口
     assert 'href="/music/changelog"' not in html    # 不再整页跳走
     # 1.8.0: 更新日志是推入层之一 (PANE_VIEWS 名单里), 与主页/专辑同款滑入
     assert '"search", "settings", "stats", "changelog"];' in js
     assert "async function renderChangelogView(" in js
     assert 'fetchJSON("/music/changelog/api/entries")' in js
     assert 'id="changelog-entries"' in js and ".v-badge" in html  # 版本卡片样式
-    assert 'navigate(row.dataset.setNav)' in js     # 更多段的行都是导航入口
+    assert 'renderChangelogView(page("changelog"));' in js   # 更新子页入口
 
 
 def test_music_frontend_structure():

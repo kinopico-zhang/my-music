@@ -1,7 +1,9 @@
-// share-viewer-fullpage — My Music 分享页全屏播放页: 开合/下拉收起/顶部绑定。
+// share-viewer-fullpage — My Music 分享页全屏播放页: 开合/下拉收起/封面滑切歌。
 // 拆自 share.html 的内联 <script> (结构化重构)。1.8.5 下拉收起扩到整页
 // (封面/歌词/标题区都能拉, app 同款): 传输区和歌词键照常点; 歌词滚到
 // 中间时竖拖先归滚词, 滚到头再往下拉才收。
+// 1.8.17 (用户点名): 封面左右滑切歌 (下一首/上一首) —— 歌词改走标题行
+// 的歌词键, 封面的滑动手势让给了切歌。
 "use strict";
 /* global $, nextTrack, prevTrack, togglePlay */
 
@@ -72,3 +74,27 @@ $("#p-text").addEventListener("click", openFullPlayer);
 $("#fp-prev").addEventListener("click", prevTrack);
 $("#fp-next").addEventListener("click", nextTrack);
 $("#fp-play").addEventListener("click", togglePlay);
+
+// 封面左右滑切歌 (1.8.17 用户点名「左右滑动封面切歌」): 横向甩 40px 且
+// 明显是横劲 (1.5 倍竖劲) 才算 —— 与下拉收起不打架 (那个只认向下,
+// 横劲起手自己就撒手了)。歌词视图开着时封面是藏着的, 自然滑不到。
+(function bindCoverSwipe() {
+  const art = $("#fp-art-wrap");
+  let startX = 0, startY = 0, tracking = false;
+  art.addEventListener("pointerdown", (event) => {
+    startX = event.clientX; startY = event.clientY; tracking = true;
+  });
+  const finish = (event) => {
+    if (!tracking) return;
+    tracking = false;
+    if (!event) return;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0) nextTrack();
+      else prevTrack();
+    }
+  };
+  addEventListener("pointerup", finish);
+  addEventListener("pointercancel", () => finish(null));
+})();

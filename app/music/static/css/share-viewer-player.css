@@ -46,8 +46,10 @@
   input[type="range"] { touch-action: none; }
 
   /* ---------- 全屏播放页 (1.8.5 与 app 同款, 用户点名): 大封面居中,
-     标题/作者·专辑 + 字幕引号键, 传输三键, 细进度条 (app 的底部三键行
-     不带 —— 分享页没有加列表/队列可进, 字幕键挪到标题行右侧) ---------- */
+     标题行 (歌手照/曲名/作者·专辑/歌词键), 传输区 (1.8.17 用户点名
+     「三个播放控制键就放在进度条上」: 细进度条一行 + 三键一行, 播键
+     从标题行并了进来); 歌词只走标题行的歌词键 (封面滑动手势让给了
+     切歌, 左滑下一首右滑上一首) ---------- */
   #fp {
     position: fixed; inset: 0; z-index: 40; background: #000;
     transform: translateY(100%); transition: transform .32s cubic-bezier(.32,.72,0,1);
@@ -82,8 +84,9 @@
   #fp-art { width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
             background: rgba(255,255,255,.08);
             box-shadow: 0 18px 50px rgba(0,0,0,.55); }
-  /* 歌词视图 (1.8.5 点字幕引号开, app 同款): 罩住整个封面区, 距离模糊 +
-     当前句放大; 上下渐隐蒙版, 滚到头再往下拖不做橡皮筋 (下拉收起通吃) */
+  /* 歌词视图 (1.8.5 起 app 同款, 1.8.17 改左右滑开合): 罩住整个封面区,
+     距离模糊 + 当前句放大; 上下渐隐蒙版, 滚到头再往下拖不做橡皮筋
+     (下拉收起通吃) */
   #fp-lyrics {
     position: absolute; inset: 0; overflow-y: auto; z-index: 2;
     overscroll-behavior: contain;
@@ -92,53 +95,66 @@
     padding: 30% 28px;
   }
   .lyrics-line {
-    /* 与应用同款: 平时行宽 80%, 放大 (21→26px) 后 99% 仍装得下,
-       断行点不动 (1.8.5 修「放大重新换行」); max-width 陪 font-size
-       一起过渡, 放大过程中也不跳行 (1.8.6, 见 music-player.css 注) */
+    /* 1.8.17 与应用同款断根法 (见 music-player.css 注): 字号恒 21px、
+       行宽恒 80%, 放大走 transform: scale(1.24) —— 布局盒尺寸不变,
+       断行点物理上不可能再变 */
     max-width: 80%;
     font-size: 21px; font-weight: 700; color: rgba(255,255,255,.32);
     padding: 12px 0; line-height: 1.34; text-align: left;
-    filter: blur(3px); will-change: filter;
+    filter: blur(3px); will-change: filter, transform;
+    transform-origin: left center;
     transition: filter .5s cubic-bezier(.22,.61,.36,1),
                 color .5s cubic-bezier(.22,.61,.36,1),
-                font-size .5s cubic-bezier(.22,.61,.36,1),
-                max-width .5s cubic-bezier(.22,.61,.36,1);
+                transform .5s cubic-bezier(.22,.61,.36,1);
   }
-  /* 距离模糊: 近一两句半模糊, 正在唱的全清放大 (与应用同一套) */
-  .lyrics-line.near-2 { filter: blur(2px); }
-  .lyrics-line.near-1 { filter: blur(1px); }
-  .lyrics-line.active { color: #fff; font-size: 26px; filter: blur(0);
-                        max-width: 100%; }
+  /* 清晰度分工 (1.8.17, 与应用同一套): 正在唱的清晰放大, 下一句清晰
+     不放大, 其余模糊 */
+  .lyrics-line.upnext { color: rgba(255,255,255,.66); filter: blur(0); }
+  .lyrics-line.active { color: #fff; filter: blur(0);
+                        transform: scale(1.24); }
   /* 纯文本歌词没有"当前句", 整页清晰 */
   #fp-lyrics.static .lyrics-line { filter: blur(0); }
-  /* 标题行 (app 同款): 左曲名/作者·专辑, 右字幕引号 (1.8.5 起替掉
-     app 的 ⋯ 菜单位 —— 分享页没有菜单, 这颗键管歌词视图) */
+  /* 没词的空态 (1.8.17 视图跟上一首保持一致: 没词不强关, 空态垫着) */
+  .lyrics-empty { position: absolute; inset: 0; display: flex;
+                  align-items: center; justify-content: center;
+                  color: rgba(255,255,255,.4); }
+  /* 标题行 (1.8.17 改版): 歌手照 | 曲名/作者·专辑 | 歌词键 —— 播键撤去
+     进度条上的三键行 (用户点名「标题艺人旁边的按键改成歌词」) */
   .fp-meta { display: flex; align-items: center; gap: 12px; padding: 0 32px; }
+  #fp-artist-art { width: 44px; height: 44px; border-radius: 50%;
+                   object-fit: cover; flex-shrink: 0;
+                   background: rgba(255,255,255,.08); }
   .fp-now { flex: 1; min-width: 0; touch-action: none; }   /* 曲名块: 下拉收起命中区 */
   .fp-meta b { display: block; font-size: 19px; font-weight: 700; color: #fff;
                overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .fp-meta small { display: block; font-size: 12px; color: rgba(255,255,255,.62);
                    margin-top: 2px; overflow: hidden; white-space: nowrap;
                    text-overflow: ellipsis; }
-  #fp-lyrics-btn {
-    color: #fff; opacity: .9; padding: 12px; flex-shrink: 0; border: 0;
-    background: none; cursor: pointer;
+  /* 歌词键: 两态透明度 (开着词点亮), 没词的曲子整键灰掉点不动 */
+  #fp-meta-lyrics {
+    width: 40px; height: 40px; padding: 0; border: 0; flex-shrink: 0;
+    background: none; color: #fff; cursor: pointer; opacity: .5;
     display: flex; align-items: center; justify-content: center;
   }
-  #fp-lyrics-btn.on { opacity: 1; }
-  #fp-lyrics-btn:disabled { opacity: .35; }   /* 探明没词: 键灰掉点不开 */
-  .fp-controls { display: flex; align-items: center; justify-content: center;
-                 gap: 32px; margin-top: 16px; }
-  .fp-controls > button {
+  #fp-meta-lyrics.on { opacity: 1; }
+  #fp-meta-lyrics:active { opacity: .6; }
+  #fp-meta-lyrics:disabled { opacity: .25; pointer-events: none; }
+  #fp-meta-lyrics svg { width: 24px; height: 24px; }
+  /* 传输区 (1.8.17 用户点名「三个播放控制键就放在进度条上」): 一列两行
+     —— 细进度条 (带时间标签) 在上, 上一首/播放/下一首 三键居中在下 */
+  .fp-transport { display: flex; flex-direction: column; margin-top: 16px;
+                  padding: 0 24px; }
+  .fp-scrub-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+  .fp-keys { display: flex; align-items: center; justify-content: center;
+             gap: 32px; margin-top: 8px; }
+  .fp-keys > button {
     width: 44px; height: 44px; color: #fff; padding: 0; border: 0;
     background: none; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: transform .16s ease, opacity .16s ease;
   }
-  .fp-controls > button:active { transform: scale(.86); opacity: .75; }
-  .fp-controls > button:disabled { opacity: .3; pointer-events: none; }
-  .fp-transport { display: flex; align-items: center; gap: 10px;
-                  margin-top: 10px; padding: 0 24px; }
+  .fp-keys > button:active { transform: scale(.86); opacity: .75; }
+  .fp-keys > button:disabled { opacity: .3; pointer-events: none; }
   .fp-time { flex-shrink: 0; font-size: 10px; color: rgba(255,255,255,.5);
              font-variant-numeric: tabular-nums; }
   .fp-scrub { flex: 1; min-width: 0; }

@@ -1,7 +1,7 @@
 """老库升级: 给已存在的旧表补缺失的列 (SQLite ADD COLUMN, 带默认值不重写行)。
 
-create_all 只建新表不 ALTER 旧表; 整张新表 (music_settings /
-cellular_usage) create_all 自己会补建, 这里只管旧表的新列。
+create_all 只建新表不 ALTER 旧表; 整张新表 (music_settings)
+create_all 自己会补建, 这里只管旧表的新列。
 """
 from typing import Final
 
@@ -16,7 +16,8 @@ _COLUMN_MIGRATIONS: Final[dict[str, dict[str, str]]] = {
     "albums": {"search_keys": "TEXT NOT NULL DEFAULT ''"},
     "artists": {"search_keys": "TEXT NOT NULL DEFAULT ''"},
     "playlists": {"is_local": "BOOLEAN NOT NULL DEFAULT 0",
-                  "cover_version": "INTEGER NOT NULL DEFAULT 0"},
+                  "cover_version": "INTEGER NOT NULL DEFAULT 0",
+                  "updated_at": "REAL NOT NULL DEFAULT 0"},
     "playlist_items": {"added_locally": "BOOLEAN NOT NULL DEFAULT 0"},
 }
 

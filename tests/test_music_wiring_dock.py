@@ -98,11 +98,11 @@ def test_music_dock_wiring():
         in html[html.index("#toast {"):]
     # 层动画期的重影对策罩住三件套 (透明船坞不罩, 罩磨砂子件); 实底是
     # 磨砂等效色 (1.8.1 立的规矩: 动画前后深浅一致; 1.8.5 底色调回半透明
-    # 一档, 等效实底跟着重算; 搜索框 1.8.5 起同住船坞位, 一起罩)
+    # 一档, 等效实底跟着重算; 1.8.17 搜索框搬页顶, 不再同住船坞位)
     assert "body.pane-anim #mini-player," in html
     assert "body.pane-anim #dock-menu," in html
-    assert "body.pane-anim #dock-search," in html
-    assert "body.pane-anim .search-box {" in html
+    assert "body.pane-anim #dock-search {" in html
+    assert "body.pane-anim .search-box" not in html
     assert "background: rgb(31,31,32);" in html[
         html.index("body.pane-anim #mini-player"):html.index(".push-pane {")]
 
@@ -139,11 +139,14 @@ def test_music_top_fallback_removed():
     assert "147px" not in html
     # 脚本清单随行: 模块全带版本参数 (1.8.1: +recent-pane; 1.8.3:
     # +search-pages; 1.8.5: +bubble-swipe; 1.8.6: +downloads-select,
-    # push-panes 拆出 pane-swipe; 1.8.14: -viewport-heal —— 按住验方退役)
+    # push-panes 拆出 pane-swipe; 1.8.14: -viewport-heal —— 按住验方
+    # 退役; 1.8.17: -cellular-usage 蜂窝流量撤了, +playlist-drag 播放
+    # 列表拖拽换序)
     scripts = re.findall(r'<script src="([^"]+)"', html)
     assert len(scripts) == 47 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
+    assert "js/music-playlist-drag.js?v=" in html   # 1.8.17 拖拽换序
     webapp_dir = Path(__file__).parent.parent / "app" / "music" / "webapp"
     webapp = "".join(path.read_text(encoding="utf-8")
                      for path in sorted(webapp_dir.glob("*.py")))

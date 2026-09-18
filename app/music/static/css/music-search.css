@@ -1,17 +1,14 @@
-/* music-search — My Music 搜索页布局 (1.8.3 重排 + 1.8.5 顶替船坞): 输入框
-   住在页底 (1.8.5 搜索层到顶时三件套让位, 搜索框顶上, 用户点名), 有查询时
-   结果分四子页左右滑切换。拆自 music-views.css 的搜索节。
-   1.8.15 键盘病换血: 页底一条从「fixed 钉死屏底」改成「住进页壳滚动流里
-   sticky 钉底」—— my-money 记账弹层同款 (那边输入框住 overflow-y:auto
-   的弹层里, 同机同系统实测键盘来回底部无恙)。iOS 键盘让位专滚焦点元素
-   的最近滚动祖先: 弹层里滚弹层, 文档纹丝不动; 原先 fixed 件四周没得滚,
-   让位只好硬滚锁死的文档, 收键盘那笔坏账 (底部黑带, 五轮回传实锤) 正是
-   从这一滚记下的。页壳自己变滚动器后让位的滚落在页壳里; 布局被键盘缩矮
-   时 sticky 的页底条自动贴在可视底 (键盘上沿), 键盘高度不用 JS 量。 */
+/* music-search — My Music 搜索页布局。1.8.17 换思路 (用户点名「键盘弹出时
+   搜索框在屏幕最上方, 不要进入模糊区域; 回车后搜索内容变成页面标题」):
+   搜索框从页底船坞位撤出 —— 编辑态钉在屏幕最上 (自家 padding 顶开系统
+   磨砂带, 输入框不进模糊区域; 键盘再高也盖不住顶端), 回车落定后查询词
+   升作页标题「搜索：xxx」, 点标题回来改; 船坞三件套恢复常驻 (1.8.5 的
+   让位开关 body.search-top 撤了)。有查询时结果分四子页左右滑切换。
+   页壳滚动器 + #search-body 撑 --kb-full (1.8.15) 与文档解锁 (1.8.16)
+   原样保留 —— 键盘让位的滚落在页壳里, 黑带那一页翻过去了, 这两块别再动。 */
 /* ---------- 页壳: 搜索层自己的滚动器 (my-money 弹层同款) ---------- */
-/* 抵掉 .pane-scroll 的上/左右衬: 安全区衬进各页内部, 滚动时内容从系统
-   磨砂带底下扫过去; 底衬清零 (层标记 data-view=search): 页底条住进流里,
-   船坞让位那截不再需要 */
+/* 抵掉 .pane-scroll 的上/左右衬: 安全区衬进页顶一条里; 底衬清零 (层标记
+   data-view=search): 结果的尾衬由各滚动页自己带 (铺到船坞三件套上头) */
 .push-pane[data-view="search"] .pane-scroll { padding-bottom: 0; }
 .search-shell {
   display: flex; flex-direction: column;
@@ -26,7 +23,9 @@
 #search-body {
   flex: 1; min-height: var(--kb-full, 0);
   overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
+  /* 尾衬铺到船坞三件套上头 (三件套 1.8.17 回岗); 页首不衬安全区 ——
+     页顶一条已经站在那儿了 */
+  padding: 8px 16px calc(var(--dock-clear) + 12px);
 }
 /* 有查询: 变身横向 snap 容器, 竖滚下放进各页 (touch-action 是链式约束,
    .push-pane 已放行 pan-x, 这里才滑得动; 起手在页里的横拖归切页,
@@ -40,26 +39,38 @@
 .search-page {
   flex: 0 0 100%; min-width: 0; height: 100%;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
-  /* 页尾呼吸缝: 页签/搜索框都在流里的页底条上 (1.8.15 起不叠在页内容上) */
-  padding: calc(env(safe-area-inset-top) + 14px) 16px 12px;
+  padding: 0 16px calc(var(--dock-clear) + 12px);
   scroll-snap-align: start;
   touch-action: pan-x pan-y;
 }
 
-/* ---------- 页底一条: 页签指示器 (有查询才出现) + 搜索框 ---------- */
-/* 1.8.15 sticky 钉底: 页壳滚动流里的最后一件, 平时贴在页壳可视底 (= 屏底);
-   键盘把布局缩矮时自动贴到键盘上沿 (env 安全区随键盘归零), 页壳里滚起来
-   时钉在可视底不走 —— 让位怎么滚, 输入框都在明处 */
-.search-foot {
-  position: sticky; bottom: calc(4px + env(safe-area-inset-bottom));
-  z-index: 2; pointer-events: none;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  padding-left: max(8px, env(safe-area-inset-left));
-  padding-right: max(8px, env(safe-area-inset-right));
+/* ---------- 页顶一条: sticky 钉页壳顶 (= 屏幕顶) ----------
+   编辑态放搜索框, 落定后放查询词标题; 页签 (有查询才出现) 垫在下面。
+   钉住的是页壳滚动流里的一行, 键盘让位滚页壳时它纹丝不动 —— 输入框
+   永远在明处 (用户点名); 结果从框底下扫过去, 与全应用的磨砂层次一个
+   语言。 */
+.search-head {
+  position: sticky; top: 0; z-index: 2; pointer-events: none;
+  display: flex; flex-direction: column; gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 0;
 }
-.search-tabs { display: none; justify-content: center; gap: 6px;
-               pointer-events: auto; }
-#search-body.paged + .search-foot .search-tabs { display: flex; }
+/* 编辑/落定两态互斥 (JS 按焦点切换 .editing): 默认落定态 (标题),
+   船坞键点进来 focus 一到就翻编辑态 */
+.search-shell:not(.editing) .search-box { display: none; }
+.search-shell.editing .search-title { display: none; }
+/* 查询词标题: 二级页大标题 (.pane-title, music-views.css) 同款字号字重,
+   但常驻页顶不随内容滚走; 点了回来改 (选中原词, 直接打字即替换) */
+.search-title {
+  pointer-events: auto; text-align: left; color: var(--ink-1);
+  font-size: 26px; font-weight: 700; letter-spacing: -.5px;
+  padding: 8px 0 0; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.search-tabs {
+  display: none; justify-content: center; gap: 6px;
+  pointer-events: auto; padding-bottom: 10px;
+}
+.search-shell.paged .search-tabs { display: flex; }
 .search-tabs button {
   display: flex; align-items: baseline; gap: 4px;
   font-size: 13px; font-weight: 600; color: var(--ink-3);

@@ -2,7 +2,8 @@
 // 拆自 share.html 的内联 <script> (结构化重构: 代码逐字节未动, 按 share.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, audio, boot, fmtTime, openFullPlayer, playQueue, queue, queuePos,
-          seeking: writable, syncLyricHighlight, togglePlay, updateIcons */
+          seeking: writable, syncLyricHighlight, toggleLyricsView, togglePlay,
+          updateIcons */
 
 // ------------------------------------------------------------ 音频事件
 
@@ -13,6 +14,7 @@ $("#hero-play").addEventListener("click", () => {
   openFullPlayer();
 });
 $("#p-toggle").addEventListener("click", togglePlay);
+$("#fp-meta-lyrics").addEventListener("click", toggleLyricsView);   // 1.8.17 歌词键 (用户点名「用歌词按钮切换」)
 
 $("#share-list").addEventListener("click", (event) => {
   const row = event.target.closest(".row");
