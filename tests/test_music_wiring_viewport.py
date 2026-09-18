@@ -34,20 +34,17 @@ def test_music_187_keyboard_scroll_repair():
 
 
 def test_music_189_viewport_freeze_repair():
-    """1.8.9 起「键盘没收起就右划关掉搜索, 底部一条黑带」的诊治线;
-    1.8.10 埋的回传在手机上实锤了病根, 1.8.11 按数据治:
-    iOS 18 独立模式键盘弹起时 innerHeight 跟着缩 (812→415), 收起后冻在
-    771 (差的 41 正是黑带) 一分多钟不回来 —— WebKit 上游老病 (cordova
-    #1575 同族), scrollTo/探针 focus→blur/换 100% 高度链都是社区验过没用
-    的路 (1.8.10 的定时器探针在回传里零 resize, 印证)。现三层对策:
-    ① 右划起手 (横向坐实) 就摘焦点, 键盘从拖动第一下就开始收;
-    ② 早治: focusout 后 140/450ms 就对满高元素做 display 翻面夹同步
-       reflow (cederhook/dev.to 验方), 磨砂罩遮闪帧, 黑带来不及露头;
-    ③ 冻矮 0.7s 实锤 (闩住只喊一次) → 修复阶梯 (翻面→身体翻面→[手势]
-       键盘往返→meta 踢), 体检窗挪出刘海地带且整窗可点。误诊修正:
-       判据看焦点在不在输入框 (1.8.10 拿 vv 与 inner 互比恒真, 键盘还
-       开着就喊病发, 还抢用户焦点)。流水全程回传
-       data/viewport-doctor.jsonl (见 test_music_viewport_log.py)。"""
+    """1.8.9 起「键盘没收起就右划关掉搜索, 底部一条黑带」的诊治线。
+    1.8.10 埋的回传 + 1.8.11 一整轮实测把话说死了: iOS 18 独立模式键盘
+    收起那一下, WebKit 把还原高度记坏 (812→771, 差的 41 就是黑带), 之后
+    页面里什么都掰不动 —— 翻面/meta 踢十一连发原地不动, 连真实开合键盘
+    三轮也只回落到 771 (社区验方在这台机器上无效); 而开局是干净的 812:
+    换新文档就复位。1.8.12 对策: ① 右划起手 (横向坐实) 就摘焦点, 键盘
+    从拖动第一下就开始收; ② 冻矮 0.7s 实锤 (闩住只喊一次) → 体检窗亮
+    「深度修复 · 刷新复位」(播放现场本来有 5 秒一存的档, 回来原曲原秒);
+    ③ 开局/深修归来都报数回传, 灵不灵日志有账。误诊修正 (1.8.11): 判据
+    看焦点在不在输入框, 不拿 vv 与 inner 互比 (iOS 18 独立模式里恒相等)。
+    流水全程回传 data/viewport-doctor.jsonl (见 test_music_viewport_log.py)。"""
     html = music_page_shell()
     panes = (MUSIC_STATIC / "js" / "music-push-panes.js").read_text(
         encoding="utf-8")
@@ -69,9 +66,9 @@ def test_music_189_viewport_freeze_repair():
     assert "ViewportDoctor.settled()" in panes
     assert "Date.now() - start > 1200" in panes   # 键盘赖着: 最多再等 1.2s
     # 装载顺序: HUD 先载 (医生 wire 时在场), 再治疗手法, 再医生
-    assert ('music-viewport-hud.js?v=2' in html
-            and 'music-viewport-heal.js?v=1' in html
-            and 'music-viewport-doctor.js?v=2' in html)
+    assert ('music-viewport-hud.js?v=3' in html
+            and 'music-viewport-heal.js?v=2' in html
+            and 'music-viewport-doctor.js?v=3' in html)
     # 只医独立模式 iPhone: 浏览器 Safari 工具栏自己收放 (满高基准立不住),
     # 安卓 interactive-widget 布局自己缩 (是正常不是病)
     assert 'window.matchMedia("(display-mode: standalone)").matches' in doctor
@@ -81,54 +78,41 @@ def test_music_189_viewport_freeze_repair():
     assert 'matchMedia("(orientation: landscape)").matches' in doctor
     assert "return window.innerHeight >= full - 12;" in doctor  # 收稳 = 回满
     # 键盘开着的判据 (1.8.11 修正): 焦点在输入框 —— iOS 18 独立模式里
-    # vv 与 inner 永远相等, 1.8.10 拿它们互比是空转 (误诊还抢了用户焦点)
+    # vv 与 inner 永远相等, 互比是空转 (1.8.10 误诊过还抢了用户焦点)
     assert 'el.tagName === "INPUT" || el.tagName === "TEXTAREA"' in doctor
     # 冻矮判定: 比满高矮 12px 以上 + 值定住 0.7s 才实锤; 闩住只喊一次
-    # (1.8.10 心跳每 1.5s 重复喊了一分多钟, 白刷回传发件箱)
     assert "full - window.innerHeight > 12" in doctor
     assert "}, 700);" in doctor
     assert "declared = true;" in doctor
-    # 早治 (验方的时机): 收键盘动画里就翻面, 黑带来不及露头; 干净收起
-    # 回满高 sick() 拦住罩子都不亮; 探针自己的收起不掺和 (那是往返在干活)
-    assert 'event.target.id !== "kb-repair"' in doctor
-    assert 'ViewportHeal.flip(document.getElementById("main"), "收尾");' in doctor
-    assert "}, 140);" in doctor
-    # 翻面手法 (heal 模块, 验方原样): display none→'' 夹同步 reflow,
-    # 滚位存还, 磨砂罩先罩严 (淡入 .22s) 再动手、缓缓掀开
-    assert "el.style.display = \"none\";" in heal
-    assert "void el.offsetHeight;" in heal
-    assert "el.style.display = keep;" in heal
-    assert "#kb-veil{" in heal
-    assert "backdrop-filter:blur(26px)" in heal
-    # 修复阶梯 (间隔够日志看清每一步成效): 自动档上限 2 次, 手势档 3 次,
-    # 点体检窗 = force 不计次只防连击
-    assert "gRepairs >= 3 : aRepairs >= 2" in doctor
-    assert "ViewportHeal.flip(document.getElementById(\"main\"), tag);" in doctor
-    assert "ViewportHeal.flip(document.body, `${tag}②`);" in doctor
-    assert "ViewportHeal.roundtrip(probe, `${tag}③`);" in doctor
-    assert "ViewportHeal.metaKick(`${tag}④`);" in doctor
-    # 键盘往返: 手势上下文才唤得动键盘 (定时器唤不动, 1.8.10 回传实锤),
-    # 真弹起来 (矮过 100px) 稳一拍再收, 唤不动 1.5s 认了; 探针还是那个
-    # 常驻隐形输入框 (样式在 music-base.css), 只在往返里干活
-    assert ('probe.id = "kb-repair";' in doctor
-            and "document.body.appendChild(probe);" in doctor)
-    assert "start - window.innerHeight > 100" in heal
-    assert "键盘唤不动" in heal
-    # meta 踢: 视口 meta 摘 80ms 再戴回去 (压箱底的大锤)
-    assert 'meta[name="viewport"]' in heal
-    # 借用户下一次触屏补一趟手势修复 (定时器没手势未必唤得动键盘)
-    assert '"pointerdown", () => {' in doctor
-    assert "{ once: true });" in doctor
+    # 深修 (heal 模块, 唯一被两轮回传证明有效的手法): 存标记 → 当场送流水
+    # → 刷新换新文档 (播放现场有档: 5 秒一存 + pagehide, 回来原曲原秒)
+    assert ('localStorage.setItem("music.deepRepairAt"' in heal
+            and "ViewportHUD.send();" in heal
+            and "location.reload();" in heal)
+    # 医生调度: 实锤只亮窗 (深修按钮在窗上, 刷不刷新用户点头) —— 不自动
+    # 五连招了 (翻面/唤键盘/meta 踢全在 1.8.11 回传里证明无效, 撤干净)
+    assert "ViewportHUD.show();" in doctor
+    assert "ViewportHeal.reloadDeep();" in doctor
+    for dead in ("ViewportHeal.flip", "metaKick", "roundtrip", "kb-veil",
+                 "kb-repair"):
+        assert dead not in doctor and dead not in heal, dead
+    assert "kb-repair" not in html        # 探针 (1.8.9) 连样式一起退役
+    # 开局报数; 深修归来 (15 秒内带标记) 复位成没成当场回传, 再清标记
+    assert "开局 i${window.innerHeight} 满高${full}" in doctor
+    assert ('localStorage.getItem("music.deepRepairAt"' in doctor
+            and "Date.now() - at < 15000" in doctor
+            and "深修归来" in doctor and "复位成功" in doctor
+            and 'localStorage.removeItem("music.deepRepairAt");' in doctor)
     # 体检窗 (HUD 管「说」): 挪出刘海/状态栏的模糊地带 (1.8.10 弹在
-    # top:8px 用户点不到), 整窗可点 = 立即修复, 亮着期间每秒刷数字
+    # top:8px 用户点不到); 刷新是有分量的动作, 只认按钮那一下 (别误触)
     assert '"#doctor-hud{' in hud
     assert "top:calc(env(safe-area-inset-top) + 8px)" in hud
-    assert "repair({ gesture: true, force: true })" in hud
-    assert '"#doctor-probe{' in hud
-    assert '"立即修复"' in hud
+    assert '"深度修复 · 刷新复位"' in hud
+    assert 'fix.addEventListener("click", deepRepair);' in hud
+    assert '"#doctor-hud button{' in hud
     assert "hudTick = setInterval" in hud
-    assert 'ViewportHUD.wire({ stat, repair, full: () => full });' in doctor
-    assert '"My Music 1.8.11 视口体检' in doctor
+    assert 'ViewportHUD.wire({ stat, deepRepair });' in doctor
+    assert '"My Music 1.8.12 视口体检' in doctor
     # 回传通道: 每行流水排进发件箱, 攒 3 秒一批 POST /music/api/viewport-log
     # (keepalive 兜最后一趟, 失败退回箱里), 切后台/离开页面就送
     assert 'fetch("/music/api/viewport-log"' in hud
@@ -139,6 +123,3 @@ def test_music_189_viewport_freeze_repair():
     # 快照字段与后端 ViewportEvent 对齐 (inner/vv/top/left/scrollY + 时间戳)
     assert "function snapshot(line)" in hud
     assert "inner: window.innerHeight," in hud
-    # 探针样式 (隐形输入框): 1px 见方全透明钉在视口内
-    assert "#kb-repair {" in html
-    assert "opacity: 0; pointer-events: none;" in html
