@@ -51,6 +51,14 @@ body {
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 button, a, summary { touch-action: manipulation; }
 img { display: block; }
+/* 键盘往返修视口的隐形探针 (1.8.9): JS 建的常驻输入框 (从不移除 ——
+   移除聚焦过的输入框正是视口冻矮的配方), 视口冻矮时拿它走一趟 focus→blur。
+   钉在视口内 1px 见方全透明 —— 在视口内 iOS 才不为它滚动, 透明才看不见 */
+#kb-repair {
+  position: fixed; left: 0; bottom: 1px;
+  width: 1px; height: 1px; margin: 0; padding: 0; border: 0;
+  background: transparent; opacity: 0; pointer-events: none;
+}
 
 /* ---------- 主区 ---------- */
 main {

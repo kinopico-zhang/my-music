@@ -3,7 +3,8 @@
 // 拆自 music-push-panes.js (1.8.6: 文件超 200 行按域再拆, 代码逐字节未动;
 // 手势回调时才解析, 后加载无碍)。
 "use strict";
-/* global paneMotion, pushStack, saveLastRoute, syncSearchDock, unlockRootScroll */
+/* global paneMotion, pushStack, removePaneWhenSettled, saveLastRoute,
+          syncSearchDock, unlockRootScroll */
 /* exported bindPaneSwipe */
 
 /** 右划返回: 面板任意位置起手, 横竖先分家 (竖向交还滚动); 拖过三分之一
@@ -37,6 +38,11 @@ function bindPaneSwipe(pane) {
         decided = true;
         horizontal = dx > 0 && Math.abs(dx) > Math.abs(dy);
         if (!horizontal) { cleanup(); return; }   // 竖向: 交还滚动
+        // 横向坐实这一下就把焦点摘走 (键盘从拖动第一下就开始收, 和原生
+        // 返回手势一个脾气) —— 别等松手收层才被动失焦: 1.8.9 录屏逐帧
+        // 量出, 键盘收起动画走到半路时移除聚焦过的层, 手机会把「页面该
+        // 多高」忘在半路, 底部从此一条黑带 (早收早稳, 收层那步就撞不上)
+        if (pane.contains(document.activeElement)) document.activeElement.blur();
         pane.setPointerCapture(ev.pointerId);
         pane.style.transition = "none";
       }
@@ -60,9 +66,10 @@ function bindPaneSwipe(pane) {
       paneMotion();                 // 滑出途中气泡暂撤磨砂 (重影对策)
       pane.classList.remove("open");              // 从当前位置滑出
       pushStack.pop();
-      // 焦点在本层 (如搜索输入框): 摘走再滑出, 键盘跟手收下 (同 closePushStack)
+      // 焦点在本层 (如搜索输入框): 摘走再滑出, 键盘跟手收下 (同 closePushStack;
+      // 起手那一处先摘过的话这里就是空跑)
       if (pane.contains(document.activeElement)) document.activeElement.blur();
-      setTimeout(() => pane.remove(), 420);
+      removePaneWhenSettled(pane);   // 键盘收稳才移除 DOM (1.8.9, 见定义处)
       if (!pushStack.length) unlockRootScroll();
       syncSearchDock();             // 手势收层也算换顶层 (1.8.5)
       saveLastRoute();              // 手势收层也记停在哪页 (开局回跳)

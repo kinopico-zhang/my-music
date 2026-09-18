@@ -6,8 +6,8 @@
           renderArtistView, renderArtistsPane, renderChangelogView, renderDownloadsPane,
           renderHomeView, renderPlaylistsPane, renderPlaylistView, renderRecentPane,
           renderSearchView, renderSettingsView, renderStatsView, saveLastRoute */
-/* exported closePushStack, paneMotion, pushPaneTarget, renderRootView, routePushed,
-            routeRoot, syncSearchDock, unlockRootScroll */
+/* exported closePushStack, paneMotion, pushPaneTarget, removePaneWhenSettled,
+            renderRootView, routePushed, routeRoot, syncSearchDock, unlockRootScroll */
 
 // ------------------------------------------------------------ 二级页推入层
 // 专辑/艺人/播放列表走 iOS 设置式二级页: 从右滑入盖住一级, 右划/返回键滑出。
@@ -106,16 +106,38 @@ function openPushPane(view, id) {
   return pane.querySelector(".pane-scroll");
 }
 
+/** 收走的层等键盘收稳再移除 DOM (1.8.9): 键盘收起动画走到半路时移除
+    聚焦过的元素, iOS 偶尔把布局视口整个冻在没收满的矮个上 —— 顶部
+    纹丝不动 (不是滚位, scrollTo 够不着), fixed 船坞和 100dvh 一起垫高,
+    屏底露出一条纯黑 (录屏逐帧量过: 船坞上移 41pt)。420ms 滑出动画走完
+    后加一步: 等视口高度回到 innerHeight 附近 (键盘彻底收走) 才动手;
+    键盘赖着不收最多再等 1.2s, 别让层永远挂着。安卓 interactive-widget
+    键盘自己缩布局, innerHeight 跟着缩, 头一步就放行, 行为照旧。 */
+function removePaneWhenSettled(pane) {
+  const vv = window.visualViewport;
+  const settled = () => !vv || vv.height >= window.innerHeight - 12;
+  setTimeout(() => {
+    if (settled()) { pane.remove(); return; }
+    const start = Date.now();
+    const poll = setInterval(() => {
+      if (settled() || Date.now() - start > 1200) {
+        clearInterval(poll);
+        pane.remove();
+      }
+    }, 120);
+  }, 420);
+}
+
 /** 滑出若干层 (栈里保留 keep 层以下); 动画完移除 DOM。 */
 function closePushStack(keep = 0) {
   paneMotion();                     // 滑出途中气泡暂撤磨砂 (重影对策)
   while (pushStack.length > keep) {
     const item = pushStack.pop();
     // 焦点还落在收走的层里 (如搜索输入框): 先摘走 —— 键盘确定性收下,
-    // --kb-h 随 resize 归零, 别等 420ms 后元素被移除才被动失焦 (1.8.6)
+    // --kb-h 随 resize 归零, 别等元素被移除才被动失焦 (1.8.6)
     if (item.pane.contains(document.activeElement)) document.activeElement.blur();
     item.pane.classList.remove("open");
-    setTimeout(() => item.pane.remove(), 420);
+    removePaneWhenSettled(item.pane);   // 键盘收稳才移除 (1.8.9, 见定义处)
   }
   if (!pushStack.length) {
     unlockRootScroll();
