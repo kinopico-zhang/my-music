@@ -7,6 +7,26 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.11", date="2026-09-18", items=[
+        ChangelogItem(kind="修复", text="底部黑带这回按真凭实据治了: 你手机"
+                                       "回传的体检数据实锤了病根 —— 键盘弹"
+                                       "起时 iPhone 连「页面该有多高」都跟着"
+                                       "缩, 收起后冻在矮一截的值上死不回来"
+                                       " (差的那截正好就是黑带), 这是苹果"
+                                       "WebKit 的老病; 偏移和滚位两味早就治"
+                                       "好了, 就剩这一味。验方是「翻面」: 收"
+                                       "起键盘后对满高的主容器显示关一下再"
+                                       "开、中间夹一次强制重排, 逼系统把高度"
+                                       "重算回来, 外面罩一层磨砂遮住闪帧 ——"
+                                       "自动做, 黑带来不及露头"),
+        ChangelogItem(kind="修复", text="上一版的体检医生会误诊 (键盘还开着"
+                                       "就当病发, 反而把你正在用的键盘收了)"
+                                       " —— 判据改成看焦点还在不在输入框, 不"
+                                       "会再骚扰打字; 体检窗也从顶部够不着的"
+                                       "模糊地带挪了下来, 现在点窗上任意一处"
+                                       "就是「立即修复」, 修复每一步的成效都"
+                                       "会记进服务器日志"),
+    ]),
     ChangelogVersion(version="1.8.10", date="2026-09-18", items=[
         ChangelogItem(kind="修复", text="底部黑带那一味上一版没断根: 键盘收起"
                                        "时连「页面该有多高」都在跟着走一小段"
