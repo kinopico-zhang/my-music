@@ -18,10 +18,18 @@ let swipeOpenWrap = null;            // 开着的行 (null = 全收)
 let swipeDrag = null;                // 拖拽进行中 {wrap,row,startX,startY,base,horizontal,offset,moved}
 let swipeSuppressClick = false;      // 松手前横移过: 尾随的 click 吞掉
 
+/** 移行 + 顺手挂 revealed (1.8.17 用户点名「左滑出删除键时, 旁边的 >
+    去掉」): x=0 归位撤标记, x<0 (露出删除钮) 挂上 —— CSS 按它藏行尾箭头
+    (visibility 不回流, 滑动全程行高纹丝不动)。 */
+function setSwipeTransform(row, x) {
+  row.style.transform = x ? `translateX(${x}px)` : "";
+  row.classList.toggle("revealed", x < 0);
+}
+
 function closeSwipeRow() {
   if (!swipeOpenWrap) return;
   if (swipeOpenWrap.isConnected && swipeOpenWrap.firstElementChild) {
-    swipeOpenWrap.firstElementChild.style.transform = "";
+    setSwipeTransform(swipeOpenWrap.firstElementChild, 0);
   }
   swipeOpenWrap = null;
 }
@@ -35,8 +43,7 @@ function bindSwipeDelete(container, onDelete) {
     swipeSuppressClick = false;                  // 新按下 = 上一手势翻篇
     if (swipeDrag) {                             // 出界松手没收到 up: 兜底归位
       swipeDrag.row.classList.remove("swiping");
-      swipeDrag.row.style.transform =
-        swipeDrag.base ? `translateX(${swipeDrag.base}px)` : "";
+      setSwipeTransform(swipeDrag.row, swipeDrag.base);
       swipeDrag = null;
     }
     const wrap = event.target.closest(".swipe-wrap");
@@ -66,8 +73,7 @@ function bindSwipeDelete(container, onDelete) {
     // 左移露钮 (可多拖 24px 橡皮筋), 右移最多推回 0
     swipeDrag.offset = Math.min(0, Math.max(-SWIPE_REVEAL - 24,
                                             swipeDrag.base + dx));
-    swipeDrag.row.style.transform =
-      swipeDrag.offset ? `translateX(${swipeDrag.offset}px)` : "";
+    setSwipeTransform(swipeDrag.row, swipeDrag.offset);
   });
   const settle = (cancelled) => {
     const drag = swipeDrag;
@@ -75,16 +81,16 @@ function bindSwipeDelete(container, onDelete) {
     if (!drag || !drag.horizontal) return;
     drag.row.classList.remove("swiping");       // 回位/定住交给 CSS 过渡
     if (cancelled) {                              // 浏览器接管手势 (滚动等)
-      drag.row.style.transform = drag.base ? `translateX(${drag.base}px)` : "";
+      setSwipeTransform(drag.row, drag.base);
       if (drag.base) swipeOpenWrap = drag.wrap;
       return;
     }
     swipeSuppressClick = drag.moved;              // 拖过的松手 click 不开播
     if (drag.offset < -SWIPE_REVEAL / 2) {
-      drag.row.style.transform = `translateX(${-SWIPE_REVEAL}px)`;
+      setSwipeTransform(drag.row, -SWIPE_REVEAL);
       swipeOpenWrap = drag.wrap;
     } else {
-      drag.row.style.transform = "";
+      setSwipeTransform(drag.row, 0);
       if (swipeOpenWrap === drag.wrap) swipeOpenWrap = null;
     }
   };

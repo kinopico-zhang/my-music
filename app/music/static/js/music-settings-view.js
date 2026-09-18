@@ -1,32 +1,60 @@
-// music-settings-view — My Music 设置视图: 曲库路径/歌词源/蜂窝账单/重新扫描等。
-// 拆自 music.js (结构化重构), 1.8.0 起住推入层 (菜单「设置」进来), 渲染目标由调用方给。
+// music-settings-view — My Music 设置视图 (1.8.17 改版, 用户点名): 跟搜索页
+// 同款左右滑子页 —— 通用 (账号/曲库/重扫) / 歌词 (联网补词) / 统计 / 更新;
+// 蜂窝流量月账整个撤掉 (前端采集与后端接口一起拆了)。拆自 music.js
+// (结构化重构), 住推入层 (菜单「设置」进来), 渲染目标由调用方给。
 "use strict";
-/* global $, checkScanStatus, clearLastRoute, escapeHTML, fetchJSON, formatBytes,
-          navigate, toast, userRescanPending: writable */
+/* global checkScanStatus, clearLastRoute, escapeHTML, fetchJSON,
+          renderChangelogView, renderStatsView, toast, userRescanPending: writable */
 /* exported renderSettingsView, userRescanPending */
 
 // ------------------------------------------------------------ 设置页
-// 账号 (谁登录/退出) + 曲库路径 / 联网补歌词开关与地址 / 蜂窝流量月账 +
-// 统计和更新日志入口 + 重新扫描曲库 —— 1.7.0 起品牌菜单的职能全在这页,
-// 1.8.0 起从页签改由菜单键进。谁登录都能看;
-// 改 (路径/开关/地址/保存) 只有管理员 —— 普通账号进来是只读的。
+// 统计/更新子页复用各自的视图函数 (PANE_VIEWS 路由不变, 上次停在哪页
+// 开局照旧回跳); 表单 (路径/开关/地址) 只有管理员能改 —— 普通账号只读。
 // 曲库路径改了服务器会立刻重新扫描整个曲库。
+// 元素查找全收在本层 target 里: 旧层滑出还挂着 DOM 的 420ms 里 $() 全局
+// 找会抓错层 (搜索页 1.8.6 的教训); 统计子页同场可能还叠着独立的统计层
+// (#stats-body 撞名), 更是非收不可。
 
 async function renderSettingsView(target) {
-  target.innerHTML = '<div class="pane-title">设置</div><div id="settings-body">'
-    + '<p class="stat-empty">加载中…</p></div>';
-  const body = $("#settings-body");
+  target.innerHTML = `
+    <div class="settings-shell">
+      <div class="pane-title">设置</div>
+      <div class="set-tabs" id="set-tabs">
+        <button type="button" class="on" data-set-tab="general">通用</button>
+        <button type="button" data-set-tab="lyrics">歌词</button>
+        <button type="button" data-set-tab="stats">统计</button>
+        <button type="button" data-set-tab="changelog">更新</button>
+      </div>
+      <div id="settings-body">
+        <div class="set-page" data-set-page="general"><p class="stat-empty">加载中…</p></div>
+        <div class="set-page" data-set-page="lyrics"><p class="stat-empty">加载中…</p></div>
+        <div class="set-page" data-set-page="stats"></div>
+        <div class="set-page" data-set-page="changelog"></div>
+      </div>
+    </div>`;
+  const page = (name) => target.querySelector(`[data-set-page="${name}"]`);
+  bindSetTabs(target);
+  // 统计/更新各自拉各自的数据 (拿不到也只塌自己那一页)
+  renderStatsView(page("stats"));
+  renderChangelogView(page("changelog"));
   let settings;
   try {
     settings = await fetchJSON("/music/api/settings");
   } catch (error) {
-    body.innerHTML = `<p class="stat-empty">设置拿不到: ${escapeHTML(error.message)}</p>`;
+    const text = `<p class="stat-empty">设置拿不到: ${escapeHTML(error.message)}</p>`;
+    page("general").innerHTML = text;
+    page("lyrics").innerHTML = text;
     return;
   }
+  if (!target.isConnected) return;               // 等数据的空档层已收走
   const me = await fetchJSON("/api/me").catch(() => null);
+  if (!target.isConnected) return;
   const editable = !!(me && me.is_admin);        // 管理员才出得起保存钮
   const lock = editable ? "" : " disabled";
-  body.innerHTML = `
+  const saveOrNote = editable
+    ? '<div class="set-save-row"><button class="action primary set-save">保存设置</button></div>'
+    : '<p class="settings-note">仅管理员可修改设置, 普通账号只读。</p>';
+  page("general").innerHTML = `
     <div class="settings-block">
       <div class="settings-title">账号</div>
       ${me && me.name ? `<div class="settings-user"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM5.5 20a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${escapeHTML(me.name)}</span>${me.is_admin ? "<em>管理员</em>" : ""}</div>` : ""}
@@ -44,6 +72,8 @@ async function renderSettingsView(target) {
       <button class="settings-row" id="set-rescan"
               title="增量重扫曲库 (没变的文件只 stat 不读标签)">重新扫描曲库</button>
     </div>
+    ${saveOrNote}`;
+  page("lyrics").innerHTML = `
     <div class="settings-block">
       <div class="settings-title">联网补歌词</div>
       <div class="settings-field switch-row">
@@ -60,27 +90,8 @@ async function renderSettingsView(target) {
         <small>LRCLIB 兼容接口; 求到的歌词会写回曲库, 离线也能看</small>
       </div>
     </div>
-    ${editable
-      ? `<div class="set-save-row"><button class="action primary" id="set-save">保存设置</button></div>`
-      : '<p class="settings-note">仅管理员可修改设置, 普通账号只读。</p>'}
-    <div class="settings-block">
-      <div class="settings-title">蜂窝流量 · 听歌消耗</div>
-      ${settings.cellular_months.length
-        ? settings.cellular_months.map(monthRowHTML).join("")
-        : '<p class="stat-empty">还没有记录</p>'}
-      <small class="settings-note">能认出蜂窝网络的浏览器 (如安卓 Chrome) 会自动按月上报;
-        iPhone 的 Safari 认不出网络类型, 那部分记不上。</small>
-    </div>
-    <div class="settings-block">
-      <div class="settings-title">更多</div>
-      <button class="settings-row" data-set-nav="stats">统计</button>
-      <button class="settings-row" data-set-nav="changelog">更新日志</button>
-    </div>`;
-  const toggle = $("#set-lyrics-on");
-  for (const row of body.querySelectorAll("[data-set-nav]")) {
-    row.addEventListener("click", () => navigate(row.dataset.setNav));
-  }
-  $("#set-rescan").addEventListener("click", async () => {
+    ${saveOrNote}`;
+  target.querySelector("#set-rescan").addEventListener("click", async () => {
     try {
       await fetchJSON("/music/api/rescan", { method: "POST" });
       userRescanPending = true;      // 这轮收尾要出提示 (后台自动扫的不出)
@@ -90,7 +101,7 @@ async function renderSettingsView(target) {
       toast(error.message);
     }
   });
-  $("#set-logout").addEventListener("click", async () => {
+  target.querySelector("#set-logout").addEventListener("click", async () => {
     clearLastRoute();         // 上次停的页清档: 下个人别落进我的页面 (1.8.3)
     if (window.caches) {
       // 离线列表数据档也带走 (1.8.4): 换账号不能看着上个人的播放列表
@@ -100,23 +111,25 @@ async function renderSettingsView(target) {
     catch (_error) { /* 清 cookie 失败也照样走 */ }
     location.href = "/music/login";
   });
-  if (editable) {
-    toggle.addEventListener("click", () => {
-      const on = toggle.getAttribute("aria-checked") !== "true";
-      toggle.setAttribute("aria-checked", String(on));
-      toggle.classList.toggle("on", on);
-    });
-    $("#set-save").addEventListener("click", async () => {
-      const button = $("#set-save");
+  if (!editable) return;
+  const toggle = target.querySelector("#set-lyrics-on");
+  toggle.addEventListener("click", () => {
+    const on = toggle.getAttribute("aria-checked") !== "true";
+    toggle.setAttribute("aria-checked", String(on));
+    toggle.classList.toggle("on", on);
+  });
+  // 通用/歌词两页各一枚保存钮, 按哪枚都存整份 (两页的输入框同场都在)
+  for (const button of target.querySelectorAll(".set-save")) {
+    button.addEventListener("click", async () => {
       button.disabled = true;
       try {
         await fetchJSON("/music/api/settings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            music_directory: $("#set-dir").value.trim(),
+            music_directory: target.querySelector("#set-dir").value.trim(),
             lyrics_api_enabled: toggle.getAttribute("aria-checked") === "true",
-            lyrics_api_base: $("#set-lyrics-base").value.trim(),
+            lyrics_api_base: target.querySelector("#set-lyrics-base").value.trim(),
           }),
         });
         toast("设置已保存");
@@ -130,13 +143,25 @@ async function renderSettingsView(target) {
   }
 }
 
-/** 流量月账一行: "2026年9月" + 友好字节数。 */
-function monthRowHTML(month) {
-  const [year, monthNumber] = month.month.split("-");
-  return `
-    <div class="month-row">
-      <span>${year}年${Number(monthNumber)}月</span>
-      <b>${formatBytes(month.bytes)}</b>
-    </div>`;
+/** 页签 ↔ 滑动互切 (搜索页 bindSearchTabs 同款): 点页签滑过去,
+    手滑到哪页点亮哪页。 */
+function bindSetTabs(target) {
+  const body = target.querySelector("#settings-body");
+  const tabs = target.querySelector("#set-tabs");
+  const highlight = (index) => {
+    tabs.querySelector(".on").classList.remove("on");
+    if (tabs.children[index]) tabs.children[index].classList.add("on");
+  };
+  tabs.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-set-tab]");
+    if (!button) return;
+    const index = [...tabs.children].indexOf(button);
+    highlight(index);
+    body.scrollTo({ left: index * body.clientWidth, behavior: "smooth" });
+  });
+  body.addEventListener("scroll", () => {
+    const index = Math.round(body.scrollLeft / (body.clientWidth || 1));
+    if (!tabs.children[index] || tabs.children[index].classList.contains("on")) return;
+    highlight(index);
+  }, { passive: true });
 }
-

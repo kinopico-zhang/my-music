@@ -1,5 +1,7 @@
 // music-playlist-picker — My Music 添加到播放列表选择单: 弹层/列表渲染/加歌去重。
 // 拆自 music.js (结构化重构: 代码逐字节未动, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
+// 1.8.17: 顶部「添加到播放列表 完成」顶栏撤掉 (关闭只剩点遮罩); 列表按最后
+// 编辑时间排, 最近编辑的在最前。
 "use strict";
 /* global $, describeDuration, escapeHTML, fetchJSON, listPlaceholderHTML,
           pickerTrack: writable, playlistCoverURL, toast */
@@ -23,8 +25,9 @@ function openPlaylistPicker(track) {
   renderPlaylistPicker();
 }
 
-/** 列表清单 (纯加歌的选择单, 列表删除在各自的详情页; 新建的排前面);
- * 空态给新建引导。 */
+/** 列表清单 (纯加歌的选择单, 列表删除在各自的详情页);
+ * 按最后编辑时间排, 最近动过的在最前 (1.8.17 用户点名 —— 常用的顺手
+ * 就点到了); 空态给新建引导。 */
 async function renderPlaylistPicker() {
   const list = $("#picker-list");
   list.innerHTML = listPlaceholderHTML("加载中…");
@@ -35,6 +38,8 @@ async function renderPlaylistPicker() {
     list.innerHTML = listPlaceholderHTML(`列表没拉到: ${error.message}`);
     return;
   }
+  // 最近编辑的在前; 老列表没记过编辑时刻的 (0) 按原顺序垫底 (sort 是稳定的)
+  playlists.sort((a, b) => b.updated_at - a.updated_at);
   if (!playlists.length) {
     list.innerHTML = listPlaceholderHTML("还没有播放列表; 起个名字新建一个");
     return;
@@ -95,6 +100,5 @@ $("#picker-create").addEventListener("click", async () => {
   }
 });
 
-$("#picker-close").addEventListener("click", closePlaylistPicker);
 $("#picker-mask").addEventListener("click", closePlaylistPicker);
 

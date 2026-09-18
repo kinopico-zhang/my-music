@@ -4,7 +4,7 @@
 // 手势回调时才解析, 后加载无碍)。
 "use strict";
 /* global paneMotion, pushStack, removePaneWhenSettled, saveLastRoute,
-          syncSearchDock, unlockRootScroll */
+          unlockRootScroll */
 /* exported bindPaneSwipe */
 
 /** 右划返回: 面板任意位置起手, 横竖先分家 (竖向交还滚动); 拖过三分之一
@@ -17,11 +17,11 @@
 function bindPaneSwipe(pane) {
   pane.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    // 搜索结果四子页 (1.8.3) 自己是横向 snap 滚动器: 起手在页里的横拖
-    // 归切页, 不归右划返回 —— 1.8.5 松一格: 歌曲页在最左 (scrollLeft 0)
-    // 没得再往左滚, 右划归返回 (用户点名); 滚到别的页上照旧归切页
-    const searchBody = event.target.closest("#search-body.paged");
-    if (searchBody && searchBody.scrollLeft > 0) return;
+    // 横向 snap 分页容器 (搜索四子页 1.8.3 / 设置四子页 1.8.17): 起手在
+    // 页里的横拖归切页, 不归右划返回 —— 最左页 (scrollLeft 0) 没得再往
+    // 左滚, 右划归返回 (用户点名); 滚到别的页上照旧归切页
+    const pager = event.target.closest("#search-body.paged, #settings-body");
+    if (pager && pager.scrollLeft > 0) return;
     const startX = event.clientX;
     const startY = event.clientY;
     let horizontal = false;
@@ -71,7 +71,6 @@ function bindPaneSwipe(pane) {
       if (pane.contains(document.activeElement)) document.activeElement.blur();
       removePaneWhenSettled(pane);   // 键盘收稳才移除 DOM (1.8.9, 见定义处)
       if (!pushStack.length) unlockRootScroll();
-      syncSearchDock();             // 手势收层也算换顶层 (1.8.5)
       saveLastRoute();              // 手势收层也记停在哪页 (开局回跳)
     };
     const cancel = () => {

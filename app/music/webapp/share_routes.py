@@ -115,8 +115,8 @@ def music_share_stream(token: str, track_id: int, request: Request,
 @router.get("/share/{token}/artwork/{kind}/{item_id}")
 def music_share_artwork(token: str, kind: str, item_id: int,
                         library: Session = Depends(get_db)) -> Response:
-    """分享页的封面 (免登录): 曲目内嵌图 / 专辑封面 / 列表自定义封面,
-    只放行这份分享里确实有的。"""
+    """分享页的封面 (免登录): 曲目内嵌图 / 专辑封面 / 列表自定义封面 /
+    艺人海报 (1.8.17 标题行的歌手照片), 只放行这份分享里确实有的。"""
     scope = library_shares.share_scope(library, token)
     if scope is None:
         raise HTTPException(410, "链接不存在或已过期")
@@ -127,6 +127,8 @@ def music_share_artwork(token: str, kind: str, item_id: int,
     if (kind == "playlist" and scope.kind == "playlist"
             and item_id == scope.playlist_id):
         return library_media.playlist_cover_response(library, item_id)
+    if kind == "artist" and item_id in scope.artist_ids:
+        return library_media.artist_artwork_response(library, item_id)
     raise HTTPException(404, "这张图不在这份分享里")
 
 

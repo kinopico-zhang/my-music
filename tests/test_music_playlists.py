@@ -18,6 +18,7 @@ def test_playlist_create_add_delete(tmp_path):
         assert created.name == "我的日常"            # 名字收边
         assert created.is_local is True
         assert created.track_count == 0
+        assert created.updated_at > 0                # 编辑时刻从建表起就有账
         with pytest.raises(ValueError):              # 撞自己的名
             library_playlists.create_playlist(session, "我的日常")
         with pytest.raises(ValueError):              # 空名
@@ -27,6 +28,7 @@ def test_playlist_create_add_delete(tmp_path):
             session, created.playlist_id, 1)
         assert brief.track_count == 1
         assert brief.duration_seconds == pytest.approx(2.0)
+        assert brief.updated_at >= created.updated_at    # 加歌也算一次编辑
         with pytest.raises(ValueError, match="已经在列表里"):
             library_playlists.add_track_to_playlist(
                 session, created.playlist_id, 1)     # 同首不再重复加
@@ -95,6 +97,30 @@ def test_playlist_endpoints(auth):
     assert auth.delete(f"/music/api/playlists/{created['playlist_id']}"
                        "/tracks/3").status_code == 404
     assert auth.delete("/music/api/playlists/99999/tracks/1").status_code == 404
+    # 1.8.17 改名 + 整表重排 (接口层): PATCH 落名 (撞名/空名 409, 没有
+    # 404); PUT 全量顺序 (内容对不上 409 = 客户端拿着过期列表, 重拉再说)
+    renamed = auth.patch(f"/music/api/playlists/{created['playlist_id']}",
+                         json={"name": " 开车听 (2026) "})
+    assert renamed.json()["name"] == "开车听 (2026)"
+    assert renamed.json()["updated_at"] >= created["updated_at"]
+    assert auth.patch(f"/music/api/playlists/{created['playlist_id']}",
+                      json={"name": " "}).status_code == 409
+    assert auth.patch("/music/api/playlists/99999",
+                      json={"name": "没有"}).status_code == 404
+    # 曲A/无题曲 已在列 (上文加过, 无题曲没被抽走), 补上 Hello 凑三首
+    assert auth.post(f"/music/api/playlists/{created['playlist_id']}/tracks",
+                     json={"track_id": 3}).status_code == 200
+    ordered = auth.put(f"/music/api/playlists/{created['playlist_id']}/order",
+                       json={"track_ids": [5, 1, 3]})
+    assert ordered.json()["track_count"] == 3
+    assert [t["title"] for t in auth.get(
+        f"/music/api/playlists/{created['playlist_id']}").json()["tracks"]] \
+        == ["无题曲", "曲A", "Hello"]
+    stale = auth.put(f"/music/api/playlists/{created['playlist_id']}/order",
+                     json={"track_ids": [1, 3]})
+    assert stale.status_code == 409 and "列表内容对不上" in stale.json()["detail"]
+    assert auth.put("/music/api/playlists/99999/order",
+                    json={"track_ids": []}).status_code == 404
     # Plex 同步接口撤了 (路径撞详情路由, 撤后只剩 GET → 405)
     assert auth.post("/music/api/playlists/sync").status_code == 405
     # 删除: 任何列表都删得掉; 再删 404

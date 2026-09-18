@@ -1,13 +1,11 @@
-"""My Music 的设置与流量路由: 设置读写 (改是管理员专属) + 蜂窝流量月账。"""
+"""My Music 的设置路由: 设置读写 (改是管理员专属)。"""
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from ... import database
-from ...schemas import OkResponse
 from .. import library_settings, service
 from ..library_database import get_db
-from ..schemas import (CellularUsageReport, MusicSettingsState,
-                       MusicSettingsUpdate)
+from ..schemas import MusicSettingsState, MusicSettingsUpdate
 from .common import _require_admin, _require_user
 
 router = APIRouter(prefix="/api")
@@ -17,7 +15,7 @@ router = APIRouter(prefix="/api")
 def music_settings(request: Request,
                    users: Session = Depends(database.get_users_db),
                    library: Session = Depends(get_db)) -> MusicSettingsState:
-    """设置页状态: 曲库路径 / 歌词 API 现值 + 蜂窝流量月账。
+    """设置页状态: 曲库路径 / 歌词 API 现值。
 
     谁登录都能看 (普通账号只读); 改要走 POST (管理员专属)。"""
     _require_user(request, users)
@@ -39,13 +37,3 @@ def music_settings_save(body: MusicSettingsUpdate, request: Request,
     if new_directory is not None:
         service.apply_music_directory(new_directory)
     return library_settings.settings_state(library)
-
-
-@router.post("/cellular-usage", response_model=OkResponse)
-def music_cellular_usage(body: CellularUsageReport, request: Request,
-                         users: Session = Depends(database.get_users_db),
-                         library: Session = Depends(get_db)) -> OkResponse:
-    """客户端报一笔蜂窝流量 (能认出蜂窝网络的浏览器定期上报, 记进当月账)。"""
-    _require_user(request, users)
-    library_settings.record_cellular_bytes(library, body.bytes)
-    return OkResponse(ok=True)

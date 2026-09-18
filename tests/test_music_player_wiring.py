@@ -35,13 +35,25 @@ def test_music_search_page_and_lockscreen_wiring():
 
 
 def test_music_lyrics_animation_wiring():
-    """歌词滚动动画接线: 当前行放大清晰/其余模糊退后 (CSS 缓动) +
-    rAF 逐帧缓动滚动, 手指一按就让位 (JS)。"""
+    """歌词滚动动画接线: 当前行放大清晰/下一句清晰不放大/其余模糊退后
+    (CSS 缓动) + rAF 逐帧缓动滚动, 手指一按就让位 (JS)。1.8.17 放大改
+    transform: scale (字号/行宽恒定, 断行点物理上不可能再变 —— 两轮字号
+    过渡法都治不干净的跳行断根)。"""
     html = music_page_shell()
     player = music_player_js()
     assert ".lyrics-line {" in html and "filter: blur(3px)" in html   # 其余模糊
-    assert ".lyrics-line.active" in html and "font-size: 26px" in html \
+    # 放大走视觉缩放: 字号恒 21px、行宽恒 80%, 当前行 transform: scale(1.24)
+    # —— 布局盒尺寸不变, 断行点不会变 (1.8.17, 用户点名「放大别触发换行」)
+    assert ".lyrics-line.active" in html and "transform: scale(1.24);" in html \
         and "blur(0)" in html                                          # 当前行放大清晰
+    assert "font-size: 21px; font-weight: 700;" in html                # 字号从头到尾不动
+    assert "will-change: filter, transform;" in html
+    assert "transform-origin: left center;" in html    # 左缘对齐放大, 顶行不歪
+    # 清晰度分工: 下一句清晰但不放大 (马上要唱, 给个预告)
+    assert ".lyrics-line.upnext { color: rgba(255,255,255,.66); filter: blur(0); }" in html
+    assert 'classList.toggle("upnext", position === index + 1)' in player
+    lyrics_css = html[html.index(".lyrics-line {"):html.index(".lyrics-line.upnext")]
+    assert "font-size: 26px" not in lyrics_css           # 旧字号过渡法退役
     assert "transition: filter .5s" in html                            # 状态切换也缓动
     for frag in ["function scrollLyricsTo", "function lyricsScrollFrame",
                  "function cancelLyricsScroll", "lyricsScrollRaf",

@@ -40,7 +40,10 @@ async function loadLyrics() {
   container.scrollTop = 0;
   // 无时间轴的歌词没有"当前句", 谈不上距离模糊 → 整页清晰
   container.classList.toggle("static", !lyricsDocument.synced);
-  lyricsActiveIndex = -1;
+  // -2 占位 (1.8.17): 开局还没有"当前句" (真值是 -1), 若占 -1, 第一遍
+  // 高亮循环会被「句号没变」跳过 —— 首句就该亮成"下一句"态 (用户点名
+  // 「开始播放歌曲的时候, 第一行应该是清晰的」)
+  lyricsActiveIndex = -2;
   highlightActiveLyric();
 }
 
@@ -56,11 +59,9 @@ function highlightActiveLyric() {
     const container = $("#fp-lyrics");
     const lines = container.children;
     for (let position = 0; position < lines.length; position++) {
+      // 清晰度分工 (1.8.17): 当前行清晰放大, 下一句清晰不放大, 其余模糊
       lines[position].classList.toggle("active", position === index);
-      // 距离模糊: 离当前句越近越清晰 (近一两句半模糊, 更远全模糊)
-      const distance = Math.abs(position - index);
-      lines[position].classList.toggle("near-1", distance === 1);
-      lines[position].classList.toggle("near-2", distance === 2);
+      lines[position].classList.toggle("upnext", position === index + 1);
     }
     if (!lyricsFollowPaused && index >= 0 && lines[index]) {
       scrollLyricsTo(lines[index]);
@@ -70,7 +71,8 @@ function highlightActiveLyric() {
 }
 
 /** 歌词容器滚动到某行居中 —— rAF 指数缓出追目标, 丝滑滚动 (Apple Music 风):
-    目标位置每帧重算 (行高跟着"放大动画"在变, 一次算死会差半行);
+    目标位置每帧重算 (1.8.17 起放大走 transform, 布局盒不动, 重算已是
+    便宜的保险 —— 换行重铺/转屏时目标仍会变);
     Chrome 的 rAF 时间戳会回退, dt 钳制后再用。 */
 let lyricsScrollRaf = 0;            // 在跑的动画帧句柄 (0 = 没在动)
 let lyricsScrollTargetLine = null;  // 追踪中的行 (换曲重铺后作废)

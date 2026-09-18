@@ -1,7 +1,9 @@
-// music-player-chrome — My Music 播放器界面渲染: 迷你条 (含跑马灯)/全屏页文案, 播放键同步, 底部来源行 (作词/作曲)。
+// music-player-chrome — My Music 播放器界面渲染: 迷你条 (含跑马灯)/全屏页文案, 播放键同步, 底部来源行 (作词)。
 // 拆自 music-player.js (结构化重构), 1.8.0 气泡变窄: 上下曲撤走,
 // 歌名/作者太长改跑马灯来回滚 (用户点名), 不再截断省略号。
-// 1.8.2 专辑名并进艺人行 (| 分隔), 来源行只留 作词/作曲, 没有就整行收掉。
+// 1.8.2 专辑名并进艺人行 (| 分隔), 来源行只留 作词, 没有就整行收掉;
+// 1.8.17 作曲也撤了 (用户点名「播放页面下面显示作曲, 去掉」—— 分享页
+// 本来就没有署名行, 不用动)。
 "use strict";
 /* global $, ICON_PAUSE, ICON_PAUSE_BIG, ICON_PLAY, ICON_PLAY_BIG, ICON_REPEAT,
           ICON_REPEAT_ONE, PLACEHOLDER_ARTWORK,
@@ -79,10 +81,10 @@ function updateShuffleRepeatButtons() {
 }
 
 // ------------------------------------------------------------ 底部来源行
-// 封面下那行小字 (1.8.2 起只住 作词/作曲 标签, 专辑名挪去了艺人行):
+// 封面下那行小字 (1.8.2 起只住 作词 标签, 专辑名挪去了艺人行):
 // 有标签才占行, 没有整行收掉 —— 播放页纵向空间多一截 (用户点名)。
 // 标签按需现读 (库里只有三成左右的歌带), 读过的缓存住。
-const creditsCache = new Map();     // track_id → "作词 X · 作曲 Y" | ""
+const creditsCache = new Map();     // track_id → "作词 X" | ""
 let creditsSequence = 0;            // 请求序号: 切曲后旧响应不再上屏
 
 function updateSourceLine(track) {
@@ -96,7 +98,6 @@ function updateSourceLine(track) {
     .then((data) => {
       const parts = [];
       if (data.lyricist) parts.push(`作词 ${data.lyricist}`);
-      if (data.composer) parts.push(`作曲 ${data.composer}`);
       creditsCache.set(track.track_id, parts.join(" · "));
       if (token !== creditsSequence) return;        // 已经切到别的歌了
       renderSourceLine(parts.join(" · "));

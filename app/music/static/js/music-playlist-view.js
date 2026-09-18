@@ -1,12 +1,14 @@
-// music-playlist-view — My Music 播放列表详情页: 曲目管理/加歌/自定义封面上传。
-// 拆自 music.js (结构化重构: 代码逐字节未动, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
+// music-playlist-view — My Music 播放列表详情页: 曲目管理/加歌/自定义封面上传/
+// 改名 (1.8.17) + 曲目拖拽换序 (拖拽住在 music-playlist-drag)。
+// 拆自 music.js (结构化重构, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, ICON_ACTION_IMAGE, ICON_ACTION_PLAY, ICON_ACTION_SHARE, ICON_ACTION_SHUFFLE,
-          ICON_ACTION_TRASH, ICON_DOWNLOAD, bindCoverPress, bindSwipeDelete, bindTrackLists,
-          coverUploadPlaylistId: writable, describeDuration, downloadAllFromUI,
-          downloadsEnabled, escapeHTML, fetchJSON, listPlaceholderHTML, navigate,
-          playerStart, playlistCoverURL, pushPaneTarget, pushStack, renderRootView,
-          sharePlaylist, syncPlayerIndicators, toast, trackArtHTML, trackRowHTML */
+          ICON_ACTION_TRASH, ICON_DOWNLOAD, ICON_GRIP, bindCoverPress, bindPlaylistDrag,
+          bindSwipeDelete, bindTrackLists, coverUploadPlaylistId: writable,
+          describeDuration, downloadAllFromUI, downloadsEnabled, escapeHTML,
+          fetchJSON, listPlaceholderHTML, navigate, playerStart, playlistCoverURL,
+          pushPaneTarget, pushStack, renderRootView, sharePlaylist,
+          syncPlayerIndicators, toast, trackArtHTML, trackRowHTML */
 /* exported coverUploadPlaylistId, renderPlaylistView, uploadPlaylistCover */
 
 // ------------------------------------------------------------ 播放列表页
@@ -35,7 +37,7 @@ async function renderPlaylistView(playlistId, target) {
         <span class="cover-hint" aria-hidden="true">${ICON_ACTION_IMAGE}</span>
       </button>
       <div class="hero-txt">
-        <h2>${escapeHTML(playlist.name)}</h2>
+        <h2 class="pl-name" title="点按改名">${escapeHTML(playlist.name)}</h2>
         <small>${escapeHTML(describeDuration(
           playlist.duration_seconds, playlist.track_count))}</small>
       </div>
@@ -60,6 +62,7 @@ async function renderPlaylistView(playlistId, target) {
       ${page.tracks.map((track) => `
         <div class="swipe-wrap" data-swipe-track="${track.track_id}">
           ${trackRowHTML(track, trackArtHTML(track), "art")}
+          <span class="pl-grip" aria-hidden="true">${ICON_GRIP}</span>
           <button class="swipe-del" aria-label="从列表移除">删除</button>
         </div>`).join("")}
     </div>`;
@@ -77,6 +80,24 @@ async function renderPlaylistView(playlistId, target) {
     sharePlaylist(playlist);
   });
   bindCoverPress(playlistId, playlist.name, !!cover);
+  // 改名 (1.8.17 用户点名「允许编辑播放列表的标题」): 点标题 prompt 落定
+  // (与删列表的 confirm 同款原生对话, 不另造弹层)
+  target.querySelector("h2.pl-name").addEventListener("click", async () => {
+    const name = window.prompt("新的列表名", playlist.name);
+    if (name === null) return;                     // 取消不算失败
+    try {
+      const updated = await fetchJSON(`/music/api/playlists/${playlistId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      playlist.name = updated.name;
+      target.querySelector("h2.pl-name").textContent = updated.name;
+      toast("列表名已更新");
+    } catch (error) {
+      toast(`没改上: ${error.message}`);
+    }
+  });
   target.querySelector("#playlist-delete").addEventListener("click", async () => {
     if (!window.confirm(`删除播放列表「${playlist.name}」?`)) return;
     try {
@@ -107,6 +128,22 @@ async function renderPlaylistView(playlistId, target) {
       toast("已从列表移除");
     } catch (error) {
       toast(`没移除掉: ${error.message}`);
+    }
+  });
+  // 拖拽换序 (1.8.17 用户点名「允许调整列表歌曲的顺序」): 把手拖完先就地
+  // 挪 DOM (滚动位置不动), 再把全量新顺序 PUT 上去; 没存上重拉详情对齐服务端
+  bindPlaylistDrag(target.querySelector("#playlist-tracks"), async (from, to) => {
+    const [moved] = page.tracks.splice(from, 1);
+    page.tracks.splice(to, 0, moved);
+    try {
+      await fetchJSON(`/music/api/playlists/${playlistId}/order`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ track_ids: page.tracks.map((track) => track.track_id) }),
+      });
+    } catch (error) {
+      toast(`顺序没存上: ${error.message}`);
+      renderPlaylistView(playlistId);
     }
   });
   coverUploadPlaylistId = playlistId;

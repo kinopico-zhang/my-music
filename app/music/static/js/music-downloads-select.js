@@ -1,8 +1,9 @@
 // music-downloads-select — My Music 已下载页多选删除 (1.8.6, 用户点名):
 // 「多选」进选择模式: 行左缘出选择圈, 点行改勾选 (capture 阶段截下, 不再
-// 开播); 统计条换出「删除 N 首」; 「完成」退出, 删完自动退出。
-// 事件绑在已下载页的 pane 层 (正文重铺不丢), 模式/勾选住本模块 ——
-// 正文整页重铺后由 syncDownloadsSelect 按 state 补勾 (music-library-views 调)。
+// 开播); 勾中了统计条出垃圾桶 (1.8.17, 替掉原「删除 N 首」文字钮);
+// 「完成」退出, 删完自动退出。事件绑在已下载页的 pane 层 (正文重铺不丢),
+// 模式/勾选住本模块 —— 正文整页重铺后由 syncDownloadsSelect 按 state
+// 补勾 (music-library-views 调)。
 "use strict";
 /* global downloads, toast */
 /* exported bindDownloadsSelect, syncDownloadsSelect */
@@ -73,11 +74,7 @@ function syncDownloadsSelect(body) {
   const toggle = body.querySelector("#dl-select-toggle");
   if (toggle) toggle.textContent = dlSelecting ? "完成" : "多选";
   const remove = body.querySelector("#dl-select-delete");
-  if (remove) {
-    remove.hidden = !dlSelecting;
-    remove.textContent = dlSelected.size ? `删除 ${dlSelected.size} 首` : "删除";
-    remove.disabled = !dlSelected.size;
-  }
+  if (remove) remove.hidden = !dlSelected.size;   // 勾中了才出垃圾桶 (1.8.17)
   for (const row of body.querySelectorAll("[data-dl-row]")) {
     row.classList.toggle("sel", dlSelected.has(Number(row.dataset.dlRow)));
   }
