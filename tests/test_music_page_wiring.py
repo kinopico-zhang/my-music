@@ -96,16 +96,17 @@ def test_music_downloads_wiring():
     assert 'id="dl-select-toggle"' in js and 'id="dl-select-delete"' in js
     assert "#dl-pane-body.selecting .dl-row.sel::after" in html  # 勾样式
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    # 结构化重构后 45 个独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
-    # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select, push-panes 拆出 pane-swipe),
-    # 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 48 and all("?v=" in src for src in scripts)
+    # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
+    # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select, push-panes 拆出
+    # pane-swipe; 1.8.14: -viewport-heal —— 按住验方退役, 治法挪进全局
+    # 事件层), 引用一律带版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 47 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/music-downloads-select.js?v=" in html   # 1.8.6 已下载多选删除
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v15" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v16" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 

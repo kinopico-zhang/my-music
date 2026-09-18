@@ -17,12 +17,13 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v15 (2026-09-18 1.8.13: 黑带病根数学对上了 —— 回传实锤冻住的高度
-// = 键盘弹起时 innerHeight + 收起起手时视口偏移 (两回都是 415+356), 收键
-// 「按住」验方落地 (把偏移钉在键盘整个高度陪动画走完, 记账记成满高), 体检
-// 窗撤按钮 (刷新实测无效, 治不了直说划掉重开); 静态资源地址变了 (?v= 各升),
-// 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v15";
+// 壳缓存 v16 (2026-09-18 1.8.14: 黑带治法换起手 —— 借鉴 my-tesla 费用弹窗
+// 同机实测, iOS 只在焦点元素被键盘挡住时才滚文档让位, 滚了收键才记坏账;
+// 键盘起手前把搜索栏预抬到屏幕上部 (焦点在明处, 一下都不滚), 1.8.13 的
+// 收键按住撤了 (回传实锤记账不读页面实际位置, 钉了白钉), 治法挪进
+// music-global-events.js; 静态资源地址变了 (?v= 各升), 换版本号让 activate
+// 清旧账)
+const SHELL_CACHE = "music-shell-v16";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档

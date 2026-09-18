@@ -39,6 +39,9 @@
 .search-foot {
   position: fixed; left: 0; right: 0;
   bottom: calc(4px + env(safe-area-inset-bottom) + var(--kb-h, 0));
+  /* 1.8.14 预抬的落回/抬升走动画 (键盘起手前抬到屏幕上部, 到位再落回
+     键盘上沿 —— 一抬一落都是 --kb-h 在动) */
+  transition: bottom .22s ease;
   z-index: 2; pointer-events: none;
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   padding-left: max(8px, env(safe-area-inset-left));
