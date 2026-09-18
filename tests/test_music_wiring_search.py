@@ -102,9 +102,9 @@ def test_music_186_search_batch():
     assert "function renderSearchView(target)" in js
     assert 'const input = target.querySelector("#search-input");' in js
     assert "if (controller.signal.aborted || !body.isConnected) return;" in js
-    # 收层摘焦点: 收层循环与手势收层两处都 blur 层内焦点 (键盘/视口状态
-    # 不再被将删的输入框搅乱)
-    assert js.count("contains(document.activeElement)) document.activeElement.blur();") == 2
+    # 收层摘焦点: 收层循环/手势收层/右划起手三处都 blur 层内焦点 (键盘/
+    # 视口状态不再被将删的输入框搅乱; 起手那处是 1.8.9 加的, 见 189 测试)
+    assert js.count("contains(document.activeElement)) document.activeElement.blur();") == 3
     # 搜索圆键聚焦收窄到栈顶层: 旧层那枚不许碰
     assert 'const input = top && top.pane.querySelector("#search-input");' in js
 
@@ -136,3 +136,49 @@ def test_music_187_keyboard_scroll_repair():
     assert "addEventListener(\"pageshow\", lift);" in ge
     assert "if (!document.hidden) lift();" in ge
     assert "    lift();\n    addEventListener(\"pageshow\", lift);" in ge
+
+
+def test_music_189_viewport_freeze_repair():
+    """1.8.9 修「键盘没收起就右划关搜索, 底部一条黑带」的真病根 (用户
+    录屏逐帧量出来的): 键盘收起动画走到半路时移除聚焦过的层, iOS 把
+    布局视口整个冻在没收满的矮个上 —— 顶部纹丝不动 (不是 1.8.5/1.8.7
+    修的偏移/滚位那两味, scrollTo 够不着), fixed 船坞和 100dvh 一起
+    垫高, 屏底露出纯黑。三层对策: ① 右划起手 (横向坐实) 就摘焦点,
+    键盘从拖动第一下就开始收 (同原生返回手势); ② 收层移除 DOM 不再
+    赌 420ms 够用 —— 等视口高度回到 innerHeight 附近 (键盘彻底收走)
+    才动手, 键盘赖着最多再等 1.2s; ③ 真被冻矮了应用自己修: 记着见过
+    的满高 (存档跨重启, 转屏按新方向重立), 没键盘却矮一截就拿常驻的
+    隐形输入框走一趟 focus→blur 逼视口重算 (定时器没手势未必唤得动
+    iOS 键盘, 再埋一手借用户下次触屏补一趟; 一回赖账最多修三次)。"""
+    html = music_page_shell()
+    js = music_browser_js()
+    ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
+        encoding="utf-8")
+    panes = (MUSIC_STATIC / "js" / "music-push-panes.js").read_text(
+        encoding="utf-8")
+    swipe = (MUSIC_STATIC / "js" / "music-pane-swipe.js").read_text(
+        encoding="utf-8")
+    # ① 起手摘焦点 + ② 收稳才移除: 两处收层共用同一个等待函数
+    assert "function removePaneWhenSettled(pane)" in panes
+    assert "removePaneWhenSettled(item.pane);" in panes    # closePushStack
+    assert "removePaneWhenSettled(pane);" in swipe         # 手势收层
+    assert "vv.height >= window.innerHeight - 12" in panes  # 键盘收走判据
+    assert "Date.now() - start > 1200" in panes            # 键盘赖着: 最多再等 1.2s
+    # ③ 视口冻矮的察觉与自修 (全局事件层): 满高基准 (开局读档 + 长高刷新 +
+    # 转屏重立) / 探针走一趟 focus→blur / 手势补一趟 / 三次封顶
+    assert '"music.fullInner"' in ge                       # 满高存档 (跨重启)
+    assert 'matchMedia("(orientation: landscape)").matches' in ge
+    assert "setTimeout(() => probe.blur(), 150);" in ge    # 键盘往返一趟
+    assert "if (fullInner - window.innerHeight > 12) repairViewport();" in ge
+    assert '"pointerdown", () => {' in ge                  # 借下次触屏补一趟
+    assert "{ once: true });" in ge
+    assert "repairs >= 3" in ge                            # 别闪个没完
+    # 触发条件: 没键盘 (视口回到 innerHeight 附近) + iOS 独有 (安卓布局
+    # 自己缩, innerHeight 天生会动, 不修)
+    assert "visualViewport.height >= window.innerHeight - 12" in ge
+    assert "/iP(hone|ad|od)/.test(navigator.userAgent)" in ge
+    # 探针本体: JS 建的常驻隐形输入框 (markup 不占行, 样式在 base.css)
+    assert 'probe.id = "kb-repair";' in ge
+    assert "document.body.appendChild(probe);" in ge
+    assert "#kb-repair {" in html                          # 隐形样式 (1px 全透明)
+    assert "opacity: 0; pointer-events: none;" in html

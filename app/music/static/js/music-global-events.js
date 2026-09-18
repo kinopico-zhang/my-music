@@ -40,6 +40,59 @@ function bindGlobalEvents() {
   // 时归零 —— 捏拉缩放同样会缩 visualViewport, 别误抬。安卓
   // interactive-widget=resizes-content 布局自己缩, 量出来是 0, 两不误伤。
   if (window.visualViewport) {
+    // 满高基准 (1.8.9): 布局视口被冻矮时 innerHeight 自己就是矮的, 得拿
+    // 「见过的最高个」作对照 —— 开局先看档里记的 (上回健在时的满高, 防
+    // webview 带着冻矮的视口跨重启), 之后长高了就刷新; 转过屏按新方向
+    // 重立 (横竖的满高不能混着比)
+    const landscape = () => window.matchMedia("(orientation: landscape)").matches;
+    let seenLandscape = landscape();
+    let fullInner = window.innerHeight;
+    try {
+      const saved = JSON.parse(localStorage.getItem("music.fullInner") || "null");
+      if (saved && saved.landscape === seenLandscape) {
+        fullInner = Math.max(fullInner, saved.height || 0);
+      }
+    } catch (_error) { /* 隐私模式读不了就只信开局值 */ }
+    const noteFull = () => {
+      if (window.innerHeight <= fullInner) return;
+      fullInner = window.innerHeight;
+      try {
+        localStorage.setItem("music.fullInner",
+          JSON.stringify({ height: fullInner, landscape: seenLandscape }));
+      } catch (_error) { /* 存不进就算了, 内存里那份还在 */ }
+    };
+    // 修视口的探针: 常驻 DOM 的隐形输入框 (样式在 music-base.css: 1px
+    // 见方全透明钉在视口内 —— 在视口内 iOS 才不为它滚动), 拿它走一趟
+    // focus→blur, 逼手机把键盘那一套视口尺寸重算回来 (键盘会闪一下,
+    // 换黑带消失, 值)。探针从不移除 —— 移除聚焦过的输入框正是视口冻矮
+    // 的配方。定时器里的 focus 未必唤得动 iOS 键盘 (没手势), 所以再埋
+    // 一手: 用户下一次触屏时借着手势补一趟。一回赖账最多修三次 (别闪个
+    // 没完), 修回来清零
+    const probe = document.createElement("input");
+    probe.id = "kb-repair";
+    probe.type = "text";
+    probe.tabIndex = -1;
+    probe.autocomplete = "off";
+    probe.setAttribute("autocapitalize", "off");
+    probe.setAttribute("autocorrect", "off");
+    probe.setAttribute("aria-hidden", "true");
+    document.body.appendChild(probe);
+    let repairs = 0;
+    let gestureArmed = false;
+    const repairViewport = () => {
+      if (repairs >= 3) return;
+      repairs += 1;
+      probe.focus();
+      setTimeout(() => probe.blur(), 150);
+    };
+    const armGestureRepair = () => {
+      if (gestureArmed) return;
+      gestureArmed = true;
+      addEventListener("pointerdown", () => {
+        gestureArmed = false;
+        if (fullInner - window.innerHeight > 12) repairViewport();
+      }, { once: true });
+    };
     const lift = () => {
       const active = document.activeElement;
       const typing = active && active.tagName === "INPUT";
@@ -60,6 +113,30 @@ function bindGlobalEvents() {
                       || visualViewport.offsetLeft
                       || visualViewport.offsetTop)) {
         window.scrollTo(0, 0);
+      }
+      // ③ 第三味 (1.8.9 录屏逐帧定位, 1.8.7 修不掉的那味): 键盘收起动画
+      //    走到半路时收走聚焦过的层, 布局视口整个冻在没收满的矮个上 ——
+      //    不是滚位 (顶部纹丝不动, ①②的复位都够不着), fixed 船坞和
+      //    100dvh 一起垫高, 屏底一条纯黑。没键盘 (视口回到 innerHeight
+      //    附近) 却比满高矮一截就是它 —— iOS 独有的病 (安卓布局自己缩,
+      //    innerHeight 天生会动), 别误修
+      if (!typing && visualViewport.height >= window.innerHeight - 12) {
+        const nowLandscape = landscape();
+        if (nowLandscape !== seenLandscape) {
+          seenLandscape = nowLandscape;
+          fullInner = window.innerHeight;
+        }
+        noteFull();
+        if (/iP(hone|ad|od)/.test(navigator.userAgent)
+            || (navigator.platform === "MacIntel"
+                && navigator.maxTouchPoints > 1)) {
+          if (fullInner - window.innerHeight > 12) {
+            repairViewport();
+            armGestureRepair();
+          } else {
+            repairs = 0;   // 健在: 下回再赖账重新给满三回
+          }
+        }
       }
     };
     visualViewport.addEventListener("resize", lift);
