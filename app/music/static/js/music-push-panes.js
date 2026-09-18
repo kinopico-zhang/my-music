@@ -96,6 +96,7 @@ function openPushPane(view, id) {
   if (!pageState.rootView) renderRootView("home");
   const pane = document.createElement("div");
   pane.className = "push-pane";
+  pane.dataset.view = view;   // 1.8.15: 按页定制的 CSS 钩子 (搜索页层衬清零, 见 music-search.css)
   pane.innerHTML = '<div class="pane-scroll"></div>';
   $("#push-stack").appendChild(pane);
   pushStack.push({ view, id, pane });
@@ -140,7 +141,7 @@ function closePushStack(keep = 0) {
   while (pushStack.length > keep) {
     const item = pushStack.pop();
     // 焦点还落在收走的层里 (如搜索输入框): 先摘走 —— 键盘确定性收下,
-    // --kb-h 随 resize 归零, 别等元素被移除才被动失焦 (1.8.6)
+    // --kb-full 随收起撤掉, 别等元素被移除才被动失焦 (1.8.6)
     if (item.pane.contains(document.activeElement)) document.activeElement.blur();
     item.pane.classList.remove("open");
     removePaneWhenSettled(item.pane);   // 键盘收稳才移除 (1.8.9, 见定义处)

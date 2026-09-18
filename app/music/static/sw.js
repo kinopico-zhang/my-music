@@ -17,13 +17,13 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v16 (2026-09-18 1.8.14: 黑带治法换起手 —— 借鉴 my-tesla 费用弹窗
-// 同机实测, iOS 只在焦点元素被键盘挡住时才滚文档让位, 滚了收键才记坏账;
-// 键盘起手前把搜索栏预抬到屏幕上部 (焦点在明处, 一下都不滚), 1.8.13 的
-// 收键按住撤了 (回传实锤记账不读页面实际位置, 钉了白钉), 治法挪进
-// music-global-events.js; 静态资源地址变了 (?v= 各升), 换版本号让 activate
-// 清旧账)
-const SHELL_CACHE = "music-shell-v16";
+// 壳缓存 v17 (2026-09-18 1.8.15: 搜索页换血 —— 五轮回传 + my-money 记账
+// 弹层对照定案, iOS 让位专滚焦点元素的最近滚动祖先, 搜索栏 fixed 钉屏底
+// 四周没得滚才被硬滚了文档 (黑带坏账的源头); 页壳 (.search-shell) 自己变
+// 滚动器 + 页底条 sticky 钉底 (my-money 弹层同款), ge 预抬退役改 --kb-full
+// 键盘期撑高, --kb-h 量键盘高那套整个撤了; 静态资源地址变了 (?v= 各升),
+// 换版本号让 activate 清旧账)
+const SHELL_CACHE = "music-shell-v17";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档

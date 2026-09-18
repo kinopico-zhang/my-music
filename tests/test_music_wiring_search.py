@@ -36,8 +36,8 @@ def test_music_183_search_restore_batch():
     assert '<div class="search-foot">' in js and 'id="search-tabs"' in js
     assert ".search-shell {" in html           # 页壳抵掉层衬
     assert "interactive-widget=resizes-content" in html   # 安卓键盘自己缩布局
-    assert "visualViewport" in js and '"--kb-h"' in js    # iOS 键盘高度 → 抬输入框
-    assert "bottom: calc(4px + env(safe-area-inset-bottom) + var(--kb-h, 0));" in html
+    assert "visualViewport" in js and '"--kb-full"' in js    # iOS 键盘让位 → 撑高页壳内滚
+    assert "position: sticky; bottom: calc(4px + env(safe-area-inset-bottom));" in html
     # 回车收起 iOS 键盘 (搜索是边打边搜的, 回车没有别的活)
     assert 'if (event.key === "Enter") { event.preventDefault(); input.blur(); }' in js
     # 四子页: 横向 snap 容器 + 各自竖滚的页, 页签指示跟手滑同步
