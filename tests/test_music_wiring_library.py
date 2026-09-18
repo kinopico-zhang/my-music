@@ -148,9 +148,11 @@ def test_music_changelog_in_app_wiring():
 
 
 def test_music_frontend_structure():
-    """结构化重构 (2026-09-17 用户令): 前端源文件 ≤200 行, 超了按逻辑拆分
-    互相引用; html/css/js 分家 —— 页面不再内联 <style> 与脚本正文;
-    js/css 引用一律带版本参数 (改动必 bump, 否则手机缓存不刷新)。"""
+    """结构化重构 (2026-09-17 用户令): 前端源文件超限按逻辑拆分互相引用;
+    html/css/js 分家 —— 页面不再内联 <style> 与脚本正文; js/css 引用一律
+    带版本参数 (改动必 bump, 否则手机缓存不刷新)。
+    行数上限 (2026-09-18 用户令): js/css 200 行, html 放宽到 500 ——
+    markup 天生长 (一页一文件), 不像代码那样需要按域拆。"""
     for page in ("music.html", "share.html", "changelog.html"):
         html = (MUSIC_STATIC / page).read_text(encoding="utf-8")
         assert "<style" not in html, f"{page} 还有内联样式"
@@ -164,7 +166,8 @@ def test_music_frontend_structure():
     for path in MUSIC_STATIC.rglob("*"):
         if path.suffix not in (".js", ".css", ".html") or not path.is_file():
             continue
+        cap = 500 if path.suffix == ".html" else 200
         count = len(path.read_text(encoding="utf-8").splitlines())
-        if count > 200:
+        if count > cap:
             oversize.append(f"{path.relative_to(MUSIC_STATIC)} ({count} 行)")
-    assert not oversize, f"超过 200 行的前端文件: {oversize}"
+    assert not oversize, f"超行数上限 (html 500 / js·css 200) 的前端文件: {oversize}"
