@@ -7,6 +7,22 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.12", date="2026-09-18", items=[
+        ChangelogItem(kind="修复", text="底部黑带这回换真管用的治法了: 上一版"
+                                       "按社区验方做的「翻面」修复, 在你手机回传"
+                                       "的数据里全线无效 —— 这病是苹果系统把"
+                                       "「键盘收起后页面该有的高度」记坏成了矮"
+                                       "一截的值, 页面里任何招都掰不回来 (连再"
+                                       "开合三轮键盘都只认那个坏值), 但换一份新"
+                                       "页面这笔账就清了。现在黑带一露头, 体检窗"
+                                       "里给一颗「深度修复」: 点一下刷新复位, "
+                                       "回来还是原来那页, 歌停在第几秒还停在第"
+                                       "几秒, 点一下播放键接着听"),
+        ChangelogItem(kind="改进", text="体检窗瘦身: 证明无效的那套五连招 (翻面"
+                                       "/唤键盘/踢配置那些) 全撤了, 只留一键深修;"
+                                       " 每次深修前后的高度数字照样回传日志, 灵"
+                                       "不灵有账可查"),
+    ]),
     ChangelogVersion(version="1.8.11", date="2026-09-18", items=[
         ChangelogItem(kind="修复", text="底部黑带这回按真凭实据治了: 你手机"
                                        "回传的体检数据实锤了病根 —— 键盘弹"
