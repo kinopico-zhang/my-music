@@ -21,13 +21,18 @@ def test_music_share_link_wiring():
                  "async function sharePlaylist", 'id="playlist-share"',
                  "24 小时内有效"]:
         assert frag in js, f"music.js 分享缺 {frag}"
-    # 1.8.23 分享图标换 iOS 共享样式 (用户点名「太像上传了」): 方框顶边
-    # 带缺口 + 箭杆只到顶边 (上传画法是箭杆插进开口托盘深处)。图标定义
-    # 在公共件里, 直接读文件 (browser_js 口径不含 music-common)
+    # 1.8.25 分享图标换 iconfont「分享」搜索第 8 个 (用户点名): 三节点互连
+    # 的共享网络画法 (id 809967, fill 填充)。图标定义在公共件里, 直接读
+    # 文件 (browser_js 口径不含 music-common)
     common = (MUSIC_STATIC / "js" / "music-common.js").read_text(encoding="utf-8")
-    assert "M12 9.5v-6M8.5 7 12 3.5 15.5 7M9.4 10.5H6v8a2 2 0 0 0 2 2h8" \
-        "a2 2 0 0 0 2-2v-8h-3.4" in common
-    assert "M12 3.5v11M" not in common            # 旧的上传画法退役
+    assert "M769.714 589.547c-51.754 0-97.702 24.851-126.571 63.269" in common
+    # 1.8.23 的 iOS 共享样式与更早的上传画法都退役
+    assert "M12 9.5v-6M8.5 7 12 3.5 15.5 7" not in common
+    assert "M12 3.5v11M" not in common
+    # 曲目菜单那颗分享 (music.html 内联 18px) 换成同款, 不再各画各的
+    html = music_page_shell()
+    assert html.count("M769.714 589.547c-51.754 0-97.702 24.851-126.571 63.269") == 1
+    assert "M12 3.5v11M" not in html
     # 公开页: 拿 uuid 换数据 → 流地址播放, 失效态/滑进度/iOS 兜底都在
     for frag in ["/music/share/${token}/api",
                  "/music/share/${token}/stream/${track.track_id}",
