@@ -8,6 +8,13 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.26", date="2026-09-19", items=[
+        ChangelogItem(kind="改进", text="左滑删除那片纱的浓淡掉了个头"
+                                       " (你点的「透明度越靠近按钮越小」):"
+                                       " 早先贴着删除钮一头最浓, 红钮边上"
+                                       " 压着一条深边 —— 现在靠近钮的一头"
+                                       " 全透, 往内容那头才渐渐浓起来"),
+    ]),
     ChangelogVersion(version="1.8.25", date="2026-09-19", items=[
         ChangelogItem(kind="改进", text="左滑删除的遮罩不再发红 (你点的"
                                        "「遮罩不是红色的, 跟 item 一样」):"

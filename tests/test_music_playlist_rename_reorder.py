@@ -115,6 +115,12 @@ def test_music_playlist_rename_reorder_wiring():
     # 纱与行同色 (var(--bg) 掺半透明做渐隐), 红纱退役
     assert "color-mix(in srgb, var(--bg) 50%, transparent)" in swipe_css
     assert "rgba(229, 72, 77" not in swipe_css
+    # 1.8.26 渐变掉头 (用户点名「透明度越靠近按钮越小」): 近钮一头全透、
+    # 往左渐浓 —— 近钮最浓的旧方向 (深边贴着红钮) 退役
+    assert "transparent, color-mix(in srgb, var(--bg) 50%, transparent))" \
+        in swipe_css
+    assert "color-mix(in srgb, var(--bg) 50%, transparent), transparent" \
+        not in swipe_css
     assert "visibility: hidden;" not in swipe_css   # 行尾整藏退役
     assert "wrap.classList.toggle(\"revealed\"" in (
         MUSIC_STATIC / "js" / "music-swipe-delete.js").read_text(encoding="utf-8")
