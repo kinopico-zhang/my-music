@@ -34,16 +34,25 @@
 .fq-head-btns button.on { opacity: 1; }
 #queue-list {
   flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 2px 0 14px;
+  /* 1.8.27 行套 .swipe-wrap (左滑删除): 壳的行底/纱色按基类读 var(--bg)
+     (页面底), 队列住全屏页黑底上会显出一块浅色行板 —— 按块改 #000 */
+  --bg: #000;
 }
 .queue-row {
   display: flex; align-items: center; gap: 10px; width: 100%;
   padding: 8px 0; text-align: left;
   border-bottom: 1px solid rgba(255,255,255,.09);
-  transition: transform .18s ease; touch-action: pan-y;
+  touch-action: pan-y;
 }
-.queue-row.dragging { position: relative; z-index: 3; transition: none;
-  background: rgba(255,255,255,.08); box-shadow: 0 8px 22px rgba(0,0,0,.5);
-  border-radius: 8px; border-bottom-color: transparent; }
+/* 1.8.27 拖拽换位的 transform 落 wrap (行在 wrap 里, overflow:hidden 裁
+   得住竖移出界); 被拖的抬层 + 底色/圆角/阴影也都在 wrap 一级 */
+#queue-list .swipe-wrap { transition: transform .18s ease; }
+#queue-list .swipe-wrap.dragging {
+  z-index: 3; transition: none; background: rgba(255,255,255,.08);
+  box-shadow: 0 8px 22px rgba(0,0,0,.5); border-radius: 8px; }
+#queue-list .swipe-wrap.dragging .queue-row { border-bottom-color: transparent; }
+/* 左滑开着的行: 拖把藏掉 (删除钮盖着, 抓不得) —— 播列表详情页同款 */
+#queue-list .swipe-wrap.revealed .q-grip { visibility: hidden; }
 .q-lead { width: 24px; flex-shrink: 0; display: flex; align-items: center;
           justify-content: center; color: rgba(255,255,255,.4); }
 .q-num { font-size: 14px; font-style: normal;

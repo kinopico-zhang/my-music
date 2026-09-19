@@ -2,7 +2,8 @@
 // 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, audioElement, bindDismissDrag, bindPlayerAudioEvents, bindQueueDrag,
-          cancelLyricsScroll, closeFullPlayer, fpDismissDragged: writable, loadTrack,
+          bindQueueSwipeDelete, cancelLyricsScroll, closeFullPlayer,
+          fpDismissDragged: writable, loadTrack,
           lyricsAutoScrolling, lyricsFollowPaused: writable, lyricsLastScrollAt: writable,
           openFullPlayer, playQueue, playerNext, playerPrevious, playerToggle,
           queueCycleRepeat, queueJump, queueSetShuffle, renderQueueView, resumeLyricsFollow,
@@ -80,6 +81,7 @@ function bindPlayerEvents() {
     }
   });
   bindQueueDrag();
+  bindQueueSwipeDelete();   // 行左滑删除 (1.8.27, 队列是最后一个没壳的列表)
 
   $("#fp-lyrics").addEventListener("click", (event) => {
     const line = event.target.closest(".lyrics-line");

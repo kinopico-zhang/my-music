@@ -105,21 +105,24 @@ def test_music_queue_drag_wiring():
     位置数学在 player-queue.js 的 queueReorder (node 直测), 这里只验接线 ——
     把手按下即捕获指针, 行跟手位移让位, 松手按落点改 order 并存档;
     换过的顺序和随机/循环开关存进 localStorage, 恢复前先验 order 是完整
-    排列 (缺/重/越界的旧档弃用, 随机旗只在顺序真恢复时才点亮)。"""
+    排列 (缺/重/越界的旧档弃用, 随机旗只在顺序真恢复时才点亮)。
+    1.8.27 行套 .swipe-wrap (左滑删除同构): 拖拽单位上移到 wrap 一级,
+    落点位只认拖动距离; 删行断言在 test_music_swipe_delete。"""
     html = music_page_shell()
     player = music_player_js()
     common = (MUSIC_STATIC / "js" / "music-common.js").read_text(encoding="utf-8")
     queue = (MUSIC_STATIC / "js" / "player-queue.js").read_text(encoding="utf-8")
-    # 拖动中的行浮起来 (阴影 + 免过渡): 拖把图标进 common, music-player 引用
-    assert ".queue-row.dragging" in html
+    # 拖动中的行浮起来 (阴影 + 免过渡) —— 1.8.27 被拖的是 wrap, 过渡也在 wrap
+    assert "#queue-list .swipe-wrap.dragging {" in html
+    assert "#queue-list .swipe-wrap { transition: transform .18s ease; }" in html
     assert "ICON_GRIP" in common and "const ICON_GRIP" in common
     assert "module.exports = {" in queue and "queueReorder," in queue
     for frag in ["function bindQueueDrag", "function finishQueueDrag",
                  "queueReorder(playQueue, base + drag.fromView, base + drag.target)",
                  "grip.setPointerCapture(event.pointerId)",
-                 'event.target.closest(".q-grip")']:
+                 'event.target.closest(".q-grip")',
+                 "drag.fromView + Math.round(dy / drag.rowH)"]:
         assert frag in player, f"music-player.js 缺 {frag}"
-    assert 'event.target.closest(".q-grip")' in player  # 拖把点击不当选曲
     assert "bindQueueDrag();" in player                 # 挂进事件绑定
     # 存档: order (截 500) + position 一起进 player state
     assert "order: playQueue.order.slice(0, 500)," in player
