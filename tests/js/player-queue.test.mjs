@@ -1,6 +1,6 @@
 /* player-queue.js (播放队列纯逻辑) 的 node --test 单元测试。
    覆盖: 建队/当前曲、前进 (队尾停/循环回绕)、后退 (队首原地)、跳转、
-   随机开关 (当前曲不换位)、循环模式轮换、剩余队列、拖行换位。 */
+   随机开关 (当前曲不换位)、循环模式轮换、剩余队列、拖行换位、左滑删行。 */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../app/music/static/js");
 const { createPlayQueue, queueCurrent, queueSetShuffle, queueShuffleAll,
         queueCycleRepeat, queueAdvance, queueGoBack, queueJump, queueUpcoming,
-        queueReorder } =
+        queueReorder, queueRemove } =
   require(path.join(dir, "player-queue.js"));
 
 const titles = ["A", "B", "C", "D"].map((title, index) => ({ track_id: index + 1, title }));
@@ -164,4 +164,22 @@ test("queueReorder: 与当前位无关的换位不动 position; 越界/原地拒
   assert.deepEqual(queue.order, [1, 0, 2, 3]);          // 拒绝的都不动队
   const empty = createPlayQueue([], 0);
   assert.equal(queueReorder(empty, 0, 0), false);
+});
+
+test("queueRemove: 删当前曲之后的行 position 不动; 当前曲/越界拒绝 (1.8.27)", () => {
+  const queue = createPlayQueue(titles, 1);             // 当前 B, 顺序 ABCD
+  assert.equal(queueRemove(queue, 3), true);            // 删 D
+  assert.deepEqual(queue.order, [0, 1, 2]);
+  assert.equal(queue.position, 1);                      // 删的都在后面, 位不动
+  assert.equal(queueCurrent(queue).title, "B");
+  assert.deepEqual(queueUpcoming(queue).map((t) => t.title), ["B", "C"]);
+  assert.equal(queueRemove(queue, 1), false);           // 当前曲删不得
+  assert.equal(queueRemove(queue, 0), false);           // 当前位之前 (视图里没有) 也拒
+  assert.equal(queueRemove(queue, -1), false);          // 越界
+  assert.equal(queueRemove(queue, 9), false);
+  assert.deepEqual(queue.order, [0, 1, 2]);             // 拒绝的都不动队
+  assert.equal(queueRemove(queue, 2), true);            // 后面的删到只剩当前
+  assert.deepEqual(queueUpcoming(queue).map((t) => t.title), ["B"]);
+  const empty = createPlayQueue([], 0);
+  assert.equal(queueRemove(empty, 0), false);
 });

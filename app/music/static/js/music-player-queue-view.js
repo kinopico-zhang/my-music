@@ -1,10 +1,12 @@
-// music-player-queue-view — My Music 队列视图 (占封面区): 翻开/重排/拖把拖拽换序。
+// music-player-queue-view — My Music 队列视图 (占封面区): 翻开/重排/拖把拖拽换序/左滑删除。
 // 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global $, ICON_BARS, ICON_GRIP, escapeHTML, lyricsViewOpen, playQueue,
-          playerCurrentTrackId, queueDrag: writable, queueReorder, queueUpcoming,
-          queueViewOpen: writable, savePlayerState, toggleLyricsView */
-/* exported bindQueueDrag, closeQueueView, renderQueueView, toggleQueueView */
+/* global $, ICON_BARS, ICON_GRIP, bindSwipeDelete, escapeHTML, lyricsViewOpen,
+          playQueue, playerCurrentTrackId, queueDrag: writable, queueRemove,
+          queueReorder, queueUpcoming, queueViewOpen: writable, savePlayerState,
+          toast, toggleLyricsView */
+/* exported bindQueueDrag, bindQueueSwipeDelete, closeQueueView, renderQueueView,
+            toggleQueueView */
 
 // ------------------------------------------------------------ 队列视图 (占封面区)
 
@@ -35,27 +37,40 @@ function renderQueueView() {
   const upcoming = queueUpcoming(playQueue);
   const currentId = playerCurrentTrackId();
   $("#fq-count").textContent = `${upcoming.length} 首歌曲`;
-  // 当前曲 eq 动条, 其余接续编号 (当前算 1); 右缘拖拽把手按住上下拖换顺序
-  $("#queue-list").innerHTML = upcoming.map((track, index) => `
-    <button class="queue-row${track.track_id === currentId ? " on" : ""}"
-            data-queue-track-id="${track.track_id}">
-      <span class="q-lead">${track.track_id === currentId ? ICON_BARS
-        : `<i class="q-num">${index + 1}</i>`}</span>
-      <span class="q-title">${escapeHTML(track.title)}</span>
-      <span class="q-artist">${escapeHTML(track.artist)}</span>
-      <span class="q-grip" aria-hidden="true">${ICON_GRIP}</span>
-    </button>`).join("") || '<div class="lyrics-empty">队列是空的</div>';
+  // 当前曲 eq 动条, 其余接续编号 (当前算 1); 右缘拖拽把手按住上下拖换顺序。
+  // 1.8.27 行套 .swipe-wrap (左滑删除, 用户点名「所有列表都这样」—— 队列
+  // 是最后一个没壳的列表); data-queue-pos 记 order 绝对位 (视图下标 0 =
+  // order[position]), 删行/换序都按它换算
+  $("#queue-list").innerHTML = upcoming.map((track, index) => {
+    const on = track.track_id === currentId;
+    return `
+    <div class="swipe-wrap" data-queue-pos="${Math.max(0, playQueue.position) + index}">
+      <button class="queue-row${on ? " on" : ""}"
+              data-queue-track-id="${track.track_id}">
+        <span class="q-lead">${on ? ICON_BARS
+          : `<i class="q-num">${index + 1}</i>`}</span>
+        <span class="q-title">${escapeHTML(track.title)}</span>
+        <span class="q-artist">${escapeHTML(track.artist)}</span>
+        <span class="q-grip" aria-hidden="true">${ICON_GRIP}</span>
+      </button>
+      <button class="swipe-del" aria-label="从队列移除">删除</button>
+    </div>`;
+  }).join("") || '<div class="lyrics-empty">队列是空的</div>';
 }
 
 // 拖拽换位: 按住右缘把手上下拖 —— 被拖行跟手 (transform), 其余行让位平移;
 // 松手按落点改 order (当前曲位照旧由 queueReorder 兜住)。把手 touch-action:
 // none, 拖把不滚列表; 行本身 pan-y, 列表照常滚。视图下标 0 = order[position]。
+// 1.8.27 被拖的/被抬层的都改成 wrap (行住 .swipe-wrap 里, 左滑删除同构;
+// 播列表详情页同款): wrap overflow:hidden, 行在 wrap 里竖移出界会被裁;
+// 落点位 = 起始下标 + 拖过的行数 (距离换算, 不认 offsetTop 绝对坐标 ——
+// 相对布局一动就让位乱跳, 1.8.18 的教训)。
 function finishQueueDrag(cancelled) {
   const drag = queueDrag;
   queueDrag = null;
   if (!drag) return;
-  drag.row.classList.remove("dragging");
-  drag.rows.forEach((row) => { row.style.transform = ""; });
+  drag.wrap.classList.remove("dragging");
+  drag.wraps.forEach((wrap) => { wrap.style.transform = ""; });
   if (cancelled || !drag.moved || drag.target === undefined
       || drag.target === drag.fromView || !playQueue) return;
   const base = Math.max(0, playQueue.position);
@@ -70,16 +85,17 @@ function bindQueueDrag() {
   list.addEventListener("pointerdown", (event) => {
     const grip = event.target.closest(".q-grip");
     if (!grip || queueDrag) return;
-    const row = grip.closest(".queue-row");
-    const rows = [...list.querySelectorAll(".queue-row")];
-    const index = rows.indexOf(row);
-    if (!row || index < 0 || !playQueue) return;
+    const wrap = grip.closest(".swipe-wrap");
+    const wraps = [...list.querySelectorAll(".swipe-wrap")];
+    const index = wraps.indexOf(wrap);
+    const row = wrap ? wrap.querySelector("button") : null;
+    if (!wrap || !row || index < 0 || wrap.classList.contains("revealed")) return;
     event.preventDefault();                       // 拖把按下就是拖, 不当点击
     grip.setPointerCapture(event.pointerId);      // 移出把手事件也不丢
-    queueDrag = { row, rows, fromView: index, target: index,
-                  rowH: row.offsetHeight || 1, startY: event.clientY,
-                  offsetTop: row.offsetTop, moved: false };
-    row.classList.add("dragging");
+    queueDrag = { wrap, wraps, fromView: index, target: index,
+                  rowH: wrap.offsetHeight || 1, startY: event.clientY,
+                  moved: false };
+    wrap.classList.add("dragging");
   });
   list.addEventListener("pointermove", (event) => {
     if (!queueDrag) return;
@@ -89,21 +105,36 @@ function bindQueueDrag() {
       if (Math.abs(dy) < 6) return;
       drag.moved = true;
     }
-    drag.row.style.transform = `translateY(${dy}px)`;
-    drag.target = Math.max(0, Math.min(drag.rows.length - 1,
-      Math.round((drag.offsetTop + dy) / drag.rowH)));
-    drag.rows.forEach((row, index) => {           // 其余行让位
-      if (row === drag.row) return;
+    drag.wrap.style.transform = `translateY(${dy}px)`;   // 被拖行跟手
+    drag.target = Math.max(0, Math.min(drag.wraps.length - 1,
+        drag.fromView + Math.round(dy / drag.rowH)));
+    drag.wraps.forEach((wrap, index) => {         // 其余行让位
+      if (wrap === drag.wrap) return;
       let shift = 0;
       if (drag.target > drag.fromView) {
         if (index > drag.fromView && index <= drag.target) shift = -drag.rowH;
       } else if (drag.target < drag.fromView) {
         if (index >= drag.target && index < drag.fromView) shift = drag.rowH;
       }
-      row.style.transform = shift ? `translateY(${shift}px)` : "";
+      wrap.style.transform = shift ? `translateY(${shift}px)` : "";
     });
   });
   list.addEventListener("pointerup", () => finishQueueDrag(false));
   list.addEventListener("pointercancel", () => finishQueueDrag(true));
+}
+
+// 左滑删行 (1.8.27, 用户点名「所有列表的删除按钮都这样」): 与播放列表/
+// 下载列表同款 bindSwipeDelete。删的是 wrap 记的 order 绝对位; 当前曲
+// 删不得 (queueRemove 拒), 重铺 + 提示一句。
+function bindQueueSwipeDelete() {
+  bindSwipeDelete($("#queue-list"), async (wrap) => {
+    if (!playQueue) return;
+    if (queueRemove(playQueue, Number(wrap.dataset.queuePos))) {
+      savePlayerState();
+    } else {
+      toast("正在播这首, 删不得");
+    }
+    renderQueueView();
+  });
 }
 
