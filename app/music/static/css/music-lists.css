@@ -152,6 +152,9 @@ button.section-head:active { opacity: .6; }
   font-size: 22px; color: #fff;
   background: linear-gradient(135deg, #6e40c8, #fa2d48);
 }
+/* 1.8.28 播放列表卡 (主页段与专辑卡同排版): 没传封面的整个方块吃
+   .pl-icon 渐变, 固定 52px 放开填满方块, 音符字号按方块比例放大 */
+.playlist-card .pl-icon { width: 100%; height: 100%; font-size: 56px; }
 .pl-icon.big {
   width: min(62vw, 260px); height: auto; aspect-ratio: 1;
   font-size: min(24vw, 96px); border-radius: 12px;

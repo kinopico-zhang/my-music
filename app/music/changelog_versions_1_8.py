@@ -8,6 +8,14 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.28", date="2026-09-19", items=[
+        ChangelogItem(kind="改进", text="主页「最近播放列表」改成和「最新添加"
+                                       "专辑」一样的网格卡 (你点的): 封面方块"
+                                       " + 名字 + 规模一行副题 —— 传过封面"
+                                       " 的列表亮封面, 没传的吃渐变音符块。"
+                                       " 整列左滑删除挪到播放列表页去做"
+                                       " (网格卡上不滑, 卡片只管进)"),
+    ]),
     ChangelogVersion(version="1.8.27", date="2026-09-19", items=[
         ChangelogItem(kind="修复", text="主页列表行点不进去了 (你报的): 左滑"
                                        " 删除那片纱罩着的 84px 成了点击死区"

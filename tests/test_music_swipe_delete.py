@@ -26,9 +26,10 @@ def test_music_swipe_delete_wiring():
                  "swipeSuppressClick",
                  '`/music/api/playlists/${playlistId}/tracks/${trackId}`']:
         assert frag in js, f"music.js 缺 {frag}"
-    # 两处挂载: 列表详情的曲目行 + 主页的列表行
+    # 两处挂载: 列表详情的曲目行 + 播放列表页的列表行 (1.8.28 主页段改
+    # 网格卡, 主页那处撤了 —— 卡片不滑, 删整列走播放列表页)
     assert 'bindSwipeDelete(target.querySelector("#playlist-tracks")' in js
-    assert 'bindSwipeDelete($("#home-playlists")' in js
+    assert "bindSwipeDelete(list, async (wrap) => {" in js
     # 1.8.27 队列也挂上 (用户点名「所有列表的删除按钮都这样」—— 队列是
     # 最后一个没壳的列表): 队列视图住全屏播放页, 挂载在播放器模块
     player = music_player_js()
