@@ -2,7 +2,7 @@
 // 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, audioElement, bindDismissDrag, bindPlayerAudioEvents, bindQueueDrag,
-          bindQueueSwipeDelete, cancelLyricsScroll, closeFullPlayer,
+          cancelLyricsScroll, closeFullPlayer,
           fpDismissDragged: writable, loadTrack,
           lyricsAutoScrolling, lyricsFollowPaused: writable, lyricsLastScrollAt: writable,
           openFullPlayer, playQueue, playerNext, playerPrevious, playerToggle,
@@ -80,8 +80,9 @@ function bindPlayerEvents() {
       toast("这首浏览器播不了");
     }
   });
-  bindQueueDrag();
-  bindQueueSwipeDelete();   // 行左滑删除 (1.8.27, 队列是最后一个没壳的列表)
+  bindQueueDrag();   // 队列左滑删除不在这绑 (1.8.29): 它用的 bindSwipeDelete
+                     // 在浏览模块, 加载在播放器组之后 —— 开局跑会掐死后面
+                     // 一串接线; 队列视图第一次打开时才绑 (queue-view 里)
 
   $("#fp-lyrics").addEventListener("click", (event) => {
     const line = event.target.closest(".lyrics-line");
