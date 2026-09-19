@@ -8,6 +8,21 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.27", date="2026-09-19", items=[
+        ChangelogItem(kind="修复", text="主页列表行点不进去了 (你报的): 左滑"
+                                       " 删除那片纱罩着的 84px 成了点击死区"
+                                       " —— 点在纱上算到了壳的头上, 找不到行"
+                                       " 按钮。纱纯是装饰, 现在点击全放行,"
+                                       " 整行哪里点都进"),
+        ChangelogItem(kind="新增", text="播放队列的行也能左滑删除了 (你点的"
+                                       "「所有列表的删除按钮都这样」—— 队列"
+                                       " 是最后一个没壳的列表): 正在播的那首"
+                                       " 删不得, 滑开点删会提醒一句"),
+        ChangelogItem(kind="修复", text="那片纱的浓淡方向转回来了 (你报的"
+                                       "「你搞反了」): 按钮一侧该是最不透明"
+                                       " (近钮 50%), 往左渐至几乎透明 ——"
+                                       " 上一版掉头掉错了方向"),
+    ]),
     ChangelogVersion(version="1.8.26", date="2026-09-19", items=[
         ChangelogItem(kind="改进", text="左滑删除那片纱的浓淡掉了个头"
                                        " (你点的「透明度越靠近按钮越小」):"

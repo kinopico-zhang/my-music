@@ -4,7 +4,8 @@
 test_music_playlist_rename_reorder, 下载页选择态压住左滑在
 test_music_page_wiring。"""
 
-from tests.music_static_files import music_browser_js, music_page_shell
+from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
+                                      music_page_shell, music_player_js)
 
 
 def test_music_swipe_delete_wiring():
@@ -28,6 +29,22 @@ def test_music_swipe_delete_wiring():
     # 两处挂载: 列表详情的曲目行 + 主页的列表行
     assert 'bindSwipeDelete(target.querySelector("#playlist-tracks")' in js
     assert 'bindSwipeDelete($("#home-playlists")' in js
+    # 1.8.27 队列也挂上 (用户点名「所有列表的删除按钮都这样」—— 队列是
+    # 最后一个没壳的列表): 队列视图住全屏播放页, 挂载在播放器模块
+    player = music_player_js()
+    assert 'bindSwipeDelete($("#queue-list")' in player
+    assert "function bindQueueSwipeDelete" in player \
+        and "bindQueueSwipeDelete();" in player
+    # 删的是壳记的 order 绝对位 (视图下标 0 = order[position]); 当前曲
+    # 删不得 (queueRemove 拒, 提示一句); 开着的行把手藏掉 (删除钮盖着,
+    # 抓不得); 旧 .queue-row.dragging 那套撤了 (拖拽单位上移到 wrap)
+    queue = (MUSIC_STATIC / "js" / "player-queue.js").read_text(encoding="utf-8")
+    assert "function queueRemove" in queue \
+        and "queueUpcoming, queueReorder, queueRemove };" in queue
+    assert "queueRemove(playQueue, Number(wrap.dataset.queuePos))" in player
+    assert 'aria-label="从队列移除"' in player
+    assert ".queue-row.dragging" not in html \
+        and "#queue-list .swipe-wrap.revealed .q-grip" in html
     # 手势地盘分家 (1.7.0 后遗症修): 左滑只认左移 (右移归推入层返回手势,
     # 抢了会被 pointercancel 掐弹回); 左缘 24px 让给 iOS 系统边缘返回
     assert "swipeDrag.horizontal = dx < 0 && Math.abs(dx) > Math.abs(dy);" in js

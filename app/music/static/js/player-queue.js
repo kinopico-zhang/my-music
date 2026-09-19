@@ -1,6 +1,6 @@
-// player-queue.js — 播放队列纯逻辑 (顺序 / 随机洗牌 / 循环 / 前进后退 / 跳转)。
-// 队列状态是一个普通对象, 由页面脚本持有; 这里只提供状态转移函数,
-// node --test 直测 + tsc --checkJs + c8 覆盖 (页面脚本由 E2E 覆盖)。
+// player-queue.js — 播放队列纯逻辑 (顺序/洗牌/循环/前进后退/跳转/删行)。
+// 状态是普通对象 (页面脚本持有), 这里只给状态转移函数 —— node --test 直测
+// + tsc --checkJs + c8 覆盖 (页面脚本由 E2E 覆盖)。
 
 /**
  * 循环模式: off = 播完即停, all = 全队循环, one = 单曲循环
@@ -184,10 +184,17 @@ function queueUpcoming(queue) {
     .filter(Boolean);
 }
 
+/** 删掉 order 表里指定位置的行 (队列视图左滑删除, 1.8.27): 当前曲删不得
+    (调用方提示), 删的都在当前曲之后 —— position 不用动。orderPos 是 order
+    绝对位 (视图下标 + queue.position); false = 当前曲/越界没删。 */
+function queueRemove(queue, orderPos) {
+  if (orderPos <= queue.position || orderPos >= queue.order.length) return false;
+  queue.order.splice(orderPos, 1);
+  return true;
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    createPlayQueue, queueCurrent, queueSetShuffle, queueShuffleAll,
-    queueCycleRepeat, queueAdvance, queueGoBack, queueJump, queueUpcoming,
-    queueReorder,
-  };
+  module.exports = { createPlayQueue, queueCurrent, queueSetShuffle,
+    queueShuffleAll, queueCycleRepeat, queueAdvance, queueGoBack, queueJump,
+    queueUpcoming, queueReorder, queueRemove };
 }

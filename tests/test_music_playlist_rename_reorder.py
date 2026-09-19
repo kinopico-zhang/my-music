@@ -115,12 +115,17 @@ def test_music_playlist_rename_reorder_wiring():
     # 纱与行同色 (var(--bg) 掺半透明做渐隐), 红纱退役
     assert "color-mix(in srgb, var(--bg) 50%, transparent)" in swipe_css
     assert "rgba(229, 72, 77" not in swipe_css
-    # 1.8.26 渐变掉头 (用户点名「透明度越靠近按钮越小」): 近钮一头全透、
-    # 往左渐浓 —— 近钮最浓的旧方向 (深边贴着红钮) 退役
-    assert "transparent, color-mix(in srgb, var(--bg) 50%, transparent))" \
-        in swipe_css
+    # 1.8.27 方向转回 (用户报「你搞反了」): 近钮一头最浓 (50%)、往左渐至
+    # 几乎透明 —— 1.8.26 掉头掉错方向 (近钮全透) 退役
     assert "color-mix(in srgb, var(--bg) 50%, transparent), transparent" \
+        in swipe_css
+    assert "transparent, color-mix(in srgb, var(--bg) 50%, transparent))" \
         not in swipe_css
+    # 1.8.27 修点击死区 (用户报「点行进不去」): 纱是装饰, 伪元素命中算到
+    # wrap 头上 —— closest 找行落空, 纱底 84px 成死区; 点击全放行
+    assert "pointer-events: none;" in swipe_css[
+        swipe_css.index(".swipe-wrap::after {"):
+        swipe_css.index(".swipe-wrap::after {") + 400]
     assert "visibility: hidden;" not in swipe_css   # 行尾整藏退役
     assert "wrap.classList.toggle(\"revealed\"" in (
         MUSIC_STATIC / "js" / "music-swipe-delete.js").read_text(encoding="utf-8")

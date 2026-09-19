@@ -10,7 +10,9 @@
    渐隐, 像内容自己沉进行底里, 删除钮那一块红才是唯一的红。
    1.8.26 渐变掉头 (用户点名「透明度越靠近按钮越小」): 早先近钮一头
    最浓 (50%), 贴着红钮压出一条深边 —— 掉头成远端最浓、近钮全透,
-   红钮边缘干干净净, 纱往内容那头渐浓。 */
+   红钮边缘干干净净, 纱往内容那头渐浓。
+   1.8.27 方向转回 (用户报「你搞反了」): 1.8.26 掉头掉错了方向 ——
+   正确的是按钮一侧最不透明 (近钮 50%), 往左渐至几乎透明。 */
 .swipe-wrap { position: relative; overflow: hidden; }
 .swipe-wrap > button:first-child {
   position: relative; z-index: 1; background: var(--bg); touch-action: pan-y;
@@ -27,15 +29,19 @@
 .swipe-del:active { background: #cf3942; }
 .swipe-wrap.swiping .swipe-del,
 .swipe-wrap.swiping::after { transition: none; }
-/* 删除钮延伸的半透纱 (1.8.25 起与行同色, 1.8.26 渐变掉头): 罩着钮
-   左侧的行尾内容 (不遮钮自己), 近钮一头全透、往左渐浓到 50% ——
-   红钮边缘不带深边。纱的浓度是 --veil × 渐变各点, 所以拿 color-mix
-   给 var(--bg) 掺一半透明 —— 不支持 color-mix 的老浏览器整条渐变
-   作废, 纱不显示 (删除钮照常), 不算坏 */
+/* 删除钮延伸的半透纱 (1.8.25 起与行同色): 罩着钮左侧的行尾内容
+   (不遮钮自己), 近钮一头最浓 (50%)、往左渐至几乎透明 (1.8.27 用户
+   点名的方向)。纱的浓度是 --veil × 渐变各点, 所以拿 color-mix 给
+   var(--bg) 掺一半透明 —— 不支持 color-mix 的老浏览器整条渐变作废,
+   纱不显示 (删除钮照常), 不算坏。
+   纱不带 pointer-events: none 的话, 伪元素的命中算到 wrap 头上 ——
+   命中的是行按钮之外的元素, 委托找行 (closest) 落空, 纱底下那 84px
+   成了点击死区 (1.8.27 用户报「点行进不去」); 纯装饰, 点击全放行 */
 .swipe-wrap::after {
   content: ""; position: absolute; top: 0; bottom: 0; right: 72px;
   width: 84px; z-index: 2; opacity: var(--veil, 0);
+  pointer-events: none;
   background: linear-gradient(to left,
-    transparent, color-mix(in srgb, var(--bg) 50%, transparent));
+    color-mix(in srgb, var(--bg) 50%, transparent), transparent);
   transition: opacity .25s cubic-bezier(.25,.1,.25,1);
 }
