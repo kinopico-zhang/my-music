@@ -21,9 +21,21 @@ function closeQueueView() {
   $("#full-player").classList.remove("queue");
 }
 
+// 左滑删除只绑一次 (开一次视图绑一回会重复挂监听); 1.8.29 起在视图
+// 第一次打开时才绑 —— bindSwipeDelete 住在浏览模块, 开局跑它必炸 (见下)
+let queueSwipeBound = false;
+
 function toggleQueueView() {
   if (queueViewOpen) { closeQueueView(); return; }
   if (lyricsViewOpen) toggleLyricsView();   // 同住封面区, 二选一
+  // 1.8.29 修 (真机播放不了那单): bindSwipeDelete 住在浏览模块, music.html
+  // 里排在播放器组后面 —— 开局 (bindPlayerEvents) 就跑它必是 ReferenceError,
+  // 把同函数里排在后面的接线 (含整组 audio 事件 + playerRestore) 全掐死。
+  // 改成视图第一次打开才绑: 那时全部脚本早加载完, 后加载引用回调时解析。
+  if (!queueSwipeBound) {
+    queueSwipeBound = true;
+    bindQueueSwipeDelete();
+  }
   queueViewOpen = true;
   renderQueueView();
   $("#fp-art-wrap").hidden = true;
@@ -125,7 +137,8 @@ function bindQueueDrag() {
 
 // 左滑删行 (1.8.27, 用户点名「所有列表的删除按钮都这样」): 与播放列表/
 // 下载列表同款 bindSwipeDelete。删的是 wrap 记的 order 绝对位; 当前曲
-// 删不得 (queueRemove 拒), 重铺 + 提示一句。
+// 删不得 (queueRemove 拒), 重铺 + 提示一句。bindSwipeDelete 在浏览模块
+// (加载在播放器组之后), 所以只在队列视图第一次打开时调用 (见上)。
 function bindQueueSwipeDelete() {
   bindSwipeDelete($("#queue-list"), async (wrap) => {
     if (!playQueue) return;

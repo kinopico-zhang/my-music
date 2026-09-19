@@ -31,11 +31,18 @@ def test_music_swipe_delete_wiring():
     assert 'bindSwipeDelete(target.querySelector("#playlist-tracks")' in js
     assert "bindSwipeDelete(list, async (wrap) => {" in js
     # 1.8.27 队列也挂上 (用户点名「所有列表的删除按钮都这样」—— 队列是
-    # 最后一个没壳的列表): 队列视图住全屏播放页, 挂载在播放器模块
+    # 最后一个没壳的列表): 队列视图住全屏播放页, 挂载在播放器模块。
+    # 1.8.29 修加载序 (真机「播放不了」那单): bindSwipeDelete 住在浏览模块
+    # (music.html 里排在播放器组后面), bindPlayerEvents 开局跑它必
+    # ReferenceError —— 同函数里排在后面的接线 (整组 audio 事件) 和 boot
+    # 里紧跟的 playerRestore 全被掐死。改成队列视图第一次打开才绑。
     player = music_player_js()
+    events = (MUSIC_STATIC / "js" / "music-player-events.js").read_text(
+        encoding="utf-8")
     assert 'bindSwipeDelete($("#queue-list")' in player
-    assert "function bindQueueSwipeDelete" in player \
-        and "bindQueueSwipeDelete();" in player
+    assert "function bindQueueSwipeDelete" in player
+    assert "queueSwipeBound" in player           # 开视图只绑一次
+    assert "bindQueueSwipeDelete" not in events  # 开局不再碰它 (1.8.29)
     # 删的是壳记的 order 绝对位 (视图下标 0 = order[position]); 当前曲
     # 删不得 (queueRemove 拒, 提示一句); 开着的行把手藏掉 (删除钮盖着,
     # 抓不得); 旧 .queue-row.dragging 那套撤了 (拖拽单位上移到 wrap)
