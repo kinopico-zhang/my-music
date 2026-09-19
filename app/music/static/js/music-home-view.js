@@ -1,9 +1,10 @@
 // music-home-view — My Music 主页视图: 三段 (最近播放音乐/最新添加专辑/
-// 最近播放列表), 各 10 个, 段头带 › 查看全部 (1.8.24 用户点名改版)。
+// 最近播放列表), 各 10 个, 段头带 › 查看全部 (1.8.24 用户点名改版);
+// 列表段 1.8.28 起与专辑段同款网格卡 (整列删除走播放列表页)。
 // 拆自 music.js (结构化重构, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global $, albumCardHTML, bindSwipeDelete, bindTrackLists, fetchJSON, listPlaceholderHTML, navigate,
-          pageState, playlistRowHTML, toast, trackArtHTML, trackRowHTML */
+/* global $, albumCardHTML, bindTrackLists, fetchJSON, listPlaceholderHTML, navigate,
+          pageState, playlistCardHTML, trackArtHTML, trackRowHTML */
 /* exported renderHomeView */
 
 // ------------------------------------------------------------ 主页
@@ -32,22 +33,11 @@ function renderHomeView() {
     ${sectionHeadHTML("最新添加专辑", "albums")}
     <div id="home-albums" class="album-grid">${listPlaceholderHTML("加载中…")}</div>
     ${sectionHeadHTML("最近播放列表", "playlists")}
-    <div id="home-playlists">${listPlaceholderHTML("加载中…")}</div>`;
+    <div id="home-playlists" class="album-grid">${listPlaceholderHTML("加载中…")}</div>`;
   // 事件绑在容器上 (内容是异步重铺的, 绑内容会重复累加)
   $("#home-playlists").addEventListener("click", (event) => {
-    const row = event.target.closest("[data-playlist-id]");
-    if (row) navigate(`playlist/${row.dataset.playlistId}`);
-  });
-  // 列表行左滑露出删除: 删掉后就地抽行, 不整页重铺
-  bindSwipeDelete($("#home-playlists"), async (wrap) => {
-    const playlistId = Number(wrap.dataset.swipePlaylist);
-    try {
-      await fetchJSON(`/music/api/playlists/${playlistId}`, { method: "DELETE" });
-      wrap.remove();
-      toast("已删除");
-    } catch (error) {
-      toast(`没删掉: ${error.message}`);
-    }
+    const card = event.target.closest("[data-playlist-id]");
+    if (card) navigate(`playlist/${card.dataset.playlistId}`);
   });
   bindTrackLists($("#home-recent"), () => pageState.homeRecent || []);
   loadHomeRecent();
@@ -92,6 +82,6 @@ async function loadHomePlaylists() {
   const element = $("#home-playlists");
   if (!element || !element.isConnected) return;
   element.innerHTML = playlists && playlists.length
-    ? playlists.map(playlistRowHTML).join("")
+    ? playlists.map(playlistCardHTML).join("")
     : listPlaceholderHTML("还没有播放列表; 长按任意歌曲就能新建一个");
 }

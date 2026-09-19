@@ -6,8 +6,8 @@
           downloadsEnabled, escapeHTML, formatPlaybackTime, playerStart, playlistCoverURL,
           toast, trackArtworkURL, updatePlayButtons */
 /* exported albumCardHTML, artistRowHTML, bindTrackLists, listPlaceholderHTML,
-            playlistRowHTML, rowForTrackMenu, syncPlayerIndicators, trackArtHTML,
-            trackListBindings, trackRowHTML */
+            playlistCardHTML, playlistRowHTML, rowForTrackMenu, syncPlayerIndicators,
+            trackArtHTML, trackListBindings, trackRowHTML */
 
 // ------------------------------------------------------------ 公共渲染件
 
@@ -74,7 +74,7 @@ function artistRowHTML(artist) {
 }
 
 /** 播放列表行: 自定义封面 (传过) / 渐变音符块 + 名字 + 规模。
-    外面套一层左滑删除的壳 (主页列表行专属, 别的用法没有)。 */
+    外面套一层左滑删除的壳 (播放列表页的行在用, 整列左滑删除)。 */
 function playlistRowHTML(playlist) {
   const cover = playlistCoverURL(playlist);
   return `
@@ -89,6 +89,23 @@ function playlistRowHTML(playlist) {
       </button>
       <button class="swipe-del" aria-label="删除列表">删除</button>
     </div>`;
+}
+
+/** 播放列表卡 (1.8.28 主页段与专辑卡同排版, 用户点名): 复用 .album-card
+    的整套卡排版, 封面方块里自定义封面 / 渐变音符块 + 名字 + 规模副题。
+    卡片不套壳 —— 整列删除走播放列表页的列表行。 */
+function playlistCardHTML(playlist) {
+  const cover = playlistCoverURL(playlist);
+  return `
+    <button class="album-card playlist-card" data-playlist-id="${playlist.playlist_id}">
+      <span class="art-wrap">${cover
+        ? `<img loading="lazy" decoding="async" alt="" src="${cover}"
+             onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'pl-icon',textContent:'♫'}))">`
+        : '<span class="pl-icon">♫</span>'}
+      </span>
+      <b>${escapeHTML(playlist.name)}</b>
+      <small>${describeDuration(playlist.duration_seconds, playlist.track_count)}</small>
+    </button>`;
 }
 
 function listPlaceholderHTML(message) {

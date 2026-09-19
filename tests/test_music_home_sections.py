@@ -52,9 +52,16 @@ def test_music_home_page_wiring():
         in home_js
     assert 'id="home-albums" class="album-grid"' in home_js  # 专辑段网格
     assert "albumCardHTML" in home_js                     # 专辑卡渲染
-    # 播放列表段行照旧 (封面行 + 左滑删除整列)
-    assert 'bindSwipeDelete($("#home-playlists")' in home_js
-    assert "playlistRowHTML" in home_js
+    # 1.8.28 播放列表段改专辑同款网格卡 (用户点名「排版和最近专辑一样」):
+    # 复用 .album-card 排版 + .pl-icon 渐变兜底; 卡片不挂壳, 删整列走
+    # 播放列表页 (列表行照旧带左滑删除)
+    assert 'id="home-playlists" class="album-grid"' in home_js
+    assert "playlistCardHTML" in home_js
+    assert 'bindSwipeDelete($("#home-playlists")' not in home_js
+    rendering = (MUSIC_STATIC / "js" / "music-list-rendering.js").read_text(
+        encoding="utf-8")
+    assert 'class="album-card playlist-card"' in rendering
+    assert ".playlist-card .pl-icon { width: 100%; height: 100%;" in html
     # 播放列表详情路由
     assert 'if (name === "playlist" && argument)' in js
     assert "function renderPlaylistView(" in js
