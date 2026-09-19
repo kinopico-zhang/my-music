@@ -17,9 +17,9 @@
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v32 (2026-09-19 1.8.28 批: 主页「最近播放列表」段改专辑同款
-// 网格卡 —— 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v32";
+// 壳缓存 v33 (2026-09-19 1.8.29 批: 修 1.8.27 埋的加载序雷 —— 队列左滑
+// 开局绑炸掉整串播放器接线, 真机播放不了 —— 换版本号让 activate 清旧账)
+const SHELL_CACHE = "music-shell-v33";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档

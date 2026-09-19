@@ -8,6 +8,16 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.29", date="2026-09-19", items=[
+        ChangelogItem(kind="修复", text="播放不了音乐了 (你报的, 1.8.27"
+                                       "埋的雷): 队列左滑删除的接线在开局"
+                                       "就跑, 它用的左滑件却排在后面还没"
+                                       "加载 —— 一步炸掉, 同一串里排在后面"
+                                       "的接线全没挂上 (进度条不动/播完不"
+                                       "切歌/播放计数不记/上次现场不恢复)。"
+                                       "改成队列视图第一次打开才接那根线,"
+                                       " 开局一路通到底"),
+    ]),
     ChangelogVersion(version="1.8.28", date="2026-09-19", items=[
         ChangelogItem(kind="改进", text="主页「最近播放列表」改成和「最新添加"
                                        "专辑」一样的网格卡 (你点的): 封面方块"
