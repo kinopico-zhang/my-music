@@ -13,7 +13,7 @@ from .playlist_schemas import (PlaylistBrief, PlaylistCreateRequest,
 from .scan_schemas import (ScanStatus, ScanSummary, ScannedTrack, TagFields)
 from .search_schemas import (LyricHit, LyricsResponse, PlayRecordRequest,
                              RecentPlaysResponse, RecentTrackBrief,
-                             SearchResult, TrackCredits)
+                             SearchResult, TopPlaysResponse, TrackCredits)
 from .settings_schemas import MusicSettingsState, MusicSettingsUpdate
 from .share_schemas import ShareCreated, ShareCreateRequest, SharePageData
 from .viewport_schemas import ViewportEvent, ViewportLogReport
@@ -28,6 +28,7 @@ __all__ = [
     "RecentPlaysResponse",
     "RecentTrackBrief", "RescanResponse", "ScanStatus", "ScanSummary",
     "ScannedTrack", "SearchResult", "ShareCreated", "ShareCreateRequest",
-    "SharePageData", "TagFields", "TrackBrief", "TrackCredits", "TrackPageList",
+    "SharePageData", "TagFields", "TopPlaysResponse", "TrackBrief",
+    "TrackCredits", "TrackPageList",
     "ViewportEvent", "ViewportLogReport",
 ]

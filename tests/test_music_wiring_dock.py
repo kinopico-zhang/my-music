@@ -59,10 +59,12 @@ def test_music_dock_wiring():
     assert '$("#mini-player").hidden = !track;' in chrome
     assert "setMarqueeLine($(\"#mini-title\")" in chrome
     assert "addEventListener(\"resize\"" in player[player.index("let marqueeResizeTimer"):]
-    # 上弹菜单: 六项带图标, 从键上方弹出 (缩放+上移入场动画); 1.8.20 用户
-    # 点名改口: 专辑/艺人/已下载/设置 → 所有专辑/所有艺人/下载管理/软件设置
+    # 上弹菜单: 七项带图标, 从键上方弹出 (缩放+上移入场动画); 1.8.20 用户
+    # 点名改口: 专辑/艺人/已下载/设置 → 所有专辑/所有艺人/下载管理/软件设置;
+    # 1.8.31 新增「播放排行」(排在最近播放后面)
     for entry, label in [("playlists", "播放列表"), ("albums", "所有专辑"),
                          ("artists", "所有艺人"), ("recent", "最近播放"),
+                         ("top", "播放排行"),
                          ("downloads", "下载管理"), ("settings", "软件设置")]:
         assert f'data-pop-nav="{entry}"><svg' in html
         assert f"{label}</button>" in html
@@ -145,9 +147,10 @@ def test_music_top_fallback_removed():
     # +search-pages; 1.8.5: +bubble-swipe; 1.8.6: +downloads-select,
     # push-panes 拆出 pane-swipe; 1.8.14: -viewport-heal —— 按住验方
     # 退役; 1.8.17: -cellular-usage 蜂窝流量撤了, +playlist-drag 播放
-    # 列表拖拽换序; 1.8.23: +root-rubber 根层右划橡皮筋)
+    # 列表拖拽换序; 1.8.23: +root-rubber 根层右划橡皮筋; 1.8.31:
+    # +top-pane 播放排行页)
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    assert len(scripts) == 48 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 49 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
     assert "js/music-playlist-drag.js?v=" in html   # 1.8.17 拖拽换序

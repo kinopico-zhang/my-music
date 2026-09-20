@@ -47,7 +47,9 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
                "Helvetica Neue", system-ui, sans-serif;
   font-size: 14px; line-height: 1.45;
-  height: 100vh; height: 100dvh;   /* 壳的高度 (dvh 优先); 文档不滚 */
+  height: 100vh; height: var(--shell-h, 100dvh);   /* 壳的高度: 冻矮补偿
+     --shell-h 优先 (1.8.32 医生在写: iOS 还原高度跨重启赖账, 冷开带矮值
+     时钉真满高, 黑带补回), 平时 100dvh; 文档不滚 */
   overflow: hidden;
   display: flex; flex-direction: column;
   touch-action: pan-y;   /* 全应用禁双指缩放: 列表行本来就 pan-y 捏不动,
@@ -69,7 +71,10 @@ main {
      1.8.0 起不再兜 iOS 26.1+ env 谎报的 bug (用户点名「任凭模糊, 不做
      处理」): 纯 env, 谎报 0 的系统里让位失效, 带子照糊, 认了 */
   margin-top: env(safe-area-inset-top);
-  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: none;
+  /* 1.8.31 overscroll 改 contain (用户点名「滑不动了也加上橡皮筋回弹」):
+     none 连回弹一起掐了; contain 保住本体的回弹, 只断向外的滚动链
+     (body 是固定壳没有可链的滚动, contain 与 none 在这里只差一个回弹) */
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
 }
 /* 一级页内容列: 限宽居中 (船坞/气泡都是 fixed, 内容得自己让开底下的高度);
    横屏时左右让开侧刘海 (env 取 max, 没侧刘海的场合保底 16px) */

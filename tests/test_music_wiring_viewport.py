@@ -48,7 +48,8 @@ def test_music_189_viewport_freeze_repair():
     文档 + 给真高度, 高度回满回锁 (健康对照 my-tesla/my-money 的文档
     天生可滚, 让位是合法滚动)。冻矮 0.7s 实锤 → 体检窗给真话 (再进搜索点
     键盘收起键再返回当场复原 —— 回传实测; 划掉重开只有三成灵)。流水
-    全程回传 data/viewport-doctor.jsonl (见 test_music_viewport_log.py)。"""
+    全程回传 data/viewport-doctor.jsonl (见 test_music_viewport_log.py);
+    冷开冻矮的自愈 (1.8.32) 见 test_music_1812_coldstart_selfheal。"""
     html = music_page_shell()
     ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
         encoding="utf-8")
@@ -71,8 +72,8 @@ def test_music_189_viewport_freeze_repair():
     assert "Date.now() - start > 1200" in panes   # 键盘赖着: 最多再等 1.2s
     # 装载顺序: HUD 先载 (医生 wire 时在场), 再医生 —— 1.8.15 起治法在
     # 搜索页结构 + ge, heal 模块退役, 装载少一件
-    assert ('music-viewport-hud.js?v=8' in html
-            and 'music-viewport-doctor.js?v=7' in html
+    assert ('music-viewport-hud.js?v=9' in html
+            and 'music-viewport-doctor.js?v=8' in html
             and "music-viewport-heal" not in html)
     # 只医独立模式 iPhone: 浏览器 Safari 工具栏自己收放 (满高基准立不住),
     # 安卓 interactive-widget 布局自己缩 (是正常不是病)
@@ -123,11 +124,11 @@ def test_music_189_viewport_freeze_repair():
     assert "overscroll-behavior-y: contain;" in html
     # 撑高也只医独立模式 iPhone (桌面/安卓的账不这么记)
     assert 'if (!window.matchMedia("(display-mode: standalone)").matches' in ge
-    # 体检窗给实测真话 (回传数据: 键盘收起键那条路当场复原, 重启只有三成)
-    assert ('"治不了就再进搜索, 点键盘收起键收掉再返回 (重启不保证灵)"'
+    # 体检窗给真话 (1.8.32 起兜底话术: 正常路径已自动补偿, 只有补不上才见)
+    assert ('"已自动按满高补齐; 若底栏还悬空, 再进搜索点键盘收起键收掉再返回"'
             in doctor)
     assert 'ViewportHUD.wire({ stat });' in doctor
-    assert '"My Music 1.8.16 视口体检' in doctor
+    assert '"My Music 1.8.32 视口体检' in doctor
     # 走过的死路撤干净: 换新文档 (1.8.12: 归来还是矮的, 坏值跟着 webview
     # 走) + 收键按住 (1.8.13: 记账不读页面实际滚动) + 预抬 (1.8.14: 让位
     # 不看输入框位置, 抬了照滚) —— heal 模块删了, 标识一个不留; 只留
@@ -158,40 +159,28 @@ def test_music_189_viewport_freeze_repair():
     assert "inner: window.innerHeight," in hud
 
 
-def test_music_top_clear_boundary():
-    """1.8.19 立的全局上边界 (用户令「固定的控件都不要超过这个边界」):
-    顶部系统磨砂带糊控件这事此前各修各的 (1.8.10 体检窗、1.8.17 页顶条、
-    1.8.19 搜索框都各自躲过一回), 这版归成一条规矩 —— 变量 --top-clear
-    定义在 music-base.css, 两条地界取深: 浏览器 env+36 (.pane-title 那条
-    1.8.17 实测干净)、独立模式 96px (--top-floor 老地界, iOS 26 磨砂带
-    env() 谎报 0)。固定控件全数钉在它之下: 搜索页顶条 / 播放页抓手
-    (app+share) / 体检窗 / 长按菜单 (拿隐形量尺 #top-clear-probe 的
-    offsetTop 读回边界值 —— CSS 变量进 JS 不用 getComputedStyle)。分享页
-    自包含, 自家 :root 同名 (没有独立模式地界, env+36 即可)。"""
+def test_music_1812_coldstart_selfheal():
+    """1.8.32 冷开冻矮自愈 (用户点名「彻底解决」, 回传 620 行日志定案):
+    会话内的病 1.8.16 已治好 (键盘往返全程干净), 剩的是冷开那一刻 ——
+    iOS 的还原高度跨进程赖账, 约一半开局直接带 771 (满高 812, 每次正好
+    差 41) 且整程一声事件不响、永不自愈, 只能反复划掉重开碰运气; 开局
+    健康则整程健康 (用户实测「只有启动的时候有这个问题」)。治法 = 布局
+    不再信 webview 的高度: 冻矮时壳高钉记档的满高 (--shell-h,
+    music-base.css 消费, 满高钳屏内防基线被瞬时值带高), 黑带当场补回,
+    回满自动撤; 体检窗 (红框) 退成兜底, 只有补不上才弹。"""
     html = music_page_shell()
-    css = {name: (MUSIC_STATIC / "css" / f"{name}.css").read_text(
-        encoding="utf-8") for name in
-        ("music-base", "music-search", "music-player", "music-menus",
-         "share-viewer-page", "share-viewer-player")}
-    js = {name: (MUSIC_STATIC / "js" / f"{name}.js").read_text(
-        encoding="utf-8") for name in ("music-viewport-hud",
-                                       "music-track-menus")}
-    # 变量本体: 两条地界取深 (浏览器 env+36 / 独立模式 --top-floor 96px)
-    assert ("--top-clear: max(calc(env(safe-area-inset-top, 0px) + 36px),"
-            in css["music-base"])
-    assert "var(--top-floor));" in css["music-base"]
-    # 固定控件挨个验钉
-    assert "padding: var(--top-clear) 16px 0;" in css["music-search"]
-    assert "margin-top: var(--top-clear);" in css["music-player"]
-    assert "padding: var(--top-clear) 0 0;" in css["share-viewer-player"]
-    assert "top:var(--top-clear)" in js["music-viewport-hud"]
-    # 长按菜单的竖向下限: 隐形量尺钉在边界上, JS 读 offsetTop 当下限
-    assert '<i id="top-clear-probe" aria-hidden="true">' in html
-    assert "#top-clear-probe {" in css["music-menus"]
-    assert 'const probe = $("#top-clear-probe");' in js["music-track-menus"]
-    assert "probe.offsetTop" in js["music-track-menus"]
-    assert ("menu.style.top = `${Math.max(minY, Math.round(y))}px`;"
-            in js["music-track-menus"])
-    # 分享页自包含: 自家 :root 同名变量 (没有独立模式地界, env+36 即可)
-    assert ("--top-clear: calc(env(safe-area-inset-top, 0px) + 36px);"
-            in css["share-viewer-page"])
+    doctor = (MUSIC_STATIC / "js" / "music-viewport-doctor.js").read_text(
+        encoding="utf-8")
+    # 壳高挂补偿变量 (音乐壳 CSS 消费, 平时 100dvh 不变)
+    assert "height: var(--shell-h, 100dvh);" in html
+    assert 'setProperty(\n      "--shell-h"' in doctor
+    assert 'removeProperty("--shell-h")' in doctor
+    # 满高钳屏内: 竖屏取长边/横屏取短边
+    assert ("const capOf = () => landscape() ? Math.min(screen.width, screen.height)"
+            in doctor)
+    assert "Math.min(full, capOf())" in doctor
+    # 回满自动撤; 补不上才弹体检窗 (红框退成兜底)
+    assert "shellH(false);" in doctor
+    assert "if (patched <= window.innerHeight) ViewportHUD.show();" in doctor
+
+

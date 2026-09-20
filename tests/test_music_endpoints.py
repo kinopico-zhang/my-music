@@ -1,14 +1,11 @@
 """My Music 接口测试: 登录门槛, 浏览/搜索端点, 统计, Service
-Worker, 播放计数, webapp 兜底。"""
-import time
-
+Worker, webapp 兜底。播放流水/排行 (1.8.31) 分家去
+test_music_play_events。"""
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 
 import app.main as m
-from app import account_store, config
-from app.music.library_database import PlayStat, session_factory
+from app import config
 from app.music import library_queries
 from tests.music_library_helpers import _seed_library
 
@@ -79,56 +76,6 @@ def test_music_service_worker_endpoint(client):
     assert response.headers["content-type"].startswith("text/javascript")
     assert "music-downloads-v1" in response.text
     assert response.headers["cache-control"] == "no-cache"
-
-
-def test_record_play_counts_and_dedups():
-    """查询层: user+track 一行, 重播只加次数; 曲目不在库里不记。"""
-    _seed_library()
-    with session_factory()() as session:
-        assert library_queries.record_play(session, "u-1", 1) is True
-        assert library_queries.record_play(session, "u-1", 1) is True
-        assert library_queries.record_play(session, "u-1", 999) is False
-        stat = session.execute(select(PlayStat)).scalar_one()
-        assert stat.play_count == 2
-        assert [t.title for t in
-                library_queries.recent_plays(session, "u-1")] == ["曲A"]
-        assert library_queries.recent_plays(session, "u-1")[0].play_count == 2
-        assert library_queries.recent_plays(session, "别人") == []
-
-
-def test_play_record_endpoints_per_user(auth, usersdb):
-    """播放记录接口: 重播把曲子顶回最前, 账号之间互不可见, 没登录 401。"""
-    _seed_library()
-    anon = TestClient(m.app)
-    assert anon.post("/music/api/plays",
-                     json={"track_id": 1}).status_code == 401
-    assert anon.get("/music/api/plays/recent").status_code == 401
-
-    assert auth.post("/music/api/plays", json={"track_id": 1}).status_code == 200
-    time.sleep(0.002)
-    assert auth.post("/music/api/plays", json={"track_id": 2}).status_code == 200
-    time.sleep(0.002)
-    assert auth.post("/music/api/plays", json={"track_id": 1}).status_code == 200
-    assert auth.post("/music/api/plays",
-                     json={"track_id": 9999}).status_code == 404
-    recent = auth.get("/music/api/plays/recent").json()["tracks"]
-    assert [t["title"] for t in recent] == ["曲A", "曲B"]   # 最近那次排前
-    assert recent[0]["album_title"] == "甲"
-    assert recent[0]["play_count"] == 2                # 1.8.1: 播过几次跟着行走
-    assert recent[1]["play_count"] == 1
-
-    # 另一个账号: 各记各的, 看不见管理员的记录
-    account_store.create_user(usersdb, "试听乙", "password123")
-    yi = TestClient(m.app)
-    assert yi.post("/api/login",
-                   json={"user": "试听乙", "password": "password123"}
-                   ).status_code == 200
-    assert yi.get("/music/api/plays/recent").json()["tracks"] == []
-    assert yi.post("/music/api/plays", json={"track_id": 3}).status_code == 200
-    assert [t["title"] for t in
-            yi.get("/music/api/plays/recent").json()["tracks"]] == ["Hello"]
-    assert [t["title"] for t in
-            auth.get("/music/api/plays/recent").json()["tracks"]] == ["曲A", "曲B"]
 
 
 def test_music_webapp_fallbacks(auth):

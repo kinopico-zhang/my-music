@@ -20,7 +20,9 @@ def test_music_pane_fixed_chrome_wiring():
     js = music_browser_js()
     # 壳: 文档不滚, main 是唯一一级滚动器
     assert "height: 100%; overflow: hidden;" in html            # html
-    assert "height: 100dvh;" in html and "overflow: hidden;" in html  # body
+    # 壳高: 平时 100dvh, 冻矮时医生写 --shell-h 钉真满高 (1.8.32 冷开自愈)
+    assert "height: var(--shell-h, 100dvh);" in html
+    assert "overflow: hidden;" in html                          # body
     main_css = html[html.index("main {"):html.index("#root-view {")]
     assert "min-height: 0;" in main_css and "overflow-y: auto;" in main_css
     assert "-webkit-overflow-scrolling: touch;" in main_css

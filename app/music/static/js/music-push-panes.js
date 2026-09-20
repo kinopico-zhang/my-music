@@ -5,8 +5,8 @@
 /* global $, bindPaneSwipe, pageState, pushStack, renderAlbumView, renderAlbumsPane,
           renderArtistView, renderArtistsPane, renderChangelogView, renderDownloadsPane,
           renderHomeView, renderPlaylistsPane, renderPlaylistView, renderRecentPane,
-          renderSearchView, renderSettingsView, renderStatsView, saveLastRoute,
-          ViewportDoctor */
+          renderSearchView, renderSettingsView, renderStatsView, renderTopPane,
+          saveLastRoute, ViewportDoctor */
 /* exported closePushStack, paneMotion, pushPaneTarget, removePaneWhenSettled,
             renderRootView, routePushed, routeRoot, unlockRootScroll */
 
@@ -65,6 +65,7 @@ function renderPushedView(view, ids, target) {
   else if (view === "albums") renderAlbumsPane(target);
   else if (view === "artists") renderArtistsPane(target);
   else if (view === "recent") renderRecentPane(target);
+  else if (view === "top") renderTopPane(target);
   else if (view === "downloads") renderDownloadsPane(target);
   else if (view === "search") renderSearchView(target);
   else if (view === "settings") renderSettingsView(target);

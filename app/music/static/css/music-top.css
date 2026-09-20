@@ -1,0 +1,36 @@
+/* music-top — My Music 播放排行页 (1.8.31 新增, JS 同名模块): 设置页同款
+   壳法 —— 大标题 + 三档页签钉住, 正文横向 snap 三榜各自竖滚。行右缘只
+   显区间内播放次数 (时长/下载标都不出), 引导位是名次。 */
+
+/* ---------- 页壳: 大标题 + 页签钉住, 正文横向 snap 三页各自竖滚 ---------- */
+/* 抵掉 .pane-scroll 的衬法 (自己管布局): 上衬留在壳上, 左右/底衬下放各页 */
+.push-pane[data-view="top"] .pane-scroll {
+  overflow: hidden; padding: calc(env(safe-area-inset-top) + 14px) 0 0;
+}
+.top-shell { display: flex; flex-direction: column; height: 100%; }
+.top-shell .pane-title { padding-left: 16px; padding-right: 16px; flex-shrink: 0; }
+.top-tabs { display: flex; gap: 6px; padding: 0 16px 12px; flex-shrink: 0; }
+.top-tabs button {
+  font-size: 13px; font-weight: 600; color: var(--ink-3);
+  padding: 5px 13px; border-radius: 999px; background: var(--surface-2);
+}
+.top-tabs button.on { color: var(--ink-1); background: var(--surface-3); }
+/* 横向 snap 容器 (touch-action 是链式约束, .push-pane 已放行 pan-x):
+   起手横拖归切页, 右划返回只在最左页认 —— music-pane-swipe.js 的守卫 */
+#top-body {
+  flex: 1; min-height: 0; display: flex;
+  overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y;
+}
+.top-page {
+  flex: 0 0 100%; min-width: 0; height: 100%;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 0 16px calc(var(--dock-clear) + 12px);
+  scroll-snap-align: start; touch-action: pan-x pan-y;
+}
+/* 名次位比默认引导位宽一档 (默认 22px, 三位数放不下) */
+.top-page .t-lead { width: 28px; }
+.top-rank { font-size: 14px; font-style: normal; color: var(--ink-3);
+            font-variant-numeric: tabular-nums; }

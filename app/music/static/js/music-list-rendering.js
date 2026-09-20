@@ -30,8 +30,10 @@ function albumCardHTML(album) {
     + 词标 (❝, 行右侧与下载标平齐) + 下载标 + 时长。下载标不是真按钮
     (行本身是 button, 嵌套非法)。
     leadClass="art" 时引导位放宽 (44px 封面图替序号, 播放列表用)。
-    trailingHTML 可顶掉时长位 (1.8.1 最近播放页: 换成播放次数)。 */
-function trackRowHTML(track, leadHTML, leadClass, trailingHTML) {
+    trailingHTML 可顶掉时长位 (1.8.31 播放排行页: 换成区间内播放次数)。
+    plain=true 时下载标也不出 (1.8.31 用户点名「排行上只需要显示播放
+    次数」—— 时长已被 trailingHTML 顶掉, 下载标一并收走)。 */
+function trackRowHTML(track, leadHTML, leadClass, trailingHTML, plain) {
   return `
     <button class="track-row${track.playable ? "" : " disabled"}"
             data-track-row="${track.track_id}" data-track-id="${track.track_id}">
@@ -43,7 +45,7 @@ function trackRowHTML(track, leadHTML, leadClass, trailingHTML) {
         <small>${escapeHTML(track.artist)}</small>
       </span>
       ${track.lyrics_available ? `<i class="t-lyric">${ICON_LYRICS}</i>` : ""}
-      ${downloadsEnabled ? `
+      ${!plain && downloadsEnabled ? `
       <span class="t-dl${downloads.isDownloaded(track.track_id) ? " done" : ""}"
             data-download-track="${track.track_id}" role="button" tabindex="-1"
             aria-label="下载">${downloadMarkHTML(track.track_id)}</span>` : ""}

@@ -39,7 +39,9 @@ body.pane-anim #dock-search {
 .push-pane.open { transform: translateX(0); }
 .push-pane .pane-scroll {
   width: 100%; max-width: 860px; height: 100%;
-  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: none;
+  /* 1.8.31 overscroll 改 contain (用户点名「滑不动了也加上橡皮筋回弹」):
+     none 连回弹一起掐了; contain 保住本体的回弹, 只断向外的滚动链 */
+  overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   padding: calc(env(safe-area-inset-top) + 14px)
            16px
            var(--dock-clear);

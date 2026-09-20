@@ -46,6 +46,15 @@ class RecentPlaysResponse(BaseModel):
     tracks: list[RecentTrackBrief] = Field(default_factory=list)
 
 
+class TopPlaysResponse(BaseModel):
+    """GET /api/plays/top 的应答 (本人的区间排行, 按区间内次数排)。
+
+    行复用 RecentTrackBrief: play_count 是该区间内的播放次数。"""
+
+    period: str                                        # week | month | year
+    tracks: list[RecentTrackBrief] = Field(default_factory=list)
+
+
 class LyricsResponse(BaseModel):
     """单曲歌词原文 (前端解析时间轴)。"""
 

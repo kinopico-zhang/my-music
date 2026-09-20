@@ -10,7 +10,14 @@
 // my-money 记账弹层, 同机同系统实测无恙) 的文档天生可滚, 让位是合法
 // 滚动、收键走苹果日常百测的还原路径。治法 = 键盘期间解锁文档 (在
 // music-global-events.js; 搜索页 1.8.15 的层内滚动结构留着没坏处)。
-// 本模块管「诊断+回传」:
+// 1.8.32 自愈 (用户点名「彻底解决」): 回传日志实锤 —— 会话内的病 1.8.16
+// 已治好 (键盘往返全程干净), 剩下的是冷开那一刻: iOS 的还原高度跨进程
+// 赖账, 约一半开局直接带 771 (满高 812, 每次正好差 41), 整程一声事件
+// 不响、永不自愈, 只能划掉重开碰运气 (用户实测「反复重启才可以」;
+// 开局健康则整程不再犯)。WebKit 写毒拦不住, 但布局自己说了算: 冻矮时
+// 壳高直接钉记档的满高 (--shell-h, music-base.css 消费), 黑带当场补回
+// —— 开局即愈, 不用用户动手; 回满自动撤。体检窗 (红框) 退成兜底。
+// 本模块管「诊断+自愈+回传」:
 //   ① 判据: 键盘开着 = 焦点在输入框 (独立模式里 vv 与 inner 永远相等,
 //      互比是空转 —— 1.8.10 误诊过还抢了用户焦点);
 //   ② 体检窗 (music-viewport-hud.js 管「说」): 现场数字 + 回传服务器日志
@@ -53,16 +60,29 @@ const ViewportDoctor = (() => {
   }
   const sick = () => full - window.innerHeight > 12;  // 冻矮: 比满高矮一截
 
+  // ---------- 冻矮自愈 (1.8.32): 布局别信 webview 的还原高度 ----------
+  // 满高钳在屏内 (竖屏取长边/横屏取短边): 防基线本身被瞬时值带高,
+  // 补偿铺出屏外反而截掉底栏。
+  const capOf = () => landscape() ? Math.min(screen.width, screen.height)
+                                  : Math.max(screen.width, screen.height);
+  function shellH(on) {   // 冻矮: 壳高钉真满高 (music-base.css 消费)
+    const root = document.documentElement;
+    if (on) root.style.setProperty(
+      "--shell-h", Math.min(full, capOf()) + "px");
+    else root.style.removeProperty("--shell-h");
+  }
+
   // ---------- 体检窗接线 (现场数字由这里注入, 屏显+回传归 HUD) ----------
   let said = [];                       // 流水留底 (拼进现场数字最后几行)
   function stat() {
     return [
-      "My Music 1.8.16 视口体检 (现场已回传)",
+      "My Music 1.8.32 视口体检 (现场已回传)",
       `screen ${window.screen.width}x${window.screen.height} dpr ${window.devicePixelRatio}`,
       `inner ${window.innerHeight} / 满高 ${full} (差 ${full - window.innerHeight})`,
       `vv ${vv ? `${Math.round(vv.height)} top ${Math.round(vv.offsetTop)}` : "无"}`,
+      `壳高 ${document.documentElement.style.getPropertyValue("--shell-h") || "dvh"}`,
       `scrollY ${window.scrollY} · 焦点 ${typing() ? "输入框" : "无"}`,
-      "治不了就再进搜索, 点键盘收起键收掉再返回 (重启不保证灵)",
+      "已自动按满高补齐; 若底栏还悬空, 再进搜索点键盘收起键收掉再返回",
       "",
       ...said,
     ].join("\n");
@@ -90,6 +110,7 @@ const ViewportDoctor = (() => {
       freezeSnap = -1;
       declared = false;
       clearTimeout(freezeTimer);
+      shellH(false);                   // 冻矮补偿撤掉 (壳高回真 100dvh)
       ViewportHUD.hide();
       return;
     }
@@ -106,8 +127,10 @@ const ViewportDoctor = (() => {
         freezeSnap = -1;
         if (!patient() || typing() || !sick()) return;
         declared = true;
-        say(`冻矮实锤 inner=${window.innerHeight} 差${full - window.innerHeight}`);
-        ViewportHUD.show();
+        const patched = Math.min(full, capOf());
+        shellH(true);   // 自愈: 壳高钉真满高, 冷开冻矮当场补 (不用用户动手)
+        say(`冻矮实锤 inner=${window.innerHeight} 差${full - window.innerHeight} 补${patched}`);
+        if (patched <= window.innerHeight) ViewportHUD.show();   // 补不上才弹框教真话
       }, 700);
     }
   }
