@@ -44,15 +44,17 @@ def test_music_swipe_delete_wiring():
     assert "queueSwipeBound" in player           # 开视图只绑一次
     assert "bindQueueSwipeDelete" not in events  # 开局不再碰它 (1.8.29)
     # 删的是壳记的 order 绝对位 (视图下标 0 = order[position]); 当前曲
-    # 删不得 (queueRemove 拒, 提示一句); 开着的行把手藏掉 (删除钮盖着,
-    # 抓不得); 旧 .queue-row.dragging 那套撤了 (拖拽单位上移到 wrap)
+    # 删不得 (queueRemove 拒, 提示一句); 1.8.31 把手退役 (整行拖) ——
+    # 开着的行不再是「把手藏掉」, 整行归删除钮; 旧 .queue-row.dragging
+    # 那套也撤了 (拖拽单位上移到 wrap), 预备亮 (.drag-armed) 顶上
     queue = (MUSIC_STATIC / "js" / "player-queue.js").read_text(encoding="utf-8")
     assert "function queueRemove" in queue \
         and "queueUpcoming, queueReorder, queueRemove };" in queue
     assert "queueRemove(playQueue, Number(wrap.dataset.queuePos))" in player
     assert 'aria-label="从队列移除"' in player
     assert ".queue-row.dragging" not in html \
-        and "#queue-list .swipe-wrap.revealed .q-grip" in html
+        and ".q-grip" not in html
+    assert "#queue-list .swipe-wrap.drag-armed {" in html
     # 手势地盘分家 (1.7.0 后遗症修): 左滑只认左移 (右移归推入层返回手势,
     # 抢了会被 pointercancel 掐弹回); 左缘 24px 让给 iOS 系统边缘返回
     assert "swipeDrag.horizontal = dx < 0 && Math.abs(dx) > Math.abs(dy);" in js

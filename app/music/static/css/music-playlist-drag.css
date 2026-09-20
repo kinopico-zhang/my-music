@@ -1,17 +1,10 @@
 /* music-playlist-drag — 播放列表详情页曲目拖拽换序 (1.8.17 用户点名
-   「允许调整列表歌曲的顺序」, JS 同名模块)。行住 .swipe-wrap 里 (与左滑
-   删除同构): 把手盖在行按钮上 (行 z1/删除钮 z0, 把手 z2); touch-action
-   none —— 按住把手上下拖不滚列表; 行尾让出一截给把手 (时长列收一点);
-   被拖的是 wrap 一级 (1.8.19: 行翻不出 wrap 的裁切, 见下)。 */
-#playlist-tracks .pl-grip {
-  position: absolute; top: 0; right: 0; bottom: 0; width: 34px; z-index: 2;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink-3); touch-action: none;
-}
-/* 行滑开露出删除钮时, 把手跟着藏 (visibility 不触发回流, 行高不动;
-   1.8.23 改款后 revealed 挂 wrap 一级 —— 删除钮会压上把手的位置) */
-#playlist-tracks .swipe-wrap.revealed .pl-grip { visibility: hidden; }
-#playlist-tracks .track-row { padding-right: 28px; }
+   「允许调整列表歌曲的顺序」; 1.8.31 改整行拖, 用户点名「不需要显示
+   三个横杠」—— 右缘把手退役, JS 同名模块)。行住 .swipe-wrap 里 (与左滑
+   删除同构): 被拖的是 wrap 一级 (1.8.19: 行翻不出 wrap 的裁切, 见下)。 */
+/* 1.8.31 整行拖: 按住 ~200ms 进预备 (行板微亮提示「可以拖了」, 比拖拽中
+   .dragging 的提亮弱一档), 再动就是拖; 横滑照旧让给左滑删除 */
+#playlist-tracks .swipe-wrap.drag-armed > button { background: var(--surface-2); }
 /* 让位平移的过渡 (队列行同款 .18s): wrap 平时没有 transform 过渡 (左滑那套
    在行 button 上), 拖拽让位要滑开跟手, 没有这条让位就是瞬跳 */
 #playlist-tracks .swipe-wrap { transition: transform .18s ease; }

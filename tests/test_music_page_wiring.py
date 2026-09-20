@@ -89,15 +89,16 @@ def test_music_downloads_wiring():
     # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
     # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select; 1.8.14:
     # -viewport-heal; 1.8.17: -cellular-usage, +playlist-drag;
-    # 1.8.23: +root-rubber), 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 48 and all("?v=" in src for src in scripts)
+    # 1.8.23: +root-rubber; 1.8.31: +top-pane 播放排行页), 引用一律带
+    # 版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 49 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/music-downloads-select.js?v=" in html   # 1.8.6 已下载多选删除
     assert "js/music-root-rubber.js?v=" in html        # 1.8.23 根层橡皮筋
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v33" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v35" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 

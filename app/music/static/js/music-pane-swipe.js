@@ -15,7 +15,8 @@
     系统手里 (整页截图滑走, 网页收不到触摸, preventDefault/Navigation
     API 都掐不动 —— 试过两轮, 别再试), 那一条之外的左缘归这里。 */
 function bindPaneSwipe(pane) {
-  // 分页容器的手势分家 (搜索四子页 1.8.3 / 设置四子页 1.8.17) 分两层:
+  // 分页容器的手势分家 (搜索四子页 1.8.3 / 设置四子页 1.8.17 / 排行三榜
+  // 1.8.31) 分两层:
   // 起手在页里的横拖归原生切页, 不归右划返回 —— 但 1.8.18 用户点名
   // 「最左页右划要退出整个设置/搜索」: 原生平移会把横拖整个抢走
   // (pointercancel), 右划返回死在半路。所以在最左页 (scrollLeft 0)
@@ -27,7 +28,7 @@ function bindPaneSwipe(pane) {
   let guardRight = false;   // 右向坐实后这个触摸的 touchmove 全掐
   pane.addEventListener("touchstart", (event) => {
     if (event.touches.length !== 1) { guardId = null; return; }
-    const pager = event.target.closest("#search-body.paged, #settings-body");
+    const pager = event.target.closest("#search-body.paged, #settings-body, #top-body");
     if (!pager || pager.scrollLeft > 0) { guardId = null; return; }
     guardId = event.touches[0].identifier;
     guardStartX = event.touches[0].clientX;
@@ -56,7 +57,7 @@ function bindPaneSwipe(pane) {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     // 滚到别的页上照旧归原生切页 (鼠标拖不动 snap 容器, 最左页不用看门
     // 也能走下面这条右划返回)
-    const pager = event.target.closest("#search-body.paged, #settings-body");
+    const pager = event.target.closest("#search-body.paged, #settings-body, #top-body");
     if (pager && pager.scrollLeft > 0) return;
     const startX = event.clientX;
     const startY = event.clientY;

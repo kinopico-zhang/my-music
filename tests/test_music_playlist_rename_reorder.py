@@ -58,9 +58,9 @@ def test_playlist_rename_reorder_query(tmp_path):
 
 
 def test_music_playlist_rename_reorder_wiring():
-    """接线: 列表名点按 prompt 改名 (PATCH); 曲目行右缘把手上下拖换序
-    (队列拖拽同款: 指针捕获/让位平移/尾随 click 吞掉), 松手 PUT 全量
-    顺序, 没存上整页重拉对齐服务端。"""
+    """接线: 列表名点按 prompt 改名 (PATCH); 1.8.31 起曲目行整行按住一小会儿
+    上下拖换序 (队列拖拽同款: 预备/让位平移/尾随 click 吞掉, 把手退役),
+    松手 PUT 全量顺序, 没存上整页重拉对齐服务端。"""
     html = music_page_shell()
     view_js = (MUSIC_STATIC / "js" / "music-playlist-view.js").read_text(
         encoding="utf-8")
@@ -71,11 +71,14 @@ def test_music_playlist_rename_reorder_wiring():
     assert 'window.prompt("新的列表名"' in view_js
     assert 'method: "PATCH",' in view_js
     assert ".pl-name::after" in html and 'content: "✎"' in html
-    # 拖拽: 只认把手起手 (行照常点播/滚动), 松手按落点落定
-    assert 'class="pl-grip"' in view_js
+    # 拖拽 (1.8.31 整行拖, 用户点名「不需要显示三个横杠, 默认都是直接
+    # 拖动调整顺序, 长按是右键菜单」): 行上按住 ~200ms 进预备再拖 (预备期
+    # 滑走交还滚动/左滑删除, 长按菜单开了也撤), 松手按落点落定
+    assert 'class="pl-grip"' not in view_js and "ICON_GRIP" not in view_js
     assert "function bindPlaylistDrag" in drag_js
-    assert 'grip.setPointerCapture(event.pointerId);' in drag_js
-    assert "playlistDragSwallowClick" in drag_js   # 落定尾随 click 吞掉 (不开播)
+    assert "const PLAYLIST_ARM_MS = 200;" in drag_js
+    assert 'try { row.setPointerCapture(event.pointerId); }' in drag_js
+    assert "playlistDragSwallowClick" in drag_js   # 按住过的尾随 click 吞掉 (不开播)
     assert 'bindPlaylistDrag(target.querySelector("#playlist-tracks")' in view_js
     # 持久化: 就地先挪 DOM, 再 PUT 全量新顺序; 失败整页重拉
     assert '`/music/api/playlists/${playlistId}/order`' in view_js
@@ -129,4 +132,6 @@ def test_music_playlist_rename_reorder_wiring():
     assert "visibility: hidden;" not in swipe_css   # 行尾整藏退役
     assert "wrap.classList.toggle(\"revealed\"" in (
         MUSIC_STATIC / "js" / "music-swipe-delete.js").read_text(encoding="utf-8")
-    assert "#playlist-tracks .swipe-wrap.revealed .pl-grip" in html  # 把手照旧让位
+    # 1.8.31 把手退役 (整行拖, 用户点名): 预备亮顶上, 右缘让位的衬法撤了
+    assert ".pl-grip" not in html
+    assert "#playlist-tracks .swipe-wrap.drag-armed > button {" in html

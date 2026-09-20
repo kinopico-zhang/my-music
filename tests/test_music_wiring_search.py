@@ -53,8 +53,10 @@ def test_music_183_search_restore_batch():
     # 两条横手势分家: 起手在四子页里的横拖归切页, 不归推入层右划返回;
     # 1.8.5 松一格 —— 歌曲页在最左 (scrollLeft 0) 没得再往左滚, 右划归返回;
     # 1.8.17 设置页也拆四滑页, 同一条守卫认两家的分页容器;
+    # 1.8.31 播放排行页三榜同款, 守卫名单再添一家;
     # touch-action 是链式约束, .push-pane 放行 pan-x 后容器才滑得动
-    assert 'const pager = event.target.closest("#search-body.paged, #settings-body");' in js
+    assert ('const pager = event.target.closest('
+            '"#search-body.paged, #settings-body, #top-body");') in js
     assert "if (pager && pager.scrollLeft > 0) return;" in js
     assert "touch-action: pan-x pan-y;" in html
     # 1.8.18 最左页右划退出整层 (用户点名「跟其他界面右划退出一样」):

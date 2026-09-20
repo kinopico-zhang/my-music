@@ -134,6 +134,22 @@ class PlayStat(MusicLibraryBase):
     play_count: Mapped[int] = mapped_column(default=1)
 
 
+class PlayEvent(MusicLibraryBase):
+    """一次播放的流水 (播一次记一行): 谁 (user_uuid) 什么时候 (played_at)
+    播了哪首 (track_id)。
+
+    play_stats 是聚合行 (最近播放的原料, 重播只推进计数), 区间排行
+    (本周/本月/今年) 没法从它算 —— 按行聚合本表; 与 play_stats 同事务
+    双写, 老库已有的播放没有流水, 排行从启用这天起算。"""
+
+    __tablename__ = "play_events"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_uuid: Mapped[str] = mapped_column(index=True)
+    track_id: Mapped[int] = mapped_column(ForeignKey("tracks.id"), index=True)
+    played_at: Mapped[float] = mapped_column(default=0.0, index=True)  # epoch 秒
+
+
 class MusicSetting(MusicLibraryBase):
     """运行时设置 (恒单行 id=1): 曲库路径 / 歌词 API。
 

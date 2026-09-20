@@ -70,7 +70,6 @@ function bindPlayerEvents() {
   });
 
   $("#queue-list").addEventListener("click", (event) => {
-    if (event.target.closest(".q-grip")) return;   // 拖把不是行点击 (拖完那下更不是)
     const row = event.target.closest("[data-queue-track-id]");
     if (!row || !playQueue) return;
     const track = queueJump(playQueue, Number(row.dataset.queueTrackId));

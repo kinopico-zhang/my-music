@@ -1,6 +1,7 @@
 // music-recent-pane — My Music 最近播放页 (菜单「最近播放」进来的推入层)。
-// 1.8.1 新增: 按最近一次播放时刻倒序整页铺开 (LRU, 最多 100 首),
-// 行右缘显示这首播过几次 (用户点名: 不显示时长, 只留词标/下载标/次数)。
+// 1.8.1 新增: 按最近一次播放时刻倒序整页铺开 (LRU, 最多 100 首)。
+// 1.8.31 用户点名「最近播放不用显示播放次数」: 行右缘回到时长
+// (词标/下载标照旧, 次数只在播放排行页出)。
 "use strict";
 /* global $, bindTrackLists, fetchJSON, listPlaceholderHTML, pageState,
           trackArtHTML, trackRowHTML */
@@ -27,7 +28,6 @@ async function loadRecentPane() {
   pageState.recentPane = tracks || [];            // 点行开播的队列语境
   element.innerHTML = pageState.recentPane.length
     ? pageState.recentPane.map(
-        (track) => trackRowHTML(track, trackArtHTML(track), "art",
-                                `×${track.play_count}`)).join("")
+        (track) => trackRowHTML(track, trackArtHTML(track), "art")).join("")
     : listPlaceholderHTML("听过歌就会出现在这里, 各账号各记各的");
 }

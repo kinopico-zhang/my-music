@@ -12,8 +12,8 @@ from ..schemas import (AlbumPage, AlbumPageList, ArtistPage, ArtistPageList,
                        LibraryStats, LyricsResponse,
                        MusicStatusResponse,
                        PlayRecordRequest, RecentPlaysResponse,
-                       RescanResponse, SearchResult, TrackCredits,
-                       TrackPageList)
+                       RescanResponse, SearchResult, TopPlaysResponse,
+                       TrackCredits, TrackPageList)
 from .common import _require_user, _validate_language
 
 router = APIRouter(prefix="/api")
@@ -140,6 +140,21 @@ def music_recent_plays(
     user = _require_user(request, users)
     return RecentPlaysResponse(
         tracks=library_queries.recent_plays(library, user.uuid, limit))
+
+
+@router.get("/plays/top", response_model=TopPlaysResponse)
+def music_top_plays(
+        request: Request,
+        period: str = Query(default="week", pattern="^(week|month|year)$"),
+        users: Session = Depends(database.get_users_db),
+        library: Session = Depends(get_db)) -> TopPlaysResponse:
+    """本人的播放排行: 本周 (周一起) / 本月 (1 号起) / 今年 (元旦起),
+    按区间内播放次数排 (次数同则最近播过的在前)。"""
+    user = _require_user(request, users)
+    return TopPlaysResponse(
+        period=period,
+        tracks=library_queries.top_plays(
+            library, user.uuid, library_queries.period_start(period)))
 
 
 @router.get("/search", response_model=SearchResult)

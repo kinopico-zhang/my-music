@@ -4,7 +4,8 @@
 /* ---------- 队列视图 (占封面那块地方, 不再弹底部单) ---------- */
 /* 点队列键: 封面原地翻开成播放队列 (照 Apple Music 待播放排版) —— 头部
    待播放 + 歌曲数 (左) 和 随机/循环 (右); 下面滚动列表: 当前曲 eq 动条,
-   其余序号, 行右缘拖拽把手按住上下拖换顺序。 */
+   其余序号; 1.8.31 整行按住一会儿拖换顺序 (把手退役), 行板透明跟整页
+   一张底。 */
 #fp-queue {
   position: absolute; inset: 0; z-index: 2;
   display: flex; flex-direction: column; overflow: hidden;
@@ -34,9 +35,14 @@
 .fq-head-btns button.on { opacity: 1; }
 #queue-list {
   flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 2px 0 14px;
-  /* 1.8.27 行套 .swipe-wrap (左滑删除): 壳的行底/纱色按基类读 var(--bg)
-     (页面底), 队列住全屏页黑底上会显出一块浅色行板 —— 按块改 #000 */
-  --bg: #000;
+  /* 1.8.31 行板改透明 (用户点名「背景颜色跟整个页面一致」): 全屏页的底是
+     模糊封面图, 原先不透明行板把它整块盖住 —— 行透出去, 整页一张底 */
+  --bg: transparent;
+}
+/* 左滑纱按块换近黑渐隐: 行板透明后, 基类那套 var(--bg) 掺半透明在这里
+   会算成全透 (等于没有纱); 近钮一头压暗 (跟底图压暗的亮度一致) */
+#queue-list .swipe-wrap::after {
+  background: linear-gradient(to left, rgba(0,0,0,.55), transparent);
 }
 .queue-row {
   display: flex; align-items: center; gap: 10px; width: 100%;
@@ -47,12 +53,14 @@
 /* 1.8.27 拖拽换位的 transform 落 wrap (行在 wrap 里, overflow:hidden 裁
    得住竖移出界); 被拖的抬层 + 底色/圆角/阴影也都在 wrap 一级 */
 #queue-list .swipe-wrap { transition: transform .18s ease; }
+/* 1.8.31 整行拖 (用户点名「不需要三个横杠」): 按住 ~200ms 进预备
+   (行板微亮提示「可以拖了」), 再动就是拖; 拖拽中的提亮/阴影照旧 */
+#queue-list .swipe-wrap.drag-armed {
+  background: rgba(255,255,255,.05); border-radius: 8px; }
 #queue-list .swipe-wrap.dragging {
   z-index: 3; transition: none; background: rgba(255,255,255,.08);
   box-shadow: 0 8px 22px rgba(0,0,0,.5); border-radius: 8px; }
 #queue-list .swipe-wrap.dragging .queue-row { border-bottom-color: transparent; }
-/* 左滑开着的行: 拖把藏掉 (删除钮盖着, 抓不得) —— 播列表详情页同款 */
-#queue-list .swipe-wrap.revealed .q-grip { visibility: hidden; }
 .q-lead { width: 24px; flex-shrink: 0; display: flex; align-items: center;
           justify-content: center; color: rgba(255,255,255,.4); }
 .q-num { font-size: 14px; font-style: normal;
@@ -64,7 +72,4 @@
 .q-artist { font-size: 13px; color: rgba(255,255,255,.4);
             flex-shrink: 1; margin-left: auto; max-width: 42%;
             overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.q-grip { flex-shrink: 0; width: 30px; height: 38px;
-          display: flex; align-items: center; justify-content: center;
-          color: rgba(255,255,255,.3); touch-action: none; }
 

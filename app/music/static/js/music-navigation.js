@@ -1,6 +1,7 @@
 // music-navigation — My Music 全局状态 (pageState/pushStack) + 应用内导航: 地址不动的路由, 同页刷新。
 // 拆自 music.js (结构化重构), 1.8.0 重排: 页签栏撤掉, 主页独占根层,
-// 其余视图 (播放列表/专辑/艺人/最近播放/已下载/搜索/设置/统计/更新日志) 全是推入层。
+// 其余视图 (播放列表/专辑/艺人/最近播放/播放排行/已下载/搜索/设置/统计/
+// 更新日志) 全是推入层。
 "use strict";
 /* global checkScanStatus, routePushed, routeRoot, stopScanPolling, syncDownloadIcons,
           syncPlayerIndicators */
@@ -12,6 +13,7 @@ const pageState = {
   lists: {},        // segment → {items, total, offset, done, loading}
   homeRecent: null,      // 主页最近播放段曲目 (队列用)
   recentPane: null,      // 最近播放页曲目 (1.8.1, 队列用)
+  topPanes: {},          // 播放排行页三榜曲目 (1.8.31, 键 = week/month/year)
   searchAbort: null,
   scanPollTimer: 0,
   lastScanSignature: "", // 已消化的一轮扫描 (finished_at+changed): 重复的不再响应
@@ -39,9 +41,10 @@ const pushStack = [];   // [{view, id, pane}]
 // 跑) 的毛病连根拔掉。旧深链 (#playlist/5) 只在开局消化一次, URL 随即
 // 洗成光杆 /music。
 
-// 无参推入层 (菜单「播放列表/专辑/艺人/最近播放/已下载」+ 搜索键 + 设置页
-// 里的统计/更新日志): 布局与详情层 (专辑/艺人/播放列表) 一模一样, 从右滑入。
-const PANE_VIEWS = ["playlists", "albums", "artists", "recent", "downloads",
+// 无参推入层 (菜单「播放列表/专辑/艺人/最近播放/播放排行/已下载」+ 搜索键
+// + 设置页里的统计/更新日志): 布局与详情层 (专辑/艺人/播放列表) 一模一样,
+// 从右滑入。
+const PANE_VIEWS = ["playlists", "albums", "artists", "recent", "top", "downloads",
                     "search", "settings", "stats", "changelog"];
 
 function parseRoute(target) {

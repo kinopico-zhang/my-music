@@ -3,7 +3,7 @@
 // 拆自 music.js (结构化重构, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, ICON_ACTION_IMAGE, ICON_ACTION_PLAY, ICON_ACTION_SHARE, ICON_ACTION_SHUFFLE,
-          ICON_ACTION_TRASH, ICON_DOWNLOAD, ICON_GRIP, bindCoverPress, bindPlaylistDrag,
+          ICON_ACTION_TRASH, ICON_DOWNLOAD, bindCoverPress, bindPlaylistDrag,
           bindSwipeDelete, bindTrackLists, coverUploadPlaylistId: writable,
           describeDuration, downloadAllFromUI, downloadsEnabled, escapeHTML,
           fetchJSON, listPlaceholderHTML, navigate, playerStart, playlistCoverURL,
@@ -62,7 +62,6 @@ async function renderPlaylistView(playlistId, target) {
       ${page.tracks.map((track) => `
         <div class="swipe-wrap" data-swipe-track="${track.track_id}">
           ${trackRowHTML(track, trackArtHTML(track), "art")}
-          <span class="pl-grip" aria-hidden="true">${ICON_GRIP}</span>
           <button class="swipe-del" aria-label="从列表移除">删除</button>
         </div>`).join("")}
     </div>`;

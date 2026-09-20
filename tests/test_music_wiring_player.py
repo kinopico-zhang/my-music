@@ -1,6 +1,6 @@
-"""My Music 播放器接线测试: 控制钮样式, 队列封面视图, 队列拖拽,
-返回手势收起, 单 URL 导航 —— 静态文本断言, 不碰数据库。
-拆自 test_music_wiring.py (结构化重构, 代码逐字节未动)。"""
+"""My Music 播放器接线测试: 控制钮样式, 队列封面视图, 返回手势收起,
+单 URL 导航 —— 静态文本断言, 不碰数据库。拆自 test_music_wiring.py
+(结构化重构); 1.8.31 队列拖拽长出自己的历史, 分家去 test_music_queue_drag。"""
 
 from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
                                       music_page_shell, music_player_js)
@@ -87,9 +87,8 @@ def test_music_queue_cover_view_wiring():
                  "$(\"#queue-list\").innerHTML = upcoming.map",
                  '$("#fq-count").textContent = `${upcoming.length} 首歌曲`']:
         assert frag in player, f"music-player.js 缺 {frag}"
-    # 行样式: 序号等宽数字 + 拖把不触发竖向滚动劫持 (touch-action 分层)
-    for frag in [".queue-row {", ".q-num {", ".q-grip {", "touch-action: pan-y;",
-                 "touch-action: none;"]:
+    # 行样式: 序号等宽数字 + 竖向照旧原生滚 (1.8.31 把手退役, 整行拖)
+    for frag in [".queue-row {", ".q-num {", "touch-action: pan-y;"]:
         assert frag in html, f"队列行样式缺 {frag}"
     # 互斥: 开队列先收歌词, 开歌词先收队列; 收起播放页两个都收
     assert "if (lyricsViewOpen) toggleLyricsView();" in player
@@ -98,36 +97,6 @@ def test_music_queue_cover_view_wiring():
     # 区, 封面整块藏掉; .lyrics 类只留背景压暗用 (缩略图那套 CSS 撤净)
     assert '$("#fp-art-wrap").hidden = lyricsViewOpen;' in player
     assert "#full-player.lyrics .fp-body {" not in html
-
-
-def test_music_queue_drag_wiring():
-    """队列内拖拽换序 (用户点名"列表里的歌单可以被拖拽更换顺序"):
-    位置数学在 player-queue.js 的 queueReorder (node 直测), 这里只验接线 ——
-    把手按下即捕获指针, 行跟手位移让位, 松手按落点改 order 并存档;
-    换过的顺序和随机/循环开关存进 localStorage, 恢复前先验 order 是完整
-    排列 (缺/重/越界的旧档弃用, 随机旗只在顺序真恢复时才点亮)。
-    1.8.27 行套 .swipe-wrap (左滑删除同构): 拖拽单位上移到 wrap 一级,
-    落点位只认拖动距离; 删行断言在 test_music_swipe_delete。"""
-    html = music_page_shell()
-    player = music_player_js()
-    common = (MUSIC_STATIC / "js" / "music-common.js").read_text(encoding="utf-8")
-    queue = (MUSIC_STATIC / "js" / "player-queue.js").read_text(encoding="utf-8")
-    # 拖动中的行浮起来 (阴影 + 免过渡) —— 1.8.27 被拖的是 wrap, 过渡也在 wrap
-    assert "#queue-list .swipe-wrap.dragging {" in html
-    assert "#queue-list .swipe-wrap { transition: transform .18s ease; }" in html
-    assert "ICON_GRIP" in common and "const ICON_GRIP" in common
-    assert "module.exports = {" in queue and "queueReorder," in queue
-    for frag in ["function bindQueueDrag", "function finishQueueDrag",
-                 "queueReorder(playQueue, base + drag.fromView, base + drag.target)",
-                 "grip.setPointerCapture(event.pointerId)",
-                 'event.target.closest(".q-grip")',
-                 "drag.fromView + Math.round(dy / drag.rowH)"]:
-        assert frag in player, f"music-player.js 缺 {frag}"
-    assert "bindQueueDrag();" in player                 # 挂进事件绑定
-    # 存档: order (截 500) + position 一起进 player state
-    assert "order: playQueue.order.slice(0, 500)," in player
-    assert "saved.order" in player and "orderRestored" in player
-    assert "new Set(saved.order).size === saved.tracks.length" in player  # 排列校验
 
 
 def test_music_player_dismiss_wiring():
@@ -183,9 +152,11 @@ def test_music_single_url_navigation_wiring():
     assert "pushState(" not in js and "history.back(" not in js
     assert "pushState(" not in player and "history.back(" not in player
     # 目标从状态派生: 有层看顶层, 没层看根视图 (1.8.0: 主页独占根层,
-    # 播放列表/专辑/艺人/最近播放/已下载/搜索/设置/统计/更新日志全是推入层)
+    # 播放列表/专辑/艺人/最近播放/播放排行/已下载/搜索/设置/统计/更新日志
+    # 全是推入层)
     assert "function parseRoute" in js and "function currentRoute" in js
-    assert 'const PANE_VIEWS = ["playlists", "albums", "artists", "recent", "downloads",' in js
+    assert ('const PANE_VIEWS = ["playlists", "albums", "artists", '
+            '"recent", "top", "downloads",') in js
     assert '"search", "settings", "stats", "changelog"];' in js
     assert "PANE_VIEWS.includes(name)" in js
     assert 'const pushed = view !== "home";' in js
