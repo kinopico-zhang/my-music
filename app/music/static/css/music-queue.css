@@ -3,9 +3,9 @@
 
 /* ---------- 队列视图 (占封面那块地方, 不再弹底部单) ---------- */
 /* 点队列键: 封面原地翻开成播放队列 (照 Apple Music 待播放排版) —— 头部
-   待播放 + 歌曲数 (左) 和 随机/循环 (右); 下面滚动列表: 当前曲 eq 动条,
-   其余序号; 1.8.31 整行按住一会儿拖换顺序 (把手退役), 行板透明跟整页
-   一张底。 */
+   待播放 + 歌曲数 (左) 和 随机/循环 (右); 下面滚动列表: 每行 44px 封面 +
+   歌名/作者两行 (1.8.38 用户点名, 与歌单行同款), 当前曲封面上盖纱动条;
+   1.8.31 整行按住一会儿拖换顺序 (把手退役), 行板透明跟整页一张底。 */
 #fp-queue {
   position: absolute; inset: 0; z-index: 2;
   display: flex; flex-direction: column; overflow: hidden;
@@ -61,15 +61,22 @@
   z-index: 3; transition: none; background: rgba(255,255,255,.08);
   box-shadow: 0 8px 22px rgba(0,0,0,.5); border-radius: 8px; }
 #queue-list .swipe-wrap.dragging .queue-row { border-bottom-color: transparent; }
-.q-lead { width: 24px; flex-shrink: 0; display: flex; align-items: center;
-          justify-content: center; color: rgba(255,255,255,.4); }
-.q-num { font-size: 14px; font-style: normal;
-         font-variant-numeric: tabular-nums; }
-.queue-row.on .bars { display: inline-flex; }
+/* 1.8.38 行改歌单同款 (用户点名「去掉序号, 显示歌曲封面, 跟歌单里的
+   歌曲风格一致」): 左 44px 曲目封面 (trackArtHTML, 无图退 ♪ 块), 歌名
+   上行/作者下行; 当前曲封面上盖整面半透纱 + 白动条 (与播放列表行
+   播放中的那套同一语言) */
+.q-lead { width: 44px; flex-shrink: 0; position: relative; }
+.queue-row.on .bars {
+  position: absolute; inset: 0; height: auto;   /* height:auto 见 music-lists 的纱罩注 */
+  align-items: center; justify-content: center;
+  border-radius: 6px; background: rgba(0, 0, 0, .45);
+}
+.queue-row.on .bars i { background: #fff; animation-name: bars-bounce-art; }
+.q-main { flex: 1; min-width: 0; }
 .queue-row.on .q-title { color: #fff; font-weight: 600; }
-.q-title { font-size: 15px; color: rgba(255,255,255,.85); flex-shrink: 1;
+.q-title { display: block; font-size: 15px; color: rgba(255,255,255,.85);
            overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.q-artist { font-size: 13px; color: rgba(255,255,255,.4);
-            flex-shrink: 1; margin-left: auto; max-width: 42%;
-            overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.q-artist { display: block; font-size: 12px; color: rgba(255,255,255,.4);
+            margin-top: 2px; overflow: hidden; white-space: nowrap;
+            text-overflow: ellipsis; }
 

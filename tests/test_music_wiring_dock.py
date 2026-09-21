@@ -148,9 +148,12 @@ def test_music_top_fallback_removed():
     # push-panes 拆出 pane-swipe; 1.8.14: -viewport-heal —— 按住验方
     # 退役; 1.8.17: -cellular-usage 蜂窝流量撤了, +playlist-drag 播放
     # 列表拖拽换序; 1.8.23: +root-rubber 根层右划橡皮筋; 1.8.31:
-    # +top-pane 播放排行页)
+    # +top-pane 播放排行页; 1.8.34: +hero-collapse 封面收缩顶栏;
+    # 1.8.35: +client 客户端识别; 1.8.39: +desktop-keys 桌面键盘层;
+    # 1.8.45: +hero-bar-actions 收缩顶栏动作条; 1.8.46: +hero-bar-tap
+    # 被吞点按补发)
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    assert len(scripts) == 49 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 54 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
     assert "js/music-playlist-drag.js?v=" in html   # 1.8.17 拖拽换序

@@ -3,12 +3,14 @@
 // 拆自 music.js (结构化重构, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, ICON_ACTION_IMAGE, ICON_ACTION_PLAY, ICON_ACTION_SHARE, ICON_ACTION_SHUFFLE,
-          ICON_ACTION_TRASH, ICON_DOWNLOAD, bindCoverPress, bindPlaylistDrag,
-          bindSwipeDelete, bindTrackLists, coverUploadPlaylistId: writable,
+          ICON_ACTION_TRASH, ICON_DOWNLOAD, bindCoverPress, bindHeroCollapse,
+          bindPlaylistDrag, bindSwipeDelete, bindTrackLists,
+          coverUploadPlaylistId: writable,
           describeDuration, downloadAllFromUI, downloadsEnabled, escapeHTML,
-          fetchJSON, listPlaceholderHTML, navigate, playerStart, playlistCoverURL,
-          pushPaneTarget, pushStack, renderRootView, sharePlaylist,
-          syncPlayerIndicators, toast, trackArtHTML, trackRowHTML */
+          fetchJSON, heroBarHTML, listPlaceholderHTML, navigate, playerStart,
+          playlistCoverURL, pushPaneTarget, pushStack, renderRootView,
+          sharePlaylist, syncPlayerIndicators, toast, trackArtHTML, trackRowHTML,
+          wireHeroBarActions */
 /* exported coverUploadPlaylistId, renderPlaylistView, uploadPlaylistCover */
 
 // ------------------------------------------------------------ 播放列表页
@@ -28,35 +30,40 @@ async function renderPlaylistView(playlistId, target) {
   const cover = playlistCoverURL(playlist);
   const coverLabel = cover ? "换封面" : "设置封面";
   target.innerHTML = `
-    <div class="album-hero">
-      <button class="pl-cover-btn" id="cover-tap" aria-label="${coverLabel}"
-              title="${coverLabel}">
-        ${cover
-          ? `<img class="pl-icon big art" alt="" src="${cover}">`
-          : '<div class="pl-icon big">♫</div>'}
-        <span class="cover-hint" aria-hidden="true">${ICON_ACTION_IMAGE}</span>
-      </button>
-      <div class="hero-txt">
-        <h2 class="pl-name" title="点按改名">${escapeHTML(playlist.name)}</h2>
-        <small>${escapeHTML(describeDuration(
-          playlist.duration_seconds, playlist.track_count))}</small>
+    <div class="hero-head">
+      <div class="album-hero">
+        <button class="pl-cover-btn" id="cover-tap" aria-label="${coverLabel}"
+                title="${coverLabel}">
+          ${cover
+            ? `<img class="pl-icon big art" alt="" src="${cover}">`
+            : '<div class="pl-icon big">♫</div>'}
+          <span class="cover-hint" aria-hidden="true">${ICON_ACTION_IMAGE}</span>
+        </button>
+        <div class="hero-txt">
+          <h2 class="pl-name" title="点按改名">${escapeHTML(playlist.name)}</h2>
+          <div class="hero-sub"><small class="hero-meta">${escapeHTML(describeDuration(
+            playlist.duration_seconds, playlist.track_count))}</small></div>
+        </div>
       </div>
-    </div>
-    <div class="action-row">
-      <button class="action icon primary" id="playlist-play" title="播放"
-              aria-label="播放" ${playable.length ? "" : "disabled"}>
-        ${ICON_ACTION_PLAY}</button>
-      <button class="action icon" id="playlist-shuffle" title="随机播放"
-              aria-label="随机播放" ${playable.length ? "" : "disabled"}>
-        ${ICON_ACTION_SHUFFLE}</button>
-      ${downloadsEnabled ? `
-      <button class="action icon" id="playlist-download" title="下载全部"
-              aria-label="下载全部" ${playable.length ? "" : "disabled"}>
-        ${ICON_DOWNLOAD}</button>` : ""}
-      <button class="action icon" id="playlist-share" title="分享"
-              aria-label="分享">${ICON_ACTION_SHARE}</button>
-      <button class="action icon" id="playlist-delete" title="删除列表"
-              aria-label="删除列表">${ICON_ACTION_TRASH}</button>
+      <div class="action-row">
+        <button class="action icon primary" id="playlist-play" title="播放"
+                aria-label="播放" ${playable.length ? "" : "disabled"}>
+          ${ICON_ACTION_PLAY}</button>
+        <button class="action icon" id="playlist-shuffle" title="随机播放"
+                aria-label="随机播放" ${playable.length ? "" : "disabled"}>
+          ${ICON_ACTION_SHUFFLE}</button>
+        ${downloadsEnabled ? `
+        <button class="action icon" id="playlist-download" title="下载全部"
+                aria-label="下载全部" ${playable.length ? "" : "disabled"}>
+          ${ICON_DOWNLOAD}</button>` : ""}
+        <button class="action icon" id="playlist-share" title="分享"
+                aria-label="分享">${ICON_ACTION_SHARE}</button>
+        <button class="action icon" id="playlist-delete" title="删除列表"
+                aria-label="删除列表">${ICON_ACTION_TRASH}</button>
+      </div>
+      ${heroBarHTML({ play: !!playable.length, shuffle: !!playable.length,
+                      ...(downloadsEnabled ? { download: !!playable.length } : {}),
+                      share: true, delete: true })}
     </div>
     <div class="track-list" id="playlist-tracks">
       ${page.tracks.map((track) => `
@@ -65,18 +72,33 @@ async function renderPlaylistView(playlistId, target) {
           <button class="swipe-del" aria-label="从列表移除">删除</button>
         </div>`).join("")}
     </div>`;
-  target.querySelector("#playlist-play").addEventListener("click", () => {
-    playerStart(page.tracks, page.tracks.indexOf(playable[0]));
-  });
-  target.querySelector("#playlist-shuffle").addEventListener("click", () => {
-    playerStart(page.tracks, page.tracks.indexOf(playable[0]), true);
-  });
+  const playList = () => playerStart(page.tracks, page.tracks.indexOf(playable[0]));
+  const shuffleList = () => playerStart(page.tracks, page.tracks.indexOf(playable[0]), true);
+  target.querySelector("#playlist-play").addEventListener("click", playList);
+  target.querySelector("#playlist-shuffle").addEventListener("click", shuffleList);
   const playlistDownload = target.querySelector("#playlist-download");
   if (playlistDownload) {
     playlistDownload.addEventListener("click", () => downloadAllFromUI(page.tracks));
   }
-  target.querySelector("#playlist-share").addEventListener("click", () => {
-    sharePlaylist(playlist);
+  const shareThisList = () => sharePlaylist(playlist);
+  target.querySelector("#playlist-share").addEventListener("click", shareThisList);
+  const deleteThisList = async () => {
+    if (!window.confirm(`删除播放列表「${playlist.name}」?`)) return;
+    try {
+      await fetchJSON(`/music/api/playlists/${playlistId}`, { method: "DELETE" });
+      toast("已删除");
+      navigate("home");                  // 回主页, 列表段重铺自然不再有它
+      if (pushStack.length) renderRootView("home");   // 一级页就在层底下, 趁滑走前重铺
+    } catch (error) {
+      toast(`没删掉: ${error.message}`);
+    }
+  };
+  target.querySelector("#playlist-delete").addEventListener("click", deleteThisList);
+  // 顶栏动作条 (1.8.45): 收缩后 播放 + … 两颗, … 里就是这四颗
+  wireHeroBarActions(target, {
+    play: playList, shuffle: shuffleList,
+    download: () => downloadAllFromUI(page.tracks), share: shareThisList,
+    delete: deleteThisList,
   });
   bindCoverPress(playlistId, playlist.name, !!cover);
   // 改名 (1.8.17 用户点名「允许编辑播放列表的标题」): 点标题 prompt 落定
@@ -95,17 +117,6 @@ async function renderPlaylistView(playlistId, target) {
       toast("列表名已更新");
     } catch (error) {
       toast(`没改上: ${error.message}`);
-    }
-  });
-  target.querySelector("#playlist-delete").addEventListener("click", async () => {
-    if (!window.confirm(`删除播放列表「${playlist.name}」?`)) return;
-    try {
-      await fetchJSON(`/music/api/playlists/${playlistId}`, { method: "DELETE" });
-      toast("已删除");
-      navigate("home");                  // 回主页, 列表段重铺自然不再有它
-      if (pushStack.length) renderRootView("home");   // 一级页就在层底下, 趁滑走前重铺
-    } catch (error) {
-      toast(`没删掉: ${error.message}`);
     }
   });
   bindTrackLists(target.querySelector("#playlist-tracks"), () => page.tracks);
@@ -146,6 +157,7 @@ async function renderPlaylistView(playlistId, target) {
     }
   });
   coverUploadPlaylistId = playlistId;
+  bindHeroCollapse(target);              // 1.8.34 封面收缩顶栏 (上划钉成顶栏)
   syncPlayerIndicators();
 }
 

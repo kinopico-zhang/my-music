@@ -40,10 +40,11 @@ def test_music_pane_fixed_chrome_wiring():
     # 一级页滚动/渲染都走 main/#root-view, 文档滚动彻底退出 —— 唯一例外
     # 是 lift() 的脏滚位复位 (iOS 键盘避让会把文档滚了, overflow:hidden
     # 拦不住; 1.8.7 起复位条件连 window.scrollY 一起查, 见视口接线测试);
-    # 其余两处都只读: 体检窗现场数字行 (医生) + 回传快照 (HUD)
+    # 其余只剩一处只读: 回传快照 (HUD) —— 医生的体检窗现场数字行随红框
+    # 1.8.43 一起撤了 (用户点名「打点就偷偷打点就行了」)
     assert '$("#main").scrollTop = pageState.rootScroll;' in js
     assert 'pageState.rootScroll = $("#main").scrollTop;' in js
-    assert js.count("window.scrollY") == 3
+    assert js.count("window.scrollY") == 2
     assert '$("#root-view").innerHTML' in js
     # 文档滚动的写手只剩 lift() 一个: 键盘收走后 iOS 赖账 (文档停在滚位
     # 上或视口停在偏移上, 回主页底部一块黑), 复位一次。1.8.13 收键「按住」

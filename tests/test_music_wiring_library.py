@@ -50,7 +50,7 @@ def test_music_share_link_wiring():
     # 视图罩住封面区 (app 同款距离模糊/当前句放大), 歌词解析借公开的
     # lyrics-parser.js
     for frag in ['id="fp"', 'id="fp-play"', 'id="fp-prev"', 'id="fp-next"',
-                 'id="fp-lyrics"', 'id="fp-meta-lyrics"', 'id="fp-scrub"',
+                 'id="fp-lyrics"', 'id="fp-lyrics-btn"', 'id="fp-scrub"',
                  'id="fp-grab"', 'id="fp-bg"', "openFullPlayer",
                  "closeFullPlayer", "bindPullClose", "updateMediaSession",
                  "/music/share/${token}/lyrics/${track.track_id}",
@@ -61,6 +61,15 @@ def test_music_share_link_wiring():
     assert '<div class="fp-transport">' in share_all
     assert share_all.index('<div class="fp-scrub-row">') < share_all.index('<div class="fp-keys">')
     assert "fp-controls" not in share_all      # 旧键行 (键在进度条旁) 撤了
+    # 1.8.37 中排键 (用户点名): 标题和进度条之间 歌词/随机/循环 三键并排;
+    # 循环三态 关→列表→单曲 (单曲带 "1" 角标), 播完单曲重播本首
+    assert '<div class="fp-mid">' in share_all
+    assert share_all.index('id="fp-lyrics-btn"') < share_all.index('<div class="fp-transport">')
+    for frag in ['id="fp-shuffle"', 'id="fp-repeat"', "function toggleShuffle",
+                 "function cycleRepeat",
+                 '$("#fp-repeat").classList.toggle("one", repeatMode === 2);',
+                 "if (repeatMode === 2) { playQueue(queuePos); return; }"]:
+        assert frag in share_all, f"分享页中排键缺 {frag}"
     # 作者行并专辑名 (「下面是标题和作者专辑名称」)
     assert '[track.artist, track.album_title].filter(Boolean).join(" | ")' in share_all
     # 歌词视图开关 (1.8.17 只走标题行的歌词键): 开着封面让位, 键点亮;
@@ -80,9 +89,10 @@ def test_music_share_link_wiring():
     # (竖向下拉归收起, 互不抢)
     assert "bindCoverSwipe" in share_all
     assert "if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {" in share_all
-    # 队列两头切歌键灰掉点不动 (1.8.17 用户点名)
-    assert '$("#fp-prev").disabled = queuePos <= 0;' in share_all
-    assert '$("#fp-next").disabled = queuePos >= queue.length - 1;' in share_all
+    # 队列两头切歌键灰掉点不动 (1.8.17 用户点名); 1.8.37 起循环/随机
+    # 开着时两头放行 (随机永远有下一首, 循环队尾回绕)
+    assert '$("#fp-prev").disabled = repeatMode === 0 && queuePos <= 0;' in share_all
+    assert '$("#fp-next").disabled = repeatMode === 0 && !shuffleOn' in share_all
     assert ".fp-keys > button:disabled { opacity: .3; pointer-events: none; }" in share_all
     # 播放列表行歌名/艺人分两行 (1.8.18 用户点名): 行内 span 挤一行不吃省略号, block 化才各行其道
     assert ".row .t { display: block;" in share_all \
@@ -111,7 +121,8 @@ def test_music_download_all_wiring():
     """「下载全部」(用户点名: 播放列表/专辑详情页): 顺序一首首下
     (几十个 40MB 并发请求在手机上必炸), 已在库/正在下的跳过,
     下载管理「全部删除」把整批叫停。列表页操作行 1.7.0 起改纯图标
-    (播放/随机/下载/分享/删除 五枚一般大, 一行装下不再换行)。"""
+    (播放/随机/下载/分享/删除 五枚一般大, 一行装下不再换行);
+    专辑/艺人页 1.8.33 同款改齐 (用户点名「跟播放列表的风格差不多」)。"""
     html = music_page_shell()
     js = music_browser_js()
     assert 'id="album-download"' in js and "下载全部" in js
@@ -125,6 +136,18 @@ def test_music_download_all_wiring():
                  'id="playlist-shuffle"', 'id="playlist-download"',
                  'id="playlist-share"', 'id="playlist-delete"']:
         assert frag in js, f"操作行缺 {frag}"
+    # 1.8.33 专辑/艺人页操作行同款纯图标 (用户点名「跟播放列表的风格
+    # 差不多」): 专辑 播放/随机/下载/分享 + 艺人 播放/随机, 文字收进
+    # title/aria-label
+    for frag in ['class="action icon primary" id="album-play"',
+                 'id="album-shuffle"', 'id="album-download"',
+                 'id="album-share"', 'class="action icon primary" id="artist-play"',
+                 'id="artist-shuffle"']:
+        assert frag in js, f"专辑/艺人操作行缺 {frag}"
+    # 专辑分享 (1.8.33 用户点名): shareAlbum 开 24h 免登录链接, 专辑页挂线
+    assert 'async function shareAlbum' in js
+    assert 'shareByLink("album", album.album_id' in js
+    assert "shareAlbum(album);" in js
     assert ".action.icon {" in html and ".action.icon svg {" in html
 
 

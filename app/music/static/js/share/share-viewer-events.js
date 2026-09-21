@@ -1,9 +1,9 @@
 // share-viewer-events — My Music 分享页事件: 音频事件/曲目清单点播/进度拖动 + 开局。
 // 拆自 share.html 的内联 <script> (结构化重构: 代码逐字节未动, 按 share.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global $, audio, boot, fmtTime, openFullPlayer, playQueue, queue, queuePos,
-          seeking: writable, syncLyricHighlight, toggleLyricsView, togglePlay,
-          updateIcons */
+/* global $, audio, boot, cycleRepeat, fmtTime, openFullPlayer, playQueue, queue,
+          queuePos, repeatMode: writable, seeking: writable, syncLyricHighlight,
+          toggleLyricsView, togglePlay, toggleShuffle, updateIcons */
 
 // ------------------------------------------------------------ 音频事件
 
@@ -14,7 +14,9 @@ $("#hero-play").addEventListener("click", () => {
   openFullPlayer();
 });
 $("#p-toggle").addEventListener("click", togglePlay);
-$("#fp-meta-lyrics").addEventListener("click", toggleLyricsView);   // 1.8.17 歌词键 (用户点名「用歌词按钮切换」)
+$("#fp-lyrics-btn").addEventListener("click", toggleLyricsView);   // 1.8.17 歌词键 (1.8.37 挪进中排)
+$("#fp-shuffle").addEventListener("click", toggleShuffle);         // 1.8.37 中排键 (用户点名)
+$("#fp-repeat").addEventListener("click", cycleRepeat);
 
 $("#share-list").addEventListener("click", (event) => {
   const row = event.target.closest(".row");
@@ -44,7 +46,9 @@ audio.addEventListener("timeupdate", () => {
   syncLyricHighlight(false);
 });
 audio.addEventListener("ended", () => {
+  if (repeatMode === 2) { playQueue(queuePos); return; }   // 1.8.37 单曲循环: 重播本首
   if (queuePos + 1 < queue.length) playQueue(queuePos + 1);
+  else if (repeatMode === 1) playQueue(0);                 // 列表循环: 队尾回绕
 });
 audio.addEventListener("error", () => {
   $("#p-title").textContent = "播放失败";
@@ -80,5 +84,10 @@ function bindSeek(input) {
 bindSeek($("#seek"));
 bindSeek($("#fp-scrub"));
 setScrubFill($("#fp-scrub"));   // 开局归零 (有总时长前也画个起点)
+
+// 双指缩放全禁 (1.8.41, 用户点名「整个app任何地方都不允许」): body 的
+// touch-action: pan-y 挡得住安卓/桌面, iOS Safari 的捏合缩放不吃
+// touch-action —— 非标准手势事件掐掉才是 iOS 上的真解 (app 主壳同款)
+document.addEventListener("gesturestart", (event) => event.preventDefault());
 
 boot();

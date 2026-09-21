@@ -16,13 +16,14 @@
 // 不响、永不自愈, 只能划掉重开碰运气 (用户实测「反复重启才可以」;
 // 开局健康则整程不再犯)。WebKit 写毒拦不住, 但布局自己说了算: 冻矮时
 // 壳高直接钉记档的满高 (--shell-h, music-base.css 消费), 黑带当场补回
-// —— 开局即愈, 不用用户动手; 回满自动撤。体检窗 (红框) 退成兜底。
+// —— 开局即愈, 不用用户动手; 回满自动撤。红框体检窗 1.8.43 整个撤了
+// (用户点名「打点就偷偷打点就行了」), 只留静默回传。
 // 本模块管「诊断+自愈+回传」:
 //   ① 判据: 键盘开着 = 焦点在输入框 (独立模式里 vv 与 inner 永远相等,
 //      互比是空转 —— 1.8.10 误诊过还抢了用户焦点);
-//   ② 体检窗 (music-viewport-hud.js 管「说」): 现场数字 + 回传服务器日志
-//      (data/viewport-doctor.jsonl); 治不了时直说真话 —— 回传实测「再进
-//      一次搜索、点键盘收起键收掉、再返回」当场复原 (重启不保证灵)。
+//   ② 静默回传 (music-viewport-hud.js 管「发」): 每行流水回传服务器日志
+//      (data/viewport-doctor.jsonl), 屏幕上什么都不弹 —— 红框 1.8.43 撤
+//      了, 治不了的现场也只进日志。
 "use strict";
 /* global ViewportHUD */
 /* exported ViewportDoctor */
@@ -72,27 +73,10 @@ const ViewportDoctor = (() => {
     else root.style.removeProperty("--shell-h");
   }
 
-  // ---------- 体检窗接线 (现场数字由这里注入, 屏显+回传归 HUD) ----------
-  let said = [];                       // 流水留底 (拼进现场数字最后几行)
-  function stat() {
-    return [
-      "My Music 1.8.32 视口体检 (现场已回传)",
-      `screen ${window.screen.width}x${window.screen.height} dpr ${window.devicePixelRatio}`,
-      `inner ${window.innerHeight} / 满高 ${full} (差 ${full - window.innerHeight})`,
-      `vv ${vv ? `${Math.round(vv.height)} top ${Math.round(vv.offsetTop)}` : "无"}`,
-      `壳高 ${document.documentElement.style.getPropertyValue("--shell-h") || "dvh"}`,
-      `scrollY ${window.scrollY} · 焦点 ${typing() ? "输入框" : "无"}`,
-      "已自动按满高补齐; 若底栏还悬空, 再进搜索点键盘收起键收掉再返回",
-      "",
-      ...said,
-    ].join("\n");
-  }
+  // ---------- 回传接线 (打点静默走, 屏幕上什么都不弹) ----------
   function say(line) {
-    said.push(`${new Date().toTimeString().slice(0, 8)} ${line}`);
-    said = said.slice(-9);
-    ViewportHUD.say(line);             // HUD: 屏显刷新 + 排进回传发件箱
+    ViewportHUD.say(line);             // 排进回传发件箱 (1.8.43: 屏显撤了)
   }
-  ViewportHUD.wire({ stat });
 
   // ---------- 冻矮判定: 焦点不在输入框 + 比满高矮 12px + 值定住 0.7s ----------
   let freezeTimer = 0;
@@ -111,7 +95,6 @@ const ViewportDoctor = (() => {
       declared = false;
       clearTimeout(freezeTimer);
       shellH(false);                   // 冻矮补偿撤掉 (壳高回真 100dvh)
-      ViewportHUD.hide();
       return;
     }
     if (typing()) {                            // 键盘还开着: 矮是应该的
@@ -130,7 +113,7 @@ const ViewportDoctor = (() => {
         const patched = Math.min(full, capOf());
         shellH(true);   // 自愈: 壳高钉真满高, 冷开冻矮当场补 (不用用户动手)
         say(`冻矮实锤 inner=${window.innerHeight} 差${full - window.innerHeight} 补${patched}`);
-        if (patched <= window.innerHeight) ViewportHUD.show();   // 补不上才弹框教真话
+        if (patched <= window.innerHeight) say("补不上: 现场已回传");   // 只进日志, 红框撤了
       }, 700);
     }
   }
@@ -155,7 +138,7 @@ const ViewportDoctor = (() => {
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) check();
   });
-  setInterval(check, 1500);   // 冻矮后一声事件不响: 慢心跳兜底 (也刷体检窗数字)
+  setInterval(check, 1500);   // 冻矮后一声事件不响: 慢心跳兜底 (自愈用, 不刷屏)
 
   function settled() {
     if (!patient()) return !vv || vv.height >= window.innerHeight - 12;

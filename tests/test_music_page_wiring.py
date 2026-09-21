@@ -89,16 +89,24 @@ def test_music_downloads_wiring():
     # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
     # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select; 1.8.14:
     # -viewport-heal; 1.8.17: -cellular-usage, +playlist-drag;
-    # 1.8.23: +root-rubber; 1.8.31: +top-pane 播放排行页), 引用一律带
-    # 版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 49 and all("?v=" in src for src in scripts)
+    # 1.8.23: +root-rubber; 1.8.31: +top-pane 播放排行页; 1.8.34:
+    # +hero-collapse; 1.8.35: +client; 1.8.39: +desktop-keys; 1.8.45:
+    # +hero-bar-actions 收缩顶栏动作条; 1.8.46: +hero-bar-tap 被吞点按
+    # 补发), 引用一律带版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 54 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/music-downloads-select.js?v=" in html   # 1.8.6 已下载多选删除
     assert "js/music-root-rubber.js?v=" in html        # 1.8.23 根层橡皮筋
+    assert "js/music-hero-collapse.js?v=" in html      # 1.8.34 封面收缩顶栏
+    assert "js/music-hero-bar-actions.js?v=" in html   # 1.8.45 顶栏动作条
+    assert "js/music-hero-bar-tap.js?v=" in html       # 1.8.46 被吞点按补发
+    assert "js/music-client.js?v=" in html             # 1.8.35 客户端识别
+    assert "js/music-desktop-keys.js?v=" in html       # 1.8.39 桌面键盘层
+    assert "css/music-hero-bar.css?v=" in html         # 1.8.45 动作条样式
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v35" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v56" in sw                  # 应用壳也进缓存 (断网打得开)
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 

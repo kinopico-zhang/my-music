@@ -39,7 +39,9 @@
 .search-page {
   flex: 0 0 100%; min-width: 0; height: 100%;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
-  padding: 0 16px calc(var(--dock-clear) + 12px);
+  /* 顶衬 12px: 1.8.36 板块头撤了 (页签已带数量), 这点呼吸留给
+     第一行结果, 不至于贴着页签 */
+  padding: 12px 16px calc(var(--dock-clear) + 12px);
   scroll-snap-align: start;
   touch-action: pan-x pan-y;
 }

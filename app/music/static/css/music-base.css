@@ -75,6 +75,10 @@ main {
      none 连回弹一起掐了; contain 保住本体的回弹, 只断向外的滚动链
      (body 是固定壳没有可链的滚动, contain 与 none 在这里只差一个回弹) */
   overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  /* 横向掐掉 (1.8.40, 与推入层 .pane-scroll 同病同方): 只写 overflow-y 时
+     横向按 auto 算, iOS 给单向滚动器也配横向橡皮筋, 竖滑稍带偏整页就左右
+     晃。横里没有可滚的内容; 根层右划的跟手位移归 music-root-rubber 管 */
+  overflow-x: hidden;
 }
 /* 一级页内容列: 限宽居中 (船坞/气泡都是 fixed, 内容得自己让开底下的高度);
    横屏时左右让开侧刘海 (env 取 max, 没侧刘海的场合保底 16px) */

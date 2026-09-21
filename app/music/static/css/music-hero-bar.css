@@ -1,0 +1,143 @@
+/* music-hero-bar — 收缩顶栏右侧的动作条 (1.8.45, 用户点名「五个按钮收缩成
+   播放和 … 两个按钮, 和封面放在一行右对齐; … 放在边上, 点击后 随机/下载/
+   分享/删除 出来顶替它、把播放按钮往左边挤; 挤占了标题的空间, 标题和副
+   标题就通过阴影过渡一下表示被遮住了」)。
+   1.8.46 重做换岗与遮罩 (用户点名「控制按钮平移不要闪现, 要通过路径丝滑
+   平移过去」+ 遮罩越靠左越透): 键不再两套交叉淡入淡出 —— 由
+   music-hero-collapse.js 沿路径从操作行的键位平移进槽位, 收拢的键错峰
+   走弧线飞进 … (途中两两不叠, 见 music-hero-bar-actions.js); 飞行期
+   .bar-fly 放额外键出裁剪箱 (平时收在 0 宽的 .bar-extras 里靠裁剪藏身);
+   条只在飞行 (0<p<0.8) 或到位 (p≥0.8, .bar-live) 时显形。… 开合只动
+   width/opacity —— 零重排的根不破。
+   1.8.46 三改遮罩罩满整个按钮区域 (用户点名「按钮左边的遮罩覆盖整个
+   按钮区域」): 三件套 —— 左侧渐隐纱 (.bar-sheen, 越靠左越透) + 播放键
+   整高衬底 (.bar-btn.primary::before) + 额外键箱整高衬底 (.bar-extras
+   的背景铺满 44 行高) —— … 开着时被挤到键底下的标题从键缝、键的上下
+   露边里都不漏字。
+   1.8.46 四改 (用户报「5个图标展开后不等间距」+「动画还有点掉帧」):
+   开 … 后首键让回 8px —— 五颗键全等距; 飞行期箱和 … 键的透明度过渡
+   归零 (起飞立即显形, 不先暗 250ms), 飞行键各上 GPU 合成层。
+   1.8.46 五改 (用户报「按钮旁边的遮挡问题」): 渐隐纱钉在收拢簇左缘 ——
+   开 … 时簇往左长、纱不动, 没被键压到的标题不再被整片渐隐; 条改
+   justify-content: flex-end 靠右 (纱退出弹性流)。
+   1.8.46 六改 (用户点名「按钮和被遮盖的文字之间加一点缓冲」): 播放键
+   衬底左缘加 20px 半透明过渡 —— 被盖住的字贴着键边淡下去, 不硬切。
+   1.8.46 十改三轮 (你报的「惯性里点 播放/… 停稳后第二下才灵」): iOS 把
+   惯性中的点按整个吞给滚动器, 页头监听/touch-action 全救不了 —— 接点
+   条 .hero-bar-catch 铺在层根 (滚动器外) 罩住收拢簇, 见文末。 */
+
+.hero-bar-actions {
+  position: absolute; top: var(--top-clear); left: 16px; right: 16px;
+  height: 44px; display: flex; align-items: center; justify-content: flex-end;
+  gap: 8px;
+  isolation: isolate;        /* 自成层叠上下文: 播放键的 z:-1 衬底压得过
+                                标题、又翻不出本条 (见 .bar-btn.primary) */
+  opacity: 0;                 /* 平移期 .bar-fly / 到位 .bar-live 才显形 */
+}
+.hero-head.bar-fly .hero-bar-actions,
+.hero-head.bar-live .hero-bar-actions { opacity: 1; }
+/* 飞行中的额外键要出裁剪箱走路径 (平时收在 0 宽的箱里靠裁剪藏身);
+   透明度过渡归零 —— 起飞那刻整箱立即显形, 不吃基态的 250ms 淡入
+   (否则接棒的键先暗一下再亮, 看着像掉帧); 宽度过渡留着 —— 快滚时
+   … 菜单往回收的动画不受影响 */
+.hero-head.bar-fly .bar-extras {
+  overflow: visible; opacity: 1;
+  transition: opacity 0s, max-width .3s ease;
+}
+/* … 键同理: 飞行中每帧写行内透明度 (显形接场), 不吃基态的 250ms 过渡
+   —— 吃了会一直吊在目标值后面, 越飞越暗 */
+.hero-head.bar-fly .bar-btn.more {
+  transition: opacity 0s, width .3s ease, margin-left .3s ease;
+}
+/* 飞行键各上 GPU 合成层: 每帧的 transform/opacity 走合成器、不重画
+   顶栏整层 —— 治掉帧; 到位 (.bar-live) 或回位后类一摘, 层自动还回去 */
+.hero-head.bar-fly .hero-bar-actions button { will-change: transform, opacity; }
+/* 头自身放行了 (大透明块), 这里的键要接回点按 —— 但收缩没到位先别接:
+   飞在半路的键接了点也是误触, JS 量到 p≥0.8 给头挂 .bar-live 开闸 */
+.hero-bar-actions button { pointer-events: none; }
+.hero-head.bar-live .hero-bar-actions button { pointer-events: auto; }
+.bar-btn {
+  display: flex; align-items: center; justify-content: center;
+  flex: none; width: 36px; height: 36px; border-radius: 10px;
+  background: var(--surface-2);
+}
+.bar-btn svg { width: 18px; height: 18px; }
+.bar-btn:active { background: var(--surface-3); }
+.bar-btn[disabled] { opacity: .4; }
+.bar-btn.primary { background: var(--ink-1); color: #000; position: relative; }
+.bar-btn.primary:active { background: #d6d6d8; }
+/* 播放键整高衬底: 键 36 高在 44 的行里, 上下各露 4px —— … 开着时底下
+   正是被挤住的标题。衬底 z:-1 压在标题之上 (条已 isolation)、键面之下;
+   飞行中键带着 transform 自成层叠上下文, z:-1 会反压到键面之上 ——
+   飞行中先别衬 (… 收着, 键底下没有字, 不衬也不漏)。
+   1.8.46 六改软边 (你点的「按钮和被遮盖的文字之间加一点缓冲」): 衬底
+   往左多铺 20px、从透明渐到背景色 —— 文字贴着键边淡下去, 不再贴着
+   键的左缘被齐边切掉。软边长在键上, 键到哪跟到哪 (收拢/展开/开 … 的
+   途中都在), 不与纱的钉位耦合 */
+.bar-btn.primary::before {
+  content: ""; position: absolute; left: -20px; right: 0; top: -4px; bottom: -4px;
+  background: linear-gradient(to right, transparent, var(--bg) 20px);
+  z-index: -1;
+}
+.hero-head.bar-fly .bar-btn.primary::before { display: none; }
+/* … 键收成 0 宽 (连左边的缝一起吃掉), 额外键从它的身位长出来贴到最右
+   —— 播放键被平滑挤向左 (用户点名「替换掉 … 按钮, 把播放按钮往左边挤」) */
+.bar-btn.more { overflow: hidden;
+  transition: width .3s ease, margin-left .3s ease, opacity .25s ease; }
+.hero-head.bar-open .bar-btn.more { width: 0; margin-left: -8px; opacity: 0; }
+/* 额外键的箱: 整高衬底 (align-self stretch 铺满 44 高, 键在箱里居中) ——
+   键与键的缝、上下的露边底下正是被挤住的标题, 不衬就漏字; 箱左缘贴死
+   播放键右缘 (margin-left -8 连缝一起吃掉)。min-width 0 钉死宽度 ——
+   飞行期 overflow 放行时, 弹性项的最小内容宽会把箱撑开, 纱被挤短、
+   起飞位跟着漂 (1.8.46 三改修的根) */
+.bar-extras { display: flex; gap: 8px; max-width: 0; margin-left: -8px;
+  min-width: 0; align-self: stretch; align-items: center;
+  overflow: hidden; opacity: 0; background: var(--bg);
+  transition: max-width .3s ease, opacity .25s ease; }
+/* 开 … 后五颗键等间距 (1.8.46 四改, 用户报「5个图标展开后不等间距」):
+   箱的 margin-left -8 把箱左缘贴死播放键右缘 (缝底下要衬底), 首键
+   再让回 8px —— 播放键→首键和键与键之间全是 8px。margin 不进箱宽,
+   收着时不露 (padding 会: border-box 下箱最小也长到 padding 宽) */
+.bar-extras > button:first-child { margin-left: 8px; }
+.hero-head.bar-open .bar-extras { max-width: 260px; opacity: 1; }
+/* 标题让位的阴影 (用户点名): 条左端一段从透明渐到背景色 —— 没压到字的地
+   方它与底同色、看不见; 压到了就把字渐隐掉。越靠左越透, 贴播放键处最实
+   (用户点名); 后段 (p 0.55 起) 才浮现 —— 起飞途中的键不罩它。
+   1.8.46 五改钉位 (你报的「按钮旁边的遮挡问题」): 纱原先是弹性项, 开 …
+   时簇往左长、纱跟着播放键左缘一起左移 —— 渐隐整片扫过没被任何键压到的
+   标题 (真机上量到副标题被抹到只剩一成亮)。现在纱改绝对定位钉在收拢簇
+   的左缘 (right = JS 量来的收拢簇宽 --bar-row-w, 见 collapse.js), 开 …
+   簇往左长、纱不动 —— 键自己的衬底接手盖字, 没压到字就别渐隐; 渐隐段
+   拉宽到 150: 收拢态更缓 (原 120), 开 … 时贴播放键左缘还留一小段过渡。
+   绝对定位的纱会画在条里流内内容 (键) 之上 —— 学播放键衬底那招压
+   z:-1: 条已 isolation, 翻不出条、压得过页头文字 */
+.bar-sheen {
+  position: absolute; left: 0; top: 0; height: 44px; z-index: -1;
+  right: var(--bar-row-w, 80px);    /* 钉在收拢簇左缘, 不跟开 … 的簇走 */
+  pointer-events: none;
+  opacity: min(1, max(0, calc((var(--hero-p, 0) - 0.55) * 2.5)));
+  background: linear-gradient(to right, transparent calc(100% - 150px), var(--bg));
+}
+
+/* ---------- 十改三轮: 接点条 (你报的「惯性里点 播放/… 停稳后第二下才灵」)
+   根子: iOS 把惯性中的点按整个吞给滚动器 —— touchstart 都不派给滚动器
+   内容 (SO 49468413), 挂页头/挂 document 的监听和 touch-action 全救不了;
+   船坞键没这毛病, 因为它在滚动器外面。照方抓药: 条铺在层根 (滚动器外),
+   JS (music-hero-bar-tap.js) 铺条, heroBarTick 在 p≥0.8 给层挂 .bar-catch
+   开闸 —— 与 .bar-live 同一刻。接点区正好罩住收拢簇 (顶隙/簇宽同源:
+   --top-clear / --bar-row-w), 点按按矩形认出底下的真键补一发 click;
+   列壳与 .pane-scroll 同款 860px 列, 宽屏对齐; 桌面端摘接点权 (悬停归
+   真键)。z6 压过页头 (z5, 页头 z 在层根的层叠上下文里比条高) ---------- */
+.hero-bar-catch {
+  position: absolute; inset: 0; z-index: 6;
+  display: flex; justify-content: center;
+  pointer-events: none;               /* 常态全放行, 只有接点区接点 */
+}
+.hero-bar-catch > div { width: 100%; max-width: 860px; position: relative; }
+.hero-bar-catch span {
+  position: absolute; top: var(--top-clear); right: 16px;
+  width: var(--bar-row-w, 80px); height: 52px;
+  pointer-events: none; touch-action: none;   /* 点按不当滚动手势, click 必来 */
+}
+.push-pane.bar-catch .hero-bar-catch span { pointer-events: auto; }
+html[data-client="desktop"] .hero-bar-catch span { pointer-events: none; }

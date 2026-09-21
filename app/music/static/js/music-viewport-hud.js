@@ -1,21 +1,16 @@
-// music-viewport-hud — 视口体检窗 + 回传 (1.8.15, 配合 music-viewport-doctor):
-// 1.8.32 起退成兜底 —— 冻矮已在开局自动补偿 (--shell-h 钉真满高), 布局
-// 正常时绝不露面; 只有补偿补不上 (满高档不过当前高) 才亮相给真话 (再进
-// 搜索点键盘收起键收掉再返回), 每行流水同时排进发件箱回传服务器
-// (data/viewport-doctor.jsonl) —— 手机上复现完, 日志已经在服务器上等人
-// 来读, 不用截图。本模块只管「说」: 屏幕上说什么、往服务器发什么,
-// 病情的判断 (满高基准/冻矮判定/自愈) 都在医生那里, 通过 wire() 注入;
-// 治疗 (键盘期文档解锁在 music-global-events.js, 冷开壳高补偿在
-// music-viewport-doctor.js)。
+// music-viewport-hud — 视口体检回传 (1.8.15, 配合 music-viewport-doctor)。
+// 1.8.43 屏显体检窗整个撤了 (用户点名「删除调试的红框, 打点就偷偷打点
+// 就行了, 别弹框了」): 冻矮 1.8.32 起开局自动补偿, 红框只剩「补不上时
+// 教真话」一条路 —— 现在真话也进日志, 屏幕上什么都不弹; 每行流水照旧
+// 排进发件箱回传服务器 (data/viewport-doctor.jsonl) —— 手机上复现完,
+// 日志已经在服务器上等人来读, 不用截图。本模块只管「发」: 病情的判断
+// (满高基准/冻矮判定/自愈) 都在医生那里; 治疗 (键盘期文档解锁在
+// music-global-events.js, 冷开壳高补偿在 music-viewport-doctor.js)。
 "use strict";
 /* exported ViewportHUD */
 
 const ViewportHUD = (() => {
-  let stat = () => "";
   let outbox = [];
-  let hud = null;
-  let hudBody = null;
-  let hudTick = 0;
   let sending = false;
   let flushTimer = 0;
 
@@ -32,7 +27,6 @@ const ViewportHUD = (() => {
   function say(line) {
     outbox.push(snapshot(line));
     outbox = outbox.slice(-96);
-    if (hudBody) hudBody.textContent = stat();
     clearTimeout(flushTimer);                 // 攒 3 秒一批, 别一件事一发
     flushTimer = setTimeout(send, 3000);
   }
@@ -51,44 +45,9 @@ const ViewportHUD = (() => {
       outbox = batch.concat(outbox).slice(-96);
     }).finally(() => { sending = false; });
   }
-  function show() {
-    if (!hud) {
-      const sheet = document.createElement("style");
-      // 挪出顶部刘海/状态栏的模糊地带 (1.8.10 弹在 top:8px 用户点不到;
-      // 1.8.19 并进全局上边界 --top-clear); 1.8.13 起没有按钮了 ——
-      // 刷新复位实测无效, 真话是划掉重开
-      sheet.textContent = "#doctor-hud{position:fixed;"
-        + "top:var(--top-clear);left:8px;z-index:999;"
-        + "max-width:80vw;padding:8px 10px;border:1px solid #fa2d48;border-radius:8px;"
-        + "background:rgba(0,0,0,.92);color:#f5f5f7;font:11px/1.6 ui-monospace,monospace;"
-        + "white-space:pre-wrap;word-break:break-all}";
-      document.head.appendChild(sheet);
-      hud = document.createElement("div");
-      hud.id = "doctor-hud";
-      hudBody = document.createElement("div");
-      hud.appendChild(hudBody);
-      document.body.appendChild(hud);
-    }
-    hudBody.textContent = stat();
-    hud.hidden = false;
-    clearInterval(hudTick);              // 亮着期间每秒刷现场数字
-    hudTick = setInterval(() => {
-      if (!hud.hidden) hudBody.textContent = stat();
-    }, 1000);
-    send();                              // 亮相的现场先送一批
-  }
-  function hide() {
-    if (hud) {
-      hud.hidden = true;
-      clearInterval(hudTick);
-    }
-  }
-  function wire(options) {
-    stat = options.stat;                       // 医生注入: 现场数字
-  }
   addEventListener("pagehide", send);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) send();               // 切后台就送, 别等系统杀页
   });
-  return { say, show, hide, send, wire };
+  return { say, send };
 })();

@@ -30,7 +30,8 @@ def test_music_top_clear_boundary():
     assert "padding: var(--top-clear) 16px 0;" in css["music-search"]
     assert "margin-top: var(--top-clear);" in css["music-player"]
     assert "padding: var(--top-clear) 0 0;" in css["share-viewer-player"]
-    assert "top:var(--top-clear)" in js["music-viewport-hud"]
+    # 视口体检红框 1.8.43 撤了 (用户点名), HUD 不再是钉顶控件 —— 它在
+    # --top-clear 之下的样式挂靠一并消失, 这里不再有它的验钉
     # 长按菜单的竖向下限: 隐形量尺钉在边界上, JS 读 offsetTop 当下限
     assert '<i id="top-clear-probe" aria-hidden="true">' in html
     assert "#top-clear-probe {" in css["music-menus"]

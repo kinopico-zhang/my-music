@@ -63,8 +63,9 @@ function renderLyricsView() {
   // 歌词页罩满封面区 (1.8.20 改回原样, 用户点名「不要封面缩略图」):
   // 封面整块藏掉, 歌词独占 (app 同款)
   $("#fp-art-wrap").hidden = open;
-  // 歌词键 (1.8.17): 视图关着时没词灰掉 (开不了); 开着保持可点好关回封面
-  const lyricsButton = $("#fp-meta-lyrics");
+  // 歌词键 (1.8.17, 1.8.37 挪进中排): 视图关着时没词灰掉 (开不了);
+  // 开着保持可点好关回封面
+  const lyricsButton = $("#fp-lyrics-btn");
   lyricsButton.disabled = !lyrics && !lyricsViewOpen;
   lyricsButton.classList.toggle("on", open);
   if (!open) return;

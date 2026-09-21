@@ -111,6 +111,8 @@ function render(data) {
     } else {
       setPlaceholder(heroArt);
     }
+  } else if (data.kind === "album" && data.album_id) {
+    setArt(heroArt, `/music/share/${token}/artwork/album/${data.album_id}`);
   } else if (data.tracks.length > 0) {
     setArt(heroArt, artURL(data.tracks[0]));
   } else {
@@ -118,21 +120,26 @@ function render(data) {
   }
 
   queue = data.tracks.filter((t) => t.playable);
-  if (data.kind === "playlist") {
+  if (data.kind === "playlist" || data.kind === "album") {
     $("#list-head").hidden = false;
     $("#list-head").textContent = `${data.tracks.length} 首歌曲`;
-    $("#share-list").innerHTML = data.tracks.map((t, i) => (
+    // 1.8.41 行首序号换歌曲封面 (用户点名, app 歌单同款): 裂图退 ♪ 占位
+    $("#share-list").innerHTML = data.tracks.map((t) => (
       `<div class="row${t.playable ? "" : " na"}" data-track-id="${t.track_id}">`
-      + `<span class="lead"><i class="num">${i + 1}</i></span>`
+      + `<span class="lead"><img alt="" loading="lazy" decoding="async"
+         src="${artURL(t)}"
+         onerror="this.onerror=null;this.closest('.lead').classList.add('ph');this.remove()"></span>`
       + `<span class="txt"><span class="t">${esc(t.title)}</span>`
       + `<span class="a">${esc(t.artist)}</span></span>`
       + `<span class="dur">${fmtTime(t.duration_seconds)}</span></div>`
     )).join("");
   }
-  // 单曲分享没有上一首/下一首可言, 传输区收成一颗播放键
+  // 单曲分享没有上一首/下一首/随机可言, 传输区收成一颗播放键 (循环键
+  // 留着 —— 单曲循环一首歌也有意义)
   if (queue.length < 2) {
     $("#fp-prev").hidden = true;
     $("#fp-next").hidden = true;
+    $("#fp-shuffle").hidden = true;
   }
   if (queue.length === 0) $("#hero-play").classList.add("off");
   $("#share-card").hidden = false;

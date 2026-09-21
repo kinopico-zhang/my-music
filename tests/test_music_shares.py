@@ -74,7 +74,9 @@ def test_share_create_validation(auth):
     assert auth.post("/music/api/shares",
                      json={"kind": "playlist", "id": 999}).status_code == 404
     assert auth.post("/music/api/shares",
-                     json={"kind": "album", "id": 1}).status_code == 422
+                     json={"kind": "album", "id": 999}).status_code == 404
+    assert auth.post("/music/api/shares",
+                     json={"kind": "artist", "id": 1}).status_code == 422
 
 
 def test_share_playlist_scopes_content(auth):

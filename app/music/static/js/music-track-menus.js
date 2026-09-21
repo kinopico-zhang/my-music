@@ -4,8 +4,8 @@
 /* global $, downloads, downloadsEnabled, fetchJSON, playDownloadedRow, playerStart,
           rowForTrackMenu: writable, toast, trackListBindings */
 /* exported closeTrackMenu, menuTrackDirect, openTrackMenu, openTrackMenuForTrack,
-            pickerTrack, placeMenuAt, playTrackFromMenu, rowForTrackMenu, sharePlaylist,
-            shareTrack, trackFromRow */
+            pickerTrack, placeMenuAt, playTrackFromMenu, rowForTrackMenu, shareAlbum,
+            sharePlaylist, shareTrack, trackFromRow */
 
 // ------------------------------------------------------------ 曲目长按菜单
 // 任何界面的曲目行 (含「已下载」栏) 长按 500ms / 桌面右键, 弹出菜单:
@@ -107,6 +107,12 @@ async function shareTrack(track) {
 async function sharePlaylist(playlist) {
   await shareByLink("playlist", playlist.playlist_id, playlist.name,
                     `播放列表「${playlist.name}」`);
+}
+
+/** 专辑页的分享钮 (1.8.33 用户点名): 分享整张专辑, 打开的人能看能听全碟。 */
+async function shareAlbum(album) {
+  await shareByLink("album", album.album_id, album.title,
+                    `专辑「${album.title}」`);
 }
 
 function openTrackMenu(row, point) {

@@ -32,7 +32,7 @@ body.pane-anim #dock-search {
   touch-action: pan-x pan-y;      /* 横拖默认没有原生滚动器, 全留给右划返回
     手势; 搜索结果四子页 (1.8.3) 自己是横向 snap 滚动器 —— touch-action
     是链式约束 (祖辈 pan-y 会掐死子孙的 pan-x), 链上放行 pan-x 它才滑得动,
-    其余层没有横向滚动器, 放行不改变任何行为 */
+    其余层的横向 1.8.40 起显式掐掉 (.pane-scroll 的 overflow-x, 见下) */
   user-select: none; -webkit-user-select: none;
 }
 .push-pane img { -webkit-user-drag: none; }    /* 右划别拖出图片幽灵 */
@@ -42,6 +42,10 @@ body.pane-anim #dock-search {
   /* 1.8.31 overscroll 改 contain (用户点名「滑不动了也加上橡皮筋回弹」):
      none 连回弹一起掐了; contain 保住本体的回弹, 只断向外的滚动链 */
   overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+  /* 横向掐掉 (1.8.40 修「页面上划的过程中竟然允许页面左右移动」): 只写
+     overflow-y 时横向按 auto 算, iOS 给单向滚动器也配横向橡皮筋 —— 竖滑
+     稍带偏整层跟着左右晃。横里没有可滚的内容; 右划返回走 JS 手势不受影响 */
+  overflow-x: hidden;
   padding: calc(env(safe-area-inset-top) + 14px)
            16px
            var(--dock-clear);
@@ -61,7 +65,11 @@ body.pane-anim #dock-search {
   width: 150px; height: 150px; border-radius: 50%; object-fit: cover;
   background: var(--surface-2); box-shadow: 0 10px 34px rgba(0,0,0,.55);
 }
-.hero-txt { margin-top: 14px; max-width: 100%; }
+/* 两行各自收缩到内容宽 (1.8.42): JS 量的就是字面实宽, 收进顶栏时左缘才
+   精确贴到封面右边; 展开态两行仍居中 (align-items), 渲染与块级 +
+   text-align: center 逐像素同款 */
+.hero-txt { margin-top: 14px; max-width: 100%; display: flex;
+            flex-direction: column; align-items: center; }
 .hero-txt h2 { font-size: 20px; line-height: 1.3; }
 /* 播放列表标题可点改名 (1.8.17): 铅笔角标提示, 不另起小字占位 */
 .pl-name { cursor: pointer; }
@@ -69,9 +77,13 @@ body.pane-anim #dock-search {
   content: "✎"; margin-left: 7px; font-size: 13px; font-weight: 400;
   color: var(--ink-3); vertical-align: 1px;
 }
-.hero-artist { color: var(--ink-2); font-size: 14px; margin-top: 3px; }
+.hero-artist { color: var(--ink-2); font-size: 14px; }
 .hero-artist:active { color: var(--ink-1); }
-.hero-txt small, .artist-hero small { color: var(--ink-3); font-size: 12px; margin-top: 4px; }
+/* 副标题行 (艺人/年份/时长): 并一行跟主标题同块 —— 收缩进顶栏时一起缩,
+   缩小之后不只主标题、副标题也在 (1.8.40 用户点名「比如8首14分钟」) */
+.hero-sub { margin-top: 3px; display: flex; align-items: baseline;
+            justify-content: center; gap: 7px; flex-wrap: wrap; }
+.hero-meta { color: var(--ink-3); font-size: 12px; }
 .action-row { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
               margin: 16px 0 6px; }
 .action {
@@ -86,4 +98,52 @@ body.pane-anim #dock-search {
 /* 纯图标操作钮 (列表页一行四五个动作装不下文字): 圆角方块, 图标放大到 20 */
 .action.icon { padding: 10px; border-radius: 12px; }
 .action.icon svg { width: 20px; height: 20px; }
+
+/* ---------- 1.8.34 封面收缩顶栏 (用户点名) ----------
+   专辑/播放列表/艺人页头包进 .hero-head 钉在层顶: 上划列表时封面一边缩小
+   一边挪向左上角 (JS 按滚动线性驱动, 见 music-hero-collapse.js), 收齐后
+   钉成实底顶栏 —— 列表继续上滑从顶栏底下滚过, 下划对称还原。
+   1.8.45 改单行顶栏 (用户点名): 按钮不再占第二行 —— 播放和 … 两颗在封面
+   同一行靠右 (music-hero-bar.css 那套), 标题/副标题缩在封面右边, 操作行
+   整排淡出; 年份/时长那行小字 (.hero-meta) 和换封面角标照旧淡出。
+   细腻的根: 页头布局高度恒定, 收缩只动 transform/opacity (零重排);
+   ::before 实底罩到顶栏下沿, 其下透明 —— 收缩途中列表照常从底下
+   穿过 (不是死板的一整块盖住)。页头整体落在全局上边界 --top-clear
+   之下 (钉顶控件不吃 env+14, 见 .hero-head 注)。 */
+.push-pane[data-view="album"] .pane-scroll,
+.push-pane[data-view="playlist"] .pane-scroll,
+.push-pane[data-view="artist"] .pane-scroll {
+  padding-top: 0;               /* 顶部留白挪进页头, 顶栏才能从层顶就位 */
+  /* 短列表补行程 (1.8.40 用户点名「上划到一半动画还没播完就停下了」):
+     列表滚到底也够不着收缩行程的页, JS 量差值写 --hero-extra 垫高底部
+     空隙 —— 上划一路有得滑, 直到顶栏收齐、所有空间归位 */
+  padding-bottom: calc(var(--dock-clear) + var(--hero-extra, 0px));
+}
+.hero-head {
+  position: sticky; top: 0; z-index: 5;
+  margin: 0 -16px;              /* 出血到层宽: 顶栏底色横贯全宽 */
+  /* 钉顶控件不吃 env+14 (1.8.19 立的全局上边界规矩, 1.8.34 上线时漏了):
+     独立模式系统磨砂带比安全区深一截, 收缩后的小顶栏 (以及展开时整个
+     页头, sticky 钉住后就是常驻控件) 必须落在 --top-clear 之下 —— 与
+     搜索页头/播放页抓手同一条线 (搜索框当时也是 env+14 进了模糊带) */
+  padding: var(--top-clear) 16px 0;
+  pointer-events: none;         /* 头是大透明块, 放行底下列表的点按 */
+}
+.hero-head::before {            /* 实底顶栏: 从屏幕顶罩到顶栏下沿 */
+  content: ""; position: absolute; left: 0; right: 0; top: 0;
+  height: calc(var(--top-clear) + 52px);   /* 52 = 封面 44 + 下沿呼吸 8
+    (1.8.45 单行顶栏: 按钮上到封面那行, 第二行撤了) */
+  background: var(--bg); z-index: -1;
+  pointer-events: auto;         /* 折叠后顶栏吞点: 挡住底下看不见的行 */
+}
+.hero-head::after {             /* 顶栏下沿血线, 收缩后段才浮现 (JS 写 --hero-p) */
+  content: ""; position: absolute; left: 0; right: 0;
+  top: calc(var(--top-clear) + 52px); height: 1px;
+  background: var(--hairline); z-index: -1;
+  opacity: min(1, max(0, calc((var(--hero-p, 0) - 0.75) * 4)));
+}
+/* 头自身放行了, 头里的可点元素逐个接回事件 (文字淡尽后 JS 再摘) */
+.hero-head .album-hero > img, .hero-head .artist-hero > img,
+.hero-head .pl-cover-btn, .hero-head .hero-txt,
+.hero-head .action-row > button { pointer-events: auto; }
 

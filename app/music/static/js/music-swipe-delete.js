@@ -24,11 +24,15 @@ let swipeSuppressClick = false;      // 松手前横移过: 尾随的 click 吞�
 /** 移删除钮 + 顺手挂 revealed (1.8.23 改款: 行不动, 钮从右缘滑上来)。
     x=0 钮藏在右缘外, x=-72 全开 (可多拖 24px 橡皮筋); --veil (0→1)
     喂纱的浓度 = 拖开的比例, 拖多少显多少。revealed 挂在 wrap 一级
-    (纱/把手都是 wrap 的家当)。 */
+    (纱/把手都是 wrap 的家当)。
+    收起 (x=0) 时清行内样式而不是写 0 (1.8.39): 藏态交回 CSS 基线
+    (translateX(100%) / --veil 缺省 0, 视觉不变), 桌面端 :hover 亮钮的
+    规则才拿得回接管权 —— 行内样式永远压着样式表。 */
 function setSwipeTransform(wrap, x) {
   const del = wrap.querySelector(".swipe-del");
-  if (del) del.style.transform = `translateX(${SWIPE_REVEAL + x}px)`;
-  wrap.style.setProperty("--veil", String(Math.min(1, -x / SWIPE_REVEAL)));
+  if (del) del.style.transform = x ? `translateX(${SWIPE_REVEAL + x}px)` : "";
+  if (x) wrap.style.setProperty("--veil", String(Math.min(1, -x / SWIPE_REVEAL)));
+  else wrap.style.removeProperty("--veil");
   wrap.classList.toggle("revealed", x < 0);
 }
 

@@ -3,7 +3,8 @@
 回上次停的页 —— 静态文本断言, 不碰数据库。拆自 test_music_page_wiring.py
 (文件超 200 行按域再拆)。"""
 
-from tests.music_static_files import music_browser_js, music_page_shell
+from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
+                                      music_page_shell)
 
 
 def test_music_183_search_restore_batch():
@@ -120,18 +121,19 @@ def test_music_185_search_top_pin():
 
 
 def test_music_186_search_batch():
-    """1.8.6 批 (用户点名): 各板块数量报真实命中总数 —— 页签/板块头不再
+    """1.8.6 批 (用户点名): 各板块数量报真实命中总数 —— 页签计数不再
     拿截断长度当命中数 (艺人页 64 张专辑、搜索页只写 20 的口径打架),
     截断时列表尾注明「共 N, 已显示前 M」; 搜索层重进输入框失灵修好 ——
     旧层滑出的 420ms 里 $() 全局查找会绑到旧层元素, 现在查找全圈定在
-    本层 target, 收层顺手摘掉层内焦点。"""
+    本层 target, 收层顺手摘掉层内焦点。1.8.36 又撤了板块头 (见下个测试)。"""
     html = music_page_shell()
     js = music_browser_js()
-    # 数量口径: 板块头挂 *_total (后端同条件不截断的 COUNT), 尾注如实
+    # 数量口径: 命中总数挂 *_total (后端同条件不截断的 COUNT), 尾注如实;
+    # 1.8.36 板块头已撤 (用户点名「页签已带数量, 重复」), 总数只活在页签
     search_render = js[js.index("function renderSearchResults"):]
     for frag in ["歌曲 · ${results.track_total}", "艺人 · ${results.artist_total}",
                  "专辑 · ${results.album_total}", "歌词 · ${results.lyric_total}"]:
-        assert frag in search_render, f"板块头缺真实总数: {frag}"
+        assert frag not in search_render, f"板块头该撤没撤: {frag}"
     assert "共 ${total} ${unit}, 已显示前 ${shown} ${unit}" in search_render
     assert ".list-note {" in html                       # 尾注样式
     # 页签计数也挂总数 (四页签依序对应四个 *_total)
@@ -146,3 +148,17 @@ def test_music_186_search_batch():
     assert js.count("contains(document.activeElement)) document.activeElement.blur();") == 3
     # 搜索圆键聚焦收窄到栈顶层: 旧层那枚不许碰
     assert 'const input = top && top.pane.querySelector("#search-input");' in js
+
+
+def test_music_1836_search_fixes_batch():
+    """1.8.36 批 (用户反馈/点名): 歌词结果行补封面 —— 以前只有文字,
+    现在跟歌曲/专辑结果一样左边有 44px 封面块; 板块头撤了 —— 页签已带
+    数量, 列表上方再标一遍「歌词 114」是重复, 撤掉后列表直接开铺,
+    页面顶上多点呼吸。"""
+    # 歌词行封面: 歌词命中行也走 trackArtHTML (无图退 ♪ 块)
+    search_js = (MUSIC_STATIC / "js" / "music-search-pages.js").read_text(encoding="utf-8")
+    assert '<span class="t-lead art">${trackArtHTML(hit.track)}</span>' in search_js
+    # 板块头撤净 (数量只在页签, 见 186 测试的 counts 断言; 艺人页/主页
+    # 的 section-head 是另一码事, 不在搜索模块里)
+    assert "section-head" not in search_js
+    assert ".search-page {" in music_page_shell()   # 撤头后的顶上呼吸仍在
