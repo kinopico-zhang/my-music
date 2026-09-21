@@ -1,5 +1,6 @@
 """My Music 分享页 1.8.6 批接线测试: 点句定位 + 禁双击/两指缩放 +
-红键自动掀全屏页 + 全屏页封面 —— 静态文本断言, 不碰数据库。"""
+红键自动掀全屏页 + 全屏页封面; 1.8.41 列表行序号换歌曲封面 ——
+静态文本断言, 不碰数据库。"""
 
 from tests.music_static_files import share_page_js, share_page_shell
 
@@ -41,3 +42,27 @@ def test_music_186_share_batch():
     # 页罩满封面区, 封面整块藏掉 (缩略图那套 #fp.lyrics CSS 撤净)
     assert '$("#fp-art-wrap").hidden = open;' in share_all
     assert "#fp.lyrics .fp-body {" not in share
+
+
+def test_music_1841_share_track_covers():
+    """1.8.41 (用户点名「分享页面, 播放列表, 不需要显示序号, 改成显示歌曲
+    封面吧」): 列表行去序号, 行首换 44px 歌曲封面 (app 歌单同款, 裂图退
+    ♪ 占位); 正播的行封面留着, 跳条蒙在封面上 (半透黑纱 + 白条, app 播放
+    队列 1.8.38 同款) —— 不再抹掉行首回填序号。"""
+    share = share_page_shell()
+    share_all = share + share_page_js()
+    # 行首: 封面图 (曲目自己的 → 专辑的, artURL 兜底), 序号标记整个撤了
+    assert '<span class="lead"><img alt="" loading="lazy" decoding="async"' in share_all
+    assert "artURL(t)}\"" in share_all
+    assert "classList.add('ph')" in share_all
+    assert 'class="num"' not in share_all
+    assert 'Array.prototype.indexOf.call(row.parentNode.children, row);' not in share_all
+    # 44px 封面格: 圆角裁切 + 相对定位 (跳条的蒙纱挂在里面), 裂图占位 ♪
+    assert ".row .lead { width: 44px; height: 44px; flex-shrink: 0;" in share
+    assert ".row .lead img { width: 100%; height: 100%; object-fit: cover;" in share
+    assert '.row .lead.ph::after { content: "♪"; }' in share
+    # 播放行: 跳条蒙在封面上 (插入, 不抹内容), 换歌时摘掉 —— 封面永在
+    assert "lead.insertAdjacentHTML(\"beforeend\", BARS_SVG);" in share_all
+    assert "if (!on && bars) bars.remove();" in share_all
+    assert ".row.on .bars { position: absolute; inset: 0;" in share
+    assert "background: rgba(0,0,0,.45);" in share

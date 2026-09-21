@@ -87,10 +87,15 @@
     border-bottom: 1px solid var(--hairline); color: inherit; font: inherit;
   }
   .row:last-child { border-bottom: 0; }
-  .row .lead { width: 22px; flex-shrink: 0; text-align: center;
-               color: var(--ink-3); font-size: 13px;
-               font-variant-numeric: tabular-nums; }
-  .row .lead i { font-style: normal; }
+  /* 1.8.41 行首序号换歌曲封面 (用户点名, app 歌单同款 44px): 播放行的
+     跳条蒙在封面上 —— 半透黑纱 + 白条 (app 播放队列同款) */
+  .row .lead { width: 44px; height: 44px; flex-shrink: 0; position: relative;
+               border-radius: 6px; overflow: hidden;
+               background: var(--surface-2); }
+  .row .lead img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .row .lead.ph { display: flex; align-items: center; justify-content: center;
+                  color: var(--ink-3); font-size: 18px; }
+  .row .lead.ph::after { content: "♪"; }
   .row .txt { flex: 1; min-width: 0; }
   /* 1.8.18 用户点名: 歌名/艺人分两行, 过长截断加省略号 —— span 默认
      行内排, 两行文字挤在同一行还不吃省略号; block 化各行其道 */
@@ -103,6 +108,9 @@
   .row.on .t { color: var(--accent); }
   .row.na { opacity: .45; pointer-events: none; }
   .bars { width: 14px; height: 14px; fill: var(--accent); }
+  .row.on .bars { position: absolute; inset: 0; width: auto; height: auto;
+                  fill: #fff; border-radius: 6px;
+                  background: rgba(0,0,0,.45); }
   .bars rect { transform-origin: center 11px; animation: eq 1s ease-in-out infinite; }
   .bars rect:nth-child(2) { animation-delay: .25s; }
   .bars rect:nth-child(3) { animation-delay: .5s; }

@@ -25,7 +25,7 @@ router = APIRouter()
 def music_share_create(body: ShareCreateRequest, request: Request,
                        users: Session = Depends(database.get_users_db),
                        library: Session = Depends(get_db)) -> ShareCreated:
-    """开一条分享链接 (歌/列表), 24 小时内任何人凭链接可看可听。"""
+    """开一条分享链接 (歌/列表/专辑), 24 小时内任何人凭链接可看可听。"""
     user = _require_user(request, users)
     try:
         return library_shares.create_share(library, body.kind, body.id,
@@ -58,7 +58,7 @@ def _share_og_tags(data: SharePageData | None, token: str,
 
 def _share_og_image(data: SharePageData, token: str, base_url: str) -> str:
     """卡片缩略图 (绝对地址): 单曲 = 自己的内嵌图, 没有退专辑图;
-    列表 = 自定义封面, 没传过退第一首的专辑图。"""
+    专辑 = 专辑封面; 列表 = 自定义封面, 没传过退第一首的专辑图。"""
     def artwork_url(kind: str, item_id: int) -> str:
         """公开封面路由的绝对地址。"""
         return f"{base_url}music/share/{token}/artwork/{kind}/{item_id}"
@@ -67,6 +67,8 @@ def _share_og_image(data: SharePageData, token: str, base_url: str) -> str:
         if track.has_artwork:
             return artwork_url("track", track.track_id)
         return artwork_url("album", track.album_id)
+    if data.kind == "album":
+        return artwork_url("album", data.album_id)
     if data.playlist is not None and data.playlist.cover_version:
         return artwork_url("playlist", data.playlist.playlist_id)
     return artwork_url("album", data.tracks[0].album_id)

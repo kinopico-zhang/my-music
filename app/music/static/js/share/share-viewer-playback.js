@@ -1,9 +1,15 @@
 // share-viewer-playback — My Music 分享页播放: 队列开播/暂停/上下曲/播键态/锁屏控制中心。
 // 拆自 share.html 的内联 <script> (结构化重构: 代码逐字节未动, 按 share.html 里的顺序加载, 跨模块引用走全局)。
+// 1.8.37 (用户点名) 中排键的播放语义: 随机 = 下一首在队列里随机挑 (当前
+// 曲除外); 循环三态 关 → 列表循环 (播完回绕) → 单曲循环 (播完重播本首)。
 "use strict";
 /* global $, BARS_SVG, ICON_PAUSE_BIG, ICON_PLAY_BIG, artURL, audio, loadLyrics, queue,
           queuePos: writable, setArt, token */
-/* exported nextTrack, playQueue, prevTrack, togglePlay, updateIcons */
+/* exported cycleRepeat, nextTrack, playQueue, prevTrack, syncStepButtons,
+            togglePlay, toggleShuffle, updateIcons */
+
+let shuffleOn = false;      // 随机: 下一首随机挑 (上一首仍按队列走)
+let repeatMode = 0;         // 循环: 0 关 / 1 列表循环 / 2 单曲循环
 
 function playQueue(pos) {
   if (pos < 0 || pos >= queue.length) return;
@@ -55,22 +61,22 @@ function playQueue(pos) {
     $("#fp-bg").classList.remove("ph");
     bgImg.src = artURL(track);
   }
-  $("#fp-prev").disabled = queuePos <= 0;
-  $("#fp-next").disabled = queuePos >= queue.length - 1;
+  $("#fp-prev").disabled = repeatMode === 0 && queuePos <= 0;
+  $("#fp-next").disabled = repeatMode === 0 && !shuffleOn
+    && queuePos >= queue.length - 1;
   document.title = `${track.title} · My Music`;
   loadLyrics(track);
   updateMediaSession(track);
   updateIcons();     // 自动播放被浏览器拦住时 play 事件不来, 键态先就位
+  // 1.8.41 行首是封面不是序号: 封面永远留着, 播放行的跳条蒙在封面上
+  // (半透黑纱 + 白条, app 播放队列 1.8.38 同款), 不再抹掉行首回填
   document.querySelectorAll(".row").forEach((row) => {
     const on = Number(row.dataset.trackId) === track.track_id;
     row.classList.toggle("on", on);
     const lead = row.querySelector(".lead");
-    if (on) {
-      lead.innerHTML = BARS_SVG;
-    } else {
-      const idx = Array.prototype.indexOf.call(row.parentNode.children, row);
-      lead.innerHTML = `<i class="num">${idx + 1}</i>`;
-    }
+    const bars = lead.querySelector(".bars");
+    if (on && !bars) lead.insertAdjacentHTML("beforeend", BARS_SVG);
+    if (!on && bars) bars.remove();
   });
   audio.play().catch(() => {});
 }
@@ -86,10 +92,42 @@ function togglePlay() {
 
 function prevTrack() {
   if (queuePos > 0) playQueue(queuePos - 1);
+  else if (repeatMode !== 0 && queue.length > 1) playQueue(queue.length - 1);
 }
 
 function nextTrack() {
+  // 随机: 队列里随机挑 (当前曲除外); 顺序: 下一首, 队尾在循环开着时回绕
+  if (shuffleOn && queue.length > 1) {
+    let pick = queuePos;
+    while (pick === queuePos) pick = Math.floor(Math.random() * queue.length);
+    playQueue(pick);
+    return;
+  }
   if (queuePos + 1 < queue.length) playQueue(queuePos + 1);
+  else if (repeatMode !== 0 && queue.length > 0) playQueue(0);
+}
+
+/** 上下曲键的可用态 (随机/循环开着时队列两头也能走: 随机永远有下一首,
+    循环队尾回绕队首)。 */
+function syncStepButtons() {
+  $("#fp-prev").disabled = repeatMode === 0 && queuePos <= 0;
+  $("#fp-next").disabled = repeatMode === 0 && !shuffleOn
+    && queuePos >= queue.length - 1;
+}
+
+/** 1.8.37 随机键: 开关随机下一首, 点亮键面。 */
+function toggleShuffle() {
+  shuffleOn = !shuffleOn;
+  $("#fp-shuffle").classList.toggle("on", shuffleOn);
+  syncStepButtons();
+}
+
+/** 1.8.37 循环键: 三态轮换 关 → 列表循环 → 单曲循环 (图标带 "1")。 */
+function cycleRepeat() {
+  repeatMode = (repeatMode + 1) % 3;
+  $("#fp-repeat").classList.toggle("on", repeatMode !== 0);
+  $("#fp-repeat").classList.toggle("one", repeatMode === 2);
+  syncStepButtons();
 }
 
 function updateIcons() {

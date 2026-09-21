@@ -87,9 +87,16 @@ def test_music_queue_cover_view_wiring():
                  "$(\"#queue-list\").innerHTML = upcoming.map",
                  '$("#fq-count").textContent = `${upcoming.length} 首歌曲`']:
         assert frag in player, f"music-player.js 缺 {frag}"
-    # 行样式: 序号等宽数字 + 竖向照旧原生滚 (1.8.31 把手退役, 整行拖)
-    for frag in [".queue-row {", ".q-num {", "touch-action: pan-y;"]:
+    # 行样式: 1.8.38 改歌单同款行 (用户点名「去序号, 显封面, 跟歌单里的
+    # 歌曲风格一致」) —— 序号 (.q-num) 退役, 左 44px 封面 + 歌名/作者两行
+    for frag in [".queue-row {", ".q-lead {", ".q-main {", ".q-title {",
+                 ".q-artist {", "touch-action: pan-y;"]:
         assert frag in html, f"队列行样式缺 {frag}"
+    assert ".q-num" not in html                       # 序号那套撤净
+    # 行内容: 封面走 trackArtHTML (无图退 ♪ 块), 当前曲封面盖半透纱+白动条
+    assert '${on ? ICON_BARS : ""}${trackArtHTML(track)}' in player
+    assert ".queue-row.on .bars {" in html
+    assert ".queue-row.on .bars i { background: #fff;" in html
     # 互斥: 开队列先收歌词, 开歌词先收队列; 收起播放页两个都收
     assert "if (lyricsViewOpen) toggleLyricsView();" in player
     assert "if (!lyricsViewOpen && queueViewOpen) closeQueueView();" in player

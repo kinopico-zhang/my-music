@@ -70,10 +70,10 @@ def test_music_189_viewport_freeze_repair():
     assert "removePaneWhenSettled(pane);" in swipe         # 手势收层
     assert "ViewportDoctor.settled()" in panes
     assert "Date.now() - start > 1200" in panes   # 键盘赖着: 最多再等 1.2s
-    # 装载顺序: HUD 先载 (医生 wire 时在场), 再医生 —— 1.8.15 起治法在
+    # 装载顺序: HUD 先载 (医生 say 时在场), 再医生 —— 1.8.15 起治法在
     # 搜索页结构 + ge, heal 模块退役, 装载少一件
-    assert ('music-viewport-hud.js?v=9' in html
-            and 'music-viewport-doctor.js?v=8' in html
+    assert ('music-viewport-hud.js?v=10' in html
+            and 'music-viewport-doctor.js?v=9' in html
             and "music-viewport-heal" not in html)
     # 只医独立模式 iPhone: 浏览器 Safari 工具栏自己收放 (满高基准立不住),
     # 安卓 interactive-widget 布局自己缩 (是正常不是病)
@@ -124,11 +124,13 @@ def test_music_189_viewport_freeze_repair():
     assert "overscroll-behavior-y: contain;" in html
     # 撑高也只医独立模式 iPhone (桌面/安卓的账不这么记)
     assert 'if (!window.matchMedia("(display-mode: standalone)").matches' in ge
-    # 体检窗给真话 (1.8.32 起兜底话术: 正常路径已自动补偿, 只有补不上才见)
-    assert ('"已自动按满高补齐; 若底栏还悬空, 再进搜索点键盘收起键收掉再返回"'
-            in doctor)
-    assert 'ViewportHUD.wire({ stat });' in doctor
-    assert '"My Music 1.8.32 视口体检' in doctor
+    # 1.8.43 红框体检窗整个撤了 (用户点名「删除调试的红框, 打点就偷偷
+    # 打点就行了, 别弹框了」): 冻矮照旧自动补偿, 流水照旧回传, 屏幕上
+    # 什么都不弹 —— show/hide/wire/#doctor-hud/现场数字面板一个不留
+    for gone in ("ViewportHUD.show", "ViewportHUD.hide", "ViewportHUD.wire",
+                 "doctor-hud", "hudTick", "createElement",
+                 "已自动按满高补齐", "(现场已回传)"):
+        assert gone not in doctor and gone not in hud, gone
     # 走过的死路撤干净: 换新文档 (1.8.12: 归来还是矮的, 坏值跟着 webview
     # 走) + 收键按住 (1.8.13: 记账不读页面实际滚动) + 预抬 (1.8.14: 让位
     # 不看输入框位置, 抬了照滚) —— heal 模块删了, 标识一个不留; 只留
@@ -140,13 +142,6 @@ def test_music_189_viewport_freeze_repair():
     assert "--kb-h" not in html and "60vh" not in html   # CSS 侧的 --kb-h 也退役
     assert ("performance.getEntriesByType(\"navigation\")" in doctor
             and "开局 i${window.innerHeight} 满高${full} ${nav}" in doctor)
-    # 体检窗 (HUD 管「说」): 挪出刘海/状态栏的模糊地带 (1.8.10 弹在
-    # top:8px 用户点不到; 1.8.19 起改钉在全局上边界 --top-clear 之下);
-    # 没按钮了 —— 能治的自动治, 治不了的直说
-    assert '"#doctor-hud{' in hud
-    assert "top:var(--top-clear)" in hud
-    assert 'createElement("button")' not in hud
-    assert "hudTick = setInterval" in hud
     # 回传通道: 每行流水排进发件箱, 攒 3 秒一批 POST /music/api/viewport-log
     # (keepalive 兜最后一趟, 失败退回箱里), 切后台/离开页面就送
     assert 'fetch("/music/api/viewport-log"' in hud
@@ -181,6 +176,20 @@ def test_music_1812_coldstart_selfheal():
     assert "Math.min(full, capOf())" in doctor
     # 回满自动撤; 补不上才弹体检窗 (红框退成兜底)
     assert "shellH(false);" in doctor
-    assert "if (patched <= window.innerHeight) ViewportHUD.show();" in doctor
+    # 补不上的现场也只进日志 (1.8.43 红框撤了): say 一行, 不弹框
+    assert 'if (patched <= window.innerHeight) say("补不上' in doctor
 
 
+def test_music_1841_pinch_zoom_kill():
+    """1.8.41 双指缩放全禁 (用户点名「整个app任何地方都不允许」): body 的
+    touch-action: pan-y 挡得住安卓/桌面, iOS Safari 的捏合缩放不吃
+    touch-action —— 非标准手势事件 (gesturestart) 掐掉才是 iOS 上的真解;
+    app 主壳和分享页各绑一份 (分享页不走应用 JS, 访客没会话)。"""
+    gesture = 'document.addEventListener("gesturestart", (event)' \
+              ' => event.preventDefault());'
+    ge = (MUSIC_STATIC / "js" / "music-global-events.js").read_text(
+        encoding="utf-8")
+    assert gesture in ge
+    share_events = (MUSIC_STATIC / "js" / "share" / "share-viewer-events.js"
+                    ).read_text(encoding="utf-8")
+    assert gesture in share_events

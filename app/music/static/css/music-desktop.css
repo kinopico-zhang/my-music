@@ -1,0 +1,85 @@
+/* music-desktop — 桌面端样式 (1.8.35 客户端识别架构, 用户点名「以后移动端
+   和 PC 端的设计不一样」): PC 端的差异化样式统一收在这个文件, 作用域一律
+   html[data-client="desktop"] (music-client.js 启动时写上; 移动端是默认
+   基线, 不加作用域前缀)。真机上 ?ui=desktop 可临时预览桌面端样子。
+   1.8.39 键鼠适配批 (用户点名「优化桌面 ui, 适配键鼠操作」): 光标/悬停/
+   悬停亮删除钮/图标钮提示/键盘焦点环/行悬停播放符; 键盘快捷键 (空格播停、
+   左右箭头切歌、/ 进搜索) 在 music-desktop-keys.js。 */
+
+/* ---- 滚动条 (1.8.35 第一条分叉) ---- */
+/* 全站滚动条是移动端 App 观感特意藏掉的, 桌面端鼠标用户没了滚动反馈会
+   以为页面滚不动 —— 接回来, 细条+圆角+半透明, 悬停才加深, 不抢内容。 */
+html[data-client="desktop"] { scrollbar-width: thin; }
+html[data-client="desktop"] ::-webkit-scrollbar { display: block; width: 10px; }
+html[data-client="desktop"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, .14); border-radius: 5px;
+}
+html[data-client="desktop"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, .28);
+}
+html[data-client="desktop"] ::-webkit-scrollbar-track { background: transparent; }
+
+/* ---- 光标: 可点的都给手型 (触屏没有光标, 这套只在桌面出现) ---- */
+html[data-client="desktop"] button { cursor: pointer; }
+html[data-client="desktop"] .pl-name { cursor: pointer; }   /* span 改名钮 */
+
+/* ---- 悬停: 键鼠要看得见「这里能点」—— 行/卡/钮亮一档 (与 :active 同
+   语言, 稍亮半分); 船坞圆键悬停胀一圈, 按下照旧缩回去 ---- */
+html[data-client="desktop"] .track-row:hover,
+html[data-client="desktop"] .lyric-hit:hover,
+html[data-client="desktop"] .queue-row:hover { background: rgba(255, 255, 255, .06); }
+html[data-client="desktop"] .album-card:hover .art-wrap { opacity: .85; }
+html[data-client="desktop"] .action:hover { background: var(--surface-3); }
+html[data-client="desktop"] .action.primary:hover { background: #d6d6d8; }
+/* 1.8.45 收缩顶栏动作条的键同款手感 */
+html[data-client="desktop"] .bar-btn:hover { background: var(--surface-3); }
+html[data-client="desktop"] .bar-btn.primary:hover { background: #d6d6d8; }
+html[data-client="desktop"] .search-tabs button:hover { color: var(--ink-1); }
+html[data-client="desktop"] .fq-head-btns button:hover { opacity: .85; }
+html[data-client="desktop"] #pop-menu button:hover,
+html[data-client="desktop"] #track-menu [data-track-action]:hover,
+html[data-client="desktop"] #cover-menu [data-cover-action]:hover {
+  background: var(--surface-3);
+}
+html[data-client="desktop"] #dock-menu:hover,
+html[data-client="desktop"] #dock-search:hover {
+  transform: translateZ(0) scale(1.06);
+}
+
+/* 纯图标钮的悬停提示: 钮自带 aria-label, CSS 拿来当提示文案 (不用 JS
+   再维护一份文字); 出在钮下方, 纯展示不挡操作 */
+html[data-client="desktop"] .action.icon,
+html[data-client="desktop"] .bar-btn { position: relative; }
+html[data-client="desktop"] .action.icon:hover::after,
+html[data-client="desktop"] .bar-btn:hover::after {
+  content: attr(aria-label);
+  position: absolute; top: calc(100% + 9px); left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap; padding: 5px 10px; border-radius: 8px;
+  background: rgba(44, 44, 46, .96); color: var(--ink-1);
+  border: 1px solid var(--hairline);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  font-size: 12px; font-weight: 400;
+  z-index: 20; pointer-events: none;
+}
+
+/* 曲目行悬停: 封面上浮出播放符 (鼠标扫过就知道行能播); 播放中的行有
+   动条占着封面、不可播的行点了也没反应, 都不浮 */
+html[data-client="desktop"] .track-row:not(.playing, .disabled):hover
+.t-lead.art::after {
+  content: "";
+  position: absolute; inset: 0; border-radius: 6px;
+  background: rgba(0, 0, 0, .45) center / 22px 22px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.029 3.127L19 10.889Q21 12 19 13.111L5.029 20.873Q3 22 3 19.679L3 4.321Q3 2 5.029 3.127z' fill='%23fff'/%3E%3C/svg%3E");
+}
+
+/* 左滑删除的桌面替身: 悬停直接亮出删除钮 (移动端靠左滑, 鼠标拖行别扭);
+   同名 JS 收起时会清掉行内样式, 这条规则始终拿得回接管权 */
+html[data-client="desktop"] .swipe-wrap:hover { --veil: 1; }
+html[data-client="desktop"] .swipe-wrap:hover .swipe-del { transform: translateX(0); }
+
+/* 键盘焦点环: Tab 走得到的地方给个看得见的落点 (触屏点按不触发
+   :focus-visible, 移动端无感) */
+html[data-client="desktop"] :focus-visible {
+  outline: 2px solid rgba(255, 255, 255, .45); outline-offset: 2px;
+}

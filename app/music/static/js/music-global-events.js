@@ -42,6 +42,10 @@ function bindGlobalEvents() {
     else if (playerOpen) closeFullPlayer();
     else if (pushStack.length) closePushStack(pushStack.length - 1);
   });
+  // 双指缩放全禁 (1.8.41, 用户点名「整个app任何地方都不允许」): body 的
+  // touch-action: pan-y 挡得住安卓/桌面, iOS Safari 的捏合缩放不吃
+  // touch-action —— 非标准手势事件掐掉才是 iOS 上的真解
+  document.addEventListener("gesturestart", (event) => event.preventDefault());
   // 键盘避让 (1.8.16 文档解锁 · 用户实测病愈): 六轮失败回传实锤 —— iOS
   // 让位就是滚文档, 页面里
   // 怎么布置都拦不住 (1.8.11 抢账 / 1.8.13 收键按住 / 1.8.14 预抬 / 1.8.15

@@ -6,10 +6,10 @@ from .playlist_schemas import PlaylistBrief
 
 
 class ShareCreateRequest(BaseModel):
-    """POST /api/shares 的请求体 (分享一首歌 / 一个播放列表)。"""
+    """POST /api/shares 的请求体 (分享一首歌 / 一个播放列表 / 一张专辑)。"""
 
-    kind: str = Field(pattern="^(track|playlist)$")   # 分享什么
-    id: int                                           # track_id / playlist_id
+    kind: str = Field(pattern="^(track|playlist|album)$")   # 分享什么
+    id: int                                           # track_id / playlist_id / album_id
 
 
 class ShareCreated(BaseModel):
@@ -22,9 +22,10 @@ class ShareCreated(BaseModel):
 class SharePageData(BaseModel):
     """分享页的数据 (免登录接口): 页面照这个渲染 + 播放。"""
 
-    kind: str                  # "track" | "playlist"
-    title: str                 # 歌名 / 列表名
-    subtitle: str              # 歌手 / "N 首 · 总时长"
+    kind: str                  # "track" | "playlist" | "album"
+    title: str                 # 歌名 / 列表名 / 专辑名
+    subtitle: str              # 歌手 / "N 首 · 总时长" / "艺人 · N 首 · 总时长"
     expires_at: float
     tracks: list[TrackBrief] = Field(default_factory=list)
     playlist: PlaylistBrief | None = None   # 列表分享才有 (封面版本号用)
+    album_id: int = 0                      # 专辑分享才有 (hero/og 取专辑封面)

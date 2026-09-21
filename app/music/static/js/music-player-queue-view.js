@@ -4,7 +4,7 @@
 /* global $, ICON_BARS, bindSwipeDelete, escapeHTML, lyricsViewOpen,
           playQueue, playerCurrentTrackId, queueDrag: writable, queueRemove,
           queueReorder, queueUpcoming, queueViewOpen: writable, savePlayerState,
-          toast, toggleLyricsView */
+          toast, toggleLyricsView, trackArtHTML */
 /* exported bindQueueDrag, bindQueueSwipeDelete, closeQueueView, renderQueueView,
             toggleQueueView */
 
@@ -46,7 +46,9 @@ function renderQueueView() {
   const upcoming = queueUpcoming(playQueue);
   const currentId = playerCurrentTrackId();
   $("#fq-count").textContent = `${upcoming.length} 首歌曲`;
-  // 当前曲 eq 动条, 其余接续编号 (当前算 1); 1.8.31 整行按住一会儿拖换序
+  // 当前曲封面上盖纱+动条, 其余是曲目封面 (1.8.38 用户点名「去掉序号,
+  // 显示歌曲封面, 跟歌单里的歌曲风格一致」: 行 = 44px 封面 + 歌名上行/
+  // 作者下行, 与播放列表行同一套语言); 1.8.31 整行按住一会儿拖换序
   // (把手退役)。1.8.27 行套 .swipe-wrap (左滑删除); data-queue-pos 记
   // order 绝对位 (视图下标 0 = order[position]), 删行/换序都按它换算
   $("#queue-list").innerHTML = upcoming.map((track, index) => {
@@ -55,10 +57,11 @@ function renderQueueView() {
     <div class="swipe-wrap" data-queue-pos="${Math.max(0, playQueue.position) + index}">
       <button class="queue-row${on ? " on" : ""}"
               data-queue-track-id="${track.track_id}">
-        <span class="q-lead">${on ? ICON_BARS
-          : `<i class="q-num">${index + 1}</i>`}</span>
-        <span class="q-title">${escapeHTML(track.title)}</span>
-        <span class="q-artist">${escapeHTML(track.artist)}</span>
+        <span class="q-lead">${on ? ICON_BARS : ""}${trackArtHTML(track)}</span>
+        <span class="q-main">
+          <span class="q-title">${escapeHTML(track.title)}</span>
+          <span class="q-artist">${escapeHTML(track.artist)}</span>
+        </span>
       </button>
       <button class="swipe-del" aria-label="从队列移除">删除</button>
     </div>`;
