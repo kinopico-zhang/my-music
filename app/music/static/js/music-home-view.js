@@ -2,11 +2,13 @@
 // 最近添加专辑), 各 10 个, 段头带 › 查看全部 (1.8.24 用户点名改版;
 // 1.8.30 用户点名调序: 列表段提最前, 专辑段 (原「最新添加专辑」) 垫底)。
 // 列表段 1.8.28 起与专辑段同款网格卡 (整列删除走播放列表页)。
+// 1.8.80 删列表后主页的卡就地抽走 (removeHomePlaylistCard): 主页层底下
+// 一直躺着, 收层回去不会重铺 —— 不抽它就带着已删的陈货等下次整页重铺。
 // 拆自 music.js (结构化重构, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, albumCardHTML, bindTrackLists, fetchJSON, listPlaceholderHTML, navigate,
           pageState, playlistCardHTML, trackArtHTML, trackRowHTML */
-/* exported renderHomeView */
+/* exported removeHomePlaylistCard, renderHomeView */
 
 // ------------------------------------------------------------ 主页
 
@@ -91,4 +93,18 @@ async function loadHomePlaylists() {
   element.innerHTML = playlists && playlists.length
     ? playlists.map(playlistCardHTML).join("")
     : listPlaceholderHTML("还没有播放列表; 长按任意歌曲就能新建一个");
+}
+
+/** 删列表后把主页「最近播放列表」段里那张卡就地抽走 (列表页左滑删调用):
+    一级页在层底下躺着, 收层回去只解锁滚动不重铺 —— 不抽它, 回主页看到
+    的还是已删的那个 (1.8.80 用户实报)。抽空了顺手换上空态占位。 */
+function removeHomePlaylistCard(playlistId) {
+  const element = $("#home-playlists");
+  if (!element) return;
+  const card = element.querySelector(`[data-playlist-id="${playlistId}"]`);
+  if (card) card.remove();
+  if (!element.querySelector("[data-playlist-id]")) {
+    element.innerHTML = listPlaceholderHTML(
+      "还没有播放列表; 长按任意歌曲就能新建一个");
+  }
 }

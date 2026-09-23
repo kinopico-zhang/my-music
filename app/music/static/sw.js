@@ -36,7 +36,7 @@ const DOWNLOAD_CACHE = "music-downloads-v1";
 // v40: 1.8.41 双指缩放全禁 + 分享页列表行序号换歌曲封面 / 1.8.40 收缩顶栏
 // 两行布局·副标题并进上行·短列表补行程·横向晃动修复 / 1.8.39 桌面键鼠
 // 适配 —— 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v69";
+const SHELL_CACHE = "music-shell-v70";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档

@@ -1,9 +1,11 @@
 // music-playlists-pane — My Music 播放列表独立页 (菜单「播放列表」进来的推入层)。
 // 1.8.0 资料库拆独立顶级视图: 播放列表从主页一段升格成整页,
 // 行内容/交互与主页列表段同款 (点行进详情, 左滑删整列)。
+// 1.8.80 左滑删完顺手把主页列表段那张卡也抽走 (removeHomePlaylistCard):
+// 主页层底下躺着不重铺, 不抽它回主页还看到已删的 (用户实报)。
 "use strict";
 /* global $, bindSwipeDelete, fetchJSON, listPlaceholderHTML, navigate,
-          playlistRowHTML, toast */
+          playlistRowHTML, removeHomePlaylistCard, toast */
 /* exported renderPlaylistsPane */
 
 // ------------------------------------------------------------ 播放列表页
@@ -24,6 +26,7 @@ function renderPlaylistsPane(target) {
     try {
       await fetchJSON(`/music/api/playlists/${playlistId}`, { method: "DELETE" });
       wrap.remove();
+      removeHomePlaylistCard(playlistId);   // 主页层底下那张同款卡一起抽掉
       toast("已删除");
     } catch (error) {
       toast(`没删掉: ${error.message}`);

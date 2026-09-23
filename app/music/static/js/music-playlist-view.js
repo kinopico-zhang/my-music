@@ -1,5 +1,8 @@
 // music-playlist-view — My Music 播放列表详情页: 曲目管理/加歌/自定义封面上传/
 // 改名 (1.8.17) + 曲目拖拽换序 (拖拽住在 music-playlist-drag)。
+// 1.8.80 修删列表后主页还留着它: 原来先 navigate("home") 再补
+// renderRootView —— navigate 把层栈收干净了, 后头那个 if (pushStack.length)
+// 永远不成立, 主页没重铺过 (陈货直等下次整页重铺); 换成趁层还盖着先铺。
 // 拆自 music.js (结构化重构, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, ICON_ACTION_IMAGE, ICON_ACTION_PLAY, ICON_ACTION_SHARE, ICON_ACTION_SHUFFLE,
@@ -8,7 +11,7 @@
           coverUploadPlaylistId: writable,
           describeDuration, downloadAllFromUI, downloadsEnabled, escapeHTML,
           fetchJSON, heroBarHTML, listPlaceholderHTML, navigate, playerStart,
-          playlistCoverURL, pushPaneTarget, pushStack, renderRootView,
+          playlistCoverURL, pushPaneTarget, renderRootView,
           sharePlaylist, syncPlayerIndicators, toast, trackArtHTML, trackRowHTML,
           wireHeroBarActions */
 /* exported coverUploadPlaylistId, renderPlaylistView, uploadPlaylistCover */
@@ -87,8 +90,11 @@ async function renderPlaylistView(playlistId, target) {
     try {
       await fetchJSON(`/music/api/playlists/${playlistId}`, { method: "DELETE" });
       toast("已删除");
-      navigate("home");                  // 回主页, 列表段重铺自然不再有它
-      if (pushStack.length) renderRootView("home");   // 一级页就在层底下, 趁滑走前重铺
+      // 一级页就在层底下, 趁层还盖着先整页重铺 (看不见重铺闪动), 再收层
+      // 滑走 —— 露出来的就是没有它的主页。次序不能反: 先 navigate 层栈
+      // 收干净, 再想补铺就没层可判断了 (1.8.80 修的是这个死闸)。
+      renderRootView("home");
+      navigate("home");
     } catch (error) {
       toast(`没删掉: ${error.message}`);
     }

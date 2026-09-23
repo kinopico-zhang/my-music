@@ -7,6 +7,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.80", date="2026-09-23", items=[
+        ChangelogItem(kind="修复", text="删除播放列表后回主页, 主页不再"
+                                       "还留着它 (列表页左滑删和详情页删"
+                                       "两条路都算)"),
+    ]),
     ChangelogVersion(version="1.8.79", date="2026-09-23", items=[
         ChangelogItem(kind="修复", text="新建播放列表连点几下不再连环报"
                                        "「没建起来」—— 之前第一下其实已建成, "
