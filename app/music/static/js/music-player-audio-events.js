@@ -1,4 +1,4 @@
-// music-player-audio-events — My Music 播放器滑杆增强与 audio 元素事件 (出声计数/进度/播完切歌/兜底存档)。
+// music-player-audio-events — My Music 播放器 audio 元素事件 (出声计数/进度/播完切歌/兜底存档)。
 // 拆自 music-player.js (结构化重构: 按逻辑再切一刀, 前半按钮事件留在 music-player-events)。
 // 1.8.70 起播即重挂锁屏键位: iOS 只认「出声那一刻」挂的键位 (见
 // music-player-media-session 的 1.8.70 注释), play/playing 各挂一遍。
@@ -12,11 +12,16 @@
 // 0, 还在继续播放」): iOS 流上 seek 后元素时长会翻脸 (NaN 一阵 / 估出个
 // 偏短的), 显示基准换成 playbackDuration() 库时长; 拖动垫子的释放补一道
 // 窗口级兜底, 指针捕获失灵不再把 scrubbing 卡在 true 冻住进度。
+// 1.8.76 播放挂了不再只弹一句就停: error 兜底交给 notePlaybackFailed
+// (music-player-sources —— 先试本地缓存救回, 不行跳下一首, 连挂 3 首封
+// 顶); 出声 (playing) 即清零连挂计数。滑杆命中区增强拆去 music-player-slider。
 "use strict";
-/* global $, audioElement, currentTrack, formatPlaybackTime, highlightActiveLyric,
-          playbackDuration, playQueue, playRecorded: writable, playerIsPlaying,
-          playerNext, rearmMediaSession, savePlayerState, scrubbing: writable,
-          syncPositionState, toast, updatePlayButtons */
+/* global $, audioElement, currentTrack, enhanceSliderTouch,
+          formatPlaybackTime, highlightActiveLyric, notePlaybackFailed,
+          notePlaybackSucceeded, playbackDuration, playQueue,
+          playRecorded: writable, playerIsPlaying, playerNext,
+          rearmMediaSession, savePlayerState, scrubbing: writable,
+          syncPositionState, updatePlayButtons */
 /* exported bindPlayerAudioEvents, noteAudioSourceChanged, pauseAudio,
             startAudio */
 
@@ -74,44 +79,9 @@ function noteAudioSourceChanged() {
 /* exported bindPlayerAudioEvents */
 
 function bindPlayerAudioEvents(audio) {
-  const enhanceSliderTouch = (input) => {
-    const wrap = document.createElement("div");
-    wrap.className = "slider-hit";
-    input.replaceWith(wrap);
-    wrap.appendChild(input);
-    let dragging = false;
-    const apply = (clientX) => {
-      const rect = wrap.getBoundingClientRect();
-      if (rect.width <= 0) return;
-      const min = Number(input.min);
-      const max = Number(input.max);
-      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-      input.value = String(Math.round(min + ratio * (max - min)));
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    };
-    wrap.addEventListener("pointerdown", (event) => {
-      dragging = true;
-      event.preventDefault();               // 别触发文字选择/页面滚动
-      wrap.setPointerCapture(event.pointerId);
-      apply(event.clientX);
-    });
-    wrap.addEventListener("pointermove", (event) => {
-      if (dragging) apply(event.clientX);
-    });
-    const release = () => {
-      if (!dragging) return;
-      dragging = false;
-      input.dispatchEvent(new Event("change", { bubbles: true }));
-    };
-    wrap.addEventListener("pointerup", release);
-    wrap.addEventListener("pointercancel", release);
-    // 释放的兜底: 指针捕获万一失灵 (老 WebKit/系统手势抢走), pointerup
-    // 落不到垫子上 —— scrubbing 会卡在 true, timeupdate 从此不刷时间,
-    // 进度显示冻在拖动那格。窗口级再接一次 (垫子上已释放过就空跑)。
-    window.addEventListener("pointerup", release);
-    window.addEventListener("pointercancel", release);
-  };
-  enhanceSliderTouch($("#fp-scrub"));   // 进度条 (音量条 1.5.1 撤了, 音量交给设备)
+  // 滑杆命中区增强 (进度条轨道 7px 手指按不准, 外面垫 28px 拖拽面):
+  // 1.8.76 拆去 music-player-slider, 代码逐字节未动
+  enhanceSliderTouch($("#fp-scrub"));
 
   const scrubber = $("#fp-scrub");
   // 时间文案照参考图: 左 = −已播, 右 = −剩余 (倒数式, 两边都带负号)
@@ -138,6 +108,7 @@ function bindPlayerAudioEvents(audio) {
 
   audio.addEventListener("playing", () => {
     rearmMediaSession();   // 1.8.70 iOS 认出声那刻的键位, 重挂 (幂等)
+    notePlaybackSucceeded();   // 1.8.76 出声了: 连挂计数清零
     // 真正出声了才算"听过" (恢复现场直接暂停的不算); 暂停续播不重复报
     if (playRecorded || !currentTrack) return;
     playRecorded = true;
@@ -192,7 +163,10 @@ function bindPlayerAudioEvents(audio) {
     playerNext(true);   // 1.8.66 自然播完强续播 (其余切歌都保持原播放状态)
   });
   audio.addEventListener("error", () => {
-    if (currentTrack) toast("这首播放失败了");
+    // 1.8.76 播放挂了不再只弹一句就死: 兜底在 music-player-sources
+    // (notePlaybackFailed —— 先试本地缓存救回当前曲, 不行跳下一首强续,
+    // 连挂 3 首封顶停住, 断网时不会无限跳歌)
+    if (currentTrack) notePlaybackFailed();
   });
 
   window.addEventListener("pagehide", savePlayerState);

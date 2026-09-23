@@ -152,9 +152,11 @@ def test_music_top_fallback_removed():
     # 1.8.35: +client 客户端识别; 1.8.39: +desktop-keys 桌面键盘层;
     # 1.8.45: +hero-bar-actions 收缩顶栏动作条; 1.8.46: +hero-bar-tap
     # 被吞点按补发; 1.8.47: +share-links 分享链接拆分; 1.8.59:
-    # +player-prefetch 下一曲预取拆分; 1.8.60: +player-art-stage 3D 封面)
+    # +player-prefetch 下一曲预取拆分; 1.8.60: +player-art-stage 3D 封面;
+    # 1.8.76: +player-sources/+player-slider/+downloads-pane 拆分;
+    # 1.8.77: +autocache 自动缓存 + 接线)
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    assert len(scripts) == 59 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 64 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
     assert "js/music-playlist-drag.js?v=" in html   # 1.8.17 拖拽换序
