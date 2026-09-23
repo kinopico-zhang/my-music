@@ -1,6 +1,7 @@
 /* downloads.js 下载与删除的 node --test 单元测试: 能力判定, 下载成功
    (索引落库 + 状态流转 + 进度回调), 重复/坏曲目拒绝, 失败不占位,
-   删除清缓存与索引, 下载中删除 = 取消, 一键清空。
+   删除清缓存与索引, 下载中删除 = 取消, 一键清空, 取流直连 + 缓存直读
+   (1.8.59 锁屏自停根修: 音频字节不经 SW)。
    拆自 downloads.test.mjs (结构化重构, 代码逐字节未动)。 */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -64,6 +65,20 @@ test("downloadTrack: 失败不占位 (图标弹回未下载), 索引不落", asy
     assert.equal(downloads.stateOf(7), null);
     assert.equal(calls.indexWrites, 0);
   }
+});
+
+test("cachedBlob + 取流直连 (1.8.59): 下载带 direct 标记绕 SW, 缓存键仍光杆; 已下载的直读缓存字节", async () => {
+  const { adapters, calls } = stubAdapters(
+    { bodyChunks: [new Uint8Array(30), new Uint8Array(10)] });
+  const downloads = createDownloads(adapters);
+  assert.equal(await downloads.cachedBlob(7), null);    // 还没下: null
+  assert.equal(await downloads.downloadTrack(TRACK), true);
+  assert.deepEqual(calls.fetched, ["/music/media/stream/7?direct=1"]);  // 取流直连
+  assert.deepEqual(calls.puts.map((put) => put.url),
+    ["/music/media/stream/7"]);                         // 缓存键仍光杆
+  assert.deepEqual(await downloads.cachedBlob(7), { size: 40 });   // 直读缓存
+  await downloads.removeDownload(7);
+  assert.equal(await downloads.cachedBlob(7), null);    // 删干净: null
 });
 
 test("removeDownload: 缓存与索引一起清", async () => {

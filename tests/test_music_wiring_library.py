@@ -127,9 +127,9 @@ def test_music_download_all_wiring():
     js = music_browser_js()
     assert 'id="album-download"' in js and "下载全部" in js
     assert 'id="playlist-download"' in js
-    for frag in ["function downloadAllFromUI", "let downloadAllCancelled = false;",
+    for frag in ["function downloadAllFromUI", "let downloadAllJob = null;",
                  "await downloads.downloadTrack(track)",   # 顺序 (await 在循环里)
-                 "downloadAllCancelled = true;"]:
+                 "job.cancelled = true;"]:
         assert frag in js, f"music.js 缺 {frag}"
     # 操作行纯图标: 五枚 .action.icon 齐全 (有 title 无文字), 单行居中
     for frag in ['class="action icon primary" id="playlist-play"',

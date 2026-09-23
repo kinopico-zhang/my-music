@@ -10,17 +10,17 @@ from ..library_tags import looks_like_synced_lyrics, read_track_credits
 from ..schemas import LyricsResponse, TrackCredits
 
 # 求而不得的负缓存: track_id → 上次外网尝试的时刻。换曲预取 (歌词键置灰)
-# 会频繁问没词的曲子, 不拦着就每换一曲打一次 LRCLIB。
+# 会频繁问没词的曲子, 不拦着就每换一曲打一次外网 (自动模式一miss三四发)。
 _lyrics_fetch_misses: dict[int, float] = {}
 _LYRICS_MISS_TTL = 24 * 3600
 
 
 def lyrics_for_track(session: Session, track_id: int,
-                     lyrics_api: tuple[bool, str] | None = None
+                     lyrics_api: tuple[bool, str, str] | None = None
                      ) -> LyricsResponse | None:
     """单曲歌词原文 (前端解析时间轴)。
 
-    库里没有且给了歌词 API 配置时, 联网求一遍并写回索引 —— 下次离线也有,
+    库里没有且给了歌词取词配置时, 联网求一遍并写回索引 —— 下次离线也有,
     搜索歌词也搜得到; 求不到保持空 (24 小时内不再为同一首打外网)。"""
     track = session.get(Track, track_id)
     if track is None:
@@ -33,8 +33,8 @@ def lyrics_for_track(session: Session, track_id: int,
         if last_miss is None or time.monotonic() - last_miss > _LYRICS_MISS_TTL:
             album_title = session.scalar(
                 select(Album.title).where(Album.id == track.album_id)) or ""
-            fetched = fetch_lyrics(lyrics_api[1], track.title, track.artist,
-                                   album_title)
+            fetched = fetch_lyrics(lyrics_api[1], lyrics_api[2],
+                                   track.title, track.artist, album_title)
             if fetched:
                 track.lyrics = fetched
                 track.lyrics_synced = looks_like_synced_lyrics(fetched)

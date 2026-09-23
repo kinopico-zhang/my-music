@@ -98,8 +98,7 @@ def existing_track_ids(session: Session,
                        scanned: list[ScannedTrack]) -> dict[str, int]:
     """这批扫描里已入库的曲目 路径 → id (重扫改, 新增插)。
 
-    全表取回再交集, 不用 IN (...) —— 首扫就是四万多路径, 会顶到
-    SQLite 绑定参数上限。"""
+    全表取回再交集, 不用 IN —— 首扫四万多路径会顶到 SQLite 绑定参数上限。"""
     scanned_paths = {track.relative_path for track in scanned}
     stored = {path: track_id for track_id, path in
               session.execute(select(Track.id, Track.file_path))}
@@ -108,8 +107,7 @@ def existing_track_ids(session: Session,
 
 
 def upsert_track(session: Session, track: ScannedTrack,
-                 album_ids: dict[str, int],
-                 stored_track_ids: dict[str, int]) -> None:
+                 album_ids: dict[str, int], stored_track_ids: dict[str, int]) -> None:
     """曲目行 (路径幂等: 有则改, 无则插)。"""
     album_id = album_ids[album_directory_of(track.relative_path)]
     values = {
@@ -180,11 +178,16 @@ def refresh_album_artist_search_keys(session: Session) -> None:
             artist.name, artist.sort_name, artist.directory)
 
 
-def refresh_album_aggregates(session: Session) -> None:
-    """一条 SQL 重算专辑汇总: 曲目数 / 总时长 / 最近添加 / 有无封面。"""
+def refresh_album_aggregates(session: Session,
+                             artist_id: int | None = None) -> None:
+    """一条 SQL 重算专辑汇总: 曲目数 / 总时长 / 最近添加 / 有无封面
+    (artist_id 给了就只重算这位艺人的专辑 —— 单艺人重扫用)。"""
     track_counts = select(func.count()).where(
         Track.album_id == Album.id).scalar_subquery()
-    session.execute(update(Album).values(
+    statement = update(Album)
+    if artist_id is not None:
+        statement = statement.where(Album.artist_id == artist_id)
+    session.execute(statement.values(
         track_count=track_counts,
         duration_seconds=select(func.coalesce(
             func.sum(Track.duration_seconds), 0.0)).where(

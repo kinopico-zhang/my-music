@@ -72,6 +72,10 @@
   border-radius: 6px; background: rgba(0, 0, 0, .45);
 }
 .queue-row.on .bars i { background: #fff; animation-name: bars-bounce-art; }
+/* 1.8.58 扶正 (用户点名「正在播放的动态」): .bars 基类 display:none, 能开
+   它的 .playing 类自 1.8.38 起从没给到队列行上 —— 纱罩动条一直隐形。现在
+   真播着才亮; 暂停收动条, 只留白粗歌名认当前曲 (与列表行同一语言) */
+.queue-row.playing .bars { display: flex; }
 .q-main { flex: 1; min-width: 0; }
 .queue-row.on .q-title { color: #fff; font-weight: 600; }
 .q-title { display: block; font-size: 15px; color: rgba(255,255,255,.85);

@@ -23,9 +23,12 @@ function heroBarHTML(acts) {
     shuffle: ICON_ACTION_SHUFFLE, download: ICON_DOWNLOAD, share: ICON_ACTION_SHARE,
     delete: ICON_ACTION_TRASH,
   };
+  // 播放键挂 jelly-glyph: 果冻只弹键心里的图标 (jellyTarget 认它) —— 整键
+  // 缩放会把蒙标题的整高衬底 (::before) 一起压扁, 底下的字漏出来闪一下
   const btn = (key, icon, label, on) =>
-    `<button class="bar-btn${key === "play" ? " primary" : ""}" data-bar-act="${key}"` +
-    ` title="${label}" aria-label="${label}"${on ? "" : " disabled"}>${icon}</button>`;
+    `<button class="bar-btn${key === "play" ? " primary jelly-glyph" : ""}"` +
+    ` data-bar-act="${key}" title="${label}" aria-label="${label}"` +
+    `${on ? "" : " disabled"}>${icon}</button>`;
   const extras = Object.entries(acts).filter(([key]) => key !== "play")
     .map(([key, on]) => btn(key, icons[key], HERO_BAR_LABELS[key], !!on))
     .join("");

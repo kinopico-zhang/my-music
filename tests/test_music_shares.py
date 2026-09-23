@@ -30,13 +30,14 @@ def _make_share(client, kind, target_id):
 
 
 def test_share_track_public_flow(auth):
-    """单曲分享全流程: 开链接 (32 位 hex, 24h 失效时刻) → 匿名访客打得开
-    页面、拉到数据、播得到流 (Range 206)、取得到封面。"""
+    """单曲分享全流程: 开链接 → 匿名访客打开页面/拉数据/播流 (206)/取封面。"""
+
     _seed_with_files()
     made = _make_share(auth, "track", 1)
     assert len(made["token"]) == 32
     int(made["token"], 16)                        # 32 位十六进制 (uuid4 hex)
     assert made["expires_at"] == pytest.approx(time.time() + 24 * 3600, abs=5)
+    assert made["artwork"] == f"/music/share/{made['token']}/artwork/track/1"
 
     anon = TestClient(m.app)                      # 不带 cookie: 分享面免登录
     page = anon.get(f"/music/share/{made['token']}")
@@ -90,6 +91,7 @@ def test_share_playlist_scopes_content(auth):
             f"/music/api/playlists/{created['playlist_id']}/tracks",
             json={"track_id": track_id}).status_code == 200
     made = _make_share(auth, "playlist", created["playlist_id"])
+    assert made["artwork"].endswith("/artwork/album/1")   # 没传封面退第一首专辑图
 
     anon = TestClient(m.app)
     data = anon.get(f"/music/share/{made['token']}/api").json()

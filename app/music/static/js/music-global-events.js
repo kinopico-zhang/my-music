@@ -6,9 +6,45 @@
           closeDockMenu, closeFullPlayer, closePushStack, coverUploadPlaylistId,
           navigate, playerOpen, pushStack,
           uploadPlaylistCover, ViewportHUD */
-/* exported bindGlobalEvents */
+/* exported bindGlobalEvents, jellyButton */
 
 // ------------------------------------------------------------ 启动
+
+/** 给一颗键播果冻反馈 (1.8.48, 用户点名「按钮点击都加上果冻 q 弹的效果,
+    给用户反馈他已经点到按钮了」; 1.8.52 收窄到列表页操作排和顶栏键): 走
+    Web Animations 合成器动画 —— 头一版是挂类+强制回流, 那一记样式重算
+    在磨砂底 (船坞气泡/全屏播放页都带 backdrop-filter) 上会把磨砂层闪
+    一下; 合成器动画键自占一层, 不惊动磨砂。连点: 上一下立刻让位从头
+    弹。接点条/补发补出来的合成 click 没有按下那一下, 那两处各自补调。 */
+const jellyReducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+/** 果冻弹的目标: 带蒙底衬底的键 (收拢顶栏播放键挂 .jelly-glyph, ::before
+    衬底蒙着底下被挤的标题) 只弹键心里的图标 —— 整键缩放会把衬底一起压
+    扁, 底下的字从衬底边漏出来闪一下 (1.8.51 用户点名「点收在上面的
+    播放按钮会闪」); 其余键弹键箱。 */
+function jellyTarget(btn) {
+  if (!btn.classList.contains("jelly-glyph")) return btn;
+  return btn.querySelector("svg") || btn;
+}
+
+function jellyButton(btn) {
+  if (jellyReducedMotion.matches) return;   // 系统开了「减弱动态效果」
+  // 1.8.52 用户收窄: 只有操作排 (.action) 和顶栏键 (.bar-btn) 弹, 列表
+  // 行/封面不弹 —— 闸门设在这, 按下/接点条/惯性补发三处一并管住
+  if (!btn.classList.contains("action")
+      && !btn.classList.contains("bar-btn")) return;
+  const target = jellyTarget(btn);
+  for (const anim of target.getAnimations()) {
+    if (anim.id === "jelly") anim.cancel(); // 上一下还在弹: 让位重弹
+  }
+  target.animate([{ transform: "scale(1)" },
+               { transform: "scale(.92, .84)", offset: .25 },
+               { transform: "scale(1.06, 1.04)", offset: .55 },
+               { transform: "scale(.98, .99)", offset: .8 },
+               { transform: "scale(1)" }],
+              { duration: 450, easing: "cubic-bezier(.3, .8, .4, 1)",
+                id: "jelly" });
+}
 
 function bindGlobalEvents() {
   // 底部船坞: 搜索键进搜索层 (顺手聚焦输入框 —— 老放大镜按钮的手感;
@@ -39,13 +75,36 @@ function bindGlobalEvents() {
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || event.repeat) return;
     if (!$("#pop-menu").hidden) closeDockMenu();
-    else if (playerOpen) closeFullPlayer();
+    else if (playerOpen) closeFullPlayer("morph");   // 1.8.63 水滴收回
     else if (pushStack.length) closePushStack(pushStack.length - 1);
   });
   // 双指缩放全禁 (1.8.41, 用户点名「整个app任何地方都不允许」): body 的
   // touch-action: pan-y 挡得住安卓/桌面, iOS Safari 的捏合缩放不吃
   // touch-action —— 非标准手势事件掐掉才是 iOS 上的真解
   document.addEventListener("gesturestart", (event) => event.preventDefault());
+  // 按钮果冻反馈 (1.8.48): 按下那刻播一段压扁回弹 (jellyButton, 只动
+  // transform 不碰布局); 按住拖走了 (滚列表/左滑) 当场收回 —— 那是
+  // 手势不是点按, 别给假反馈。这场的监听全挂 AbortController 信号上,
+  // 抬指/拖走一声 abort 就全自拆
+  document.addEventListener("pointerdown", (event) => {
+    const btn = event.target.closest("button");
+    if (!btn || btn.disabled) return;
+    jellyButton(btn);
+    const x = event.clientX, y = event.clientY;
+    const press = new AbortController();   // 这一次按下的余生
+    const cancel = () => {              // 拖走/系统打断 = 手势: 收回果冻
+      for (const anim of jellyTarget(btn).getAnimations()) {
+        if (anim.id === "jelly") anim.cancel();
+      }
+      press.abort();
+    };
+    document.addEventListener("pointermove", (ev) => {
+      if (Math.hypot(ev.clientX - x, ev.clientY - y) > 10) cancel();
+    }, { passive: true, signal: press.signal });
+    document.addEventListener("pointercancel", cancel, { signal: press.signal });
+    document.addEventListener("pointerup", () => press.abort(),
+                              { signal: press.signal });
+  }, { passive: true, capture: true });
   // 键盘避让 (1.8.16 文档解锁 · 用户实测病愈): 六轮失败回传实锤 —— iOS
   // 让位就是滚文档, 页面里
   // 怎么布置都拦不住 (1.8.11 抢账 / 1.8.13 收键按住 / 1.8.14 预抬 / 1.8.15

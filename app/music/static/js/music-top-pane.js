@@ -1,11 +1,12 @@
 // music-top-pane — My Music 播放排行页 (1.8.31 新增, 用户点名): 菜单
 // 「播放排行」进来的推入层, 本周/本月/今年三个榜左右滑切换 (设置页同款
 // 壳法: 大标题 + 页签钉住, 正文横向 snap 三页各自竖滚)。行右缘只显示
-// 该区间内的播放次数 —— 时长/下载标都不出 (用户点名); 引导位是名次。
-// 数据按 play_events 流水算, 老库已有的播放没流水 —— 榜从记流水这天起算。
+// 该区间内的播放次数 —— 时长/下载标都不出 (用户点名); 引导位是歌曲封面
+// (1.8.54 用户点名, 原来标名次)。数据按 play_events 流水算, 老库已有的
+// 播放没流水 —— 榜从记流水这天起算。
 "use strict";
 /* global bindTrackLists, fetchJSON, listPlaceholderHTML, pageState,
-          syncPlayerIndicators, trackRowHTML */
+          syncPlayerIndicators, trackArtHTML, trackRowHTML */
 /* exported renderTopPane */
 
 // ------------------------------------------------------------ 播放排行页
@@ -58,9 +59,9 @@ function bindTopTabs(target) {
   }, { passive: true });
 }
 
-/** 拉一个榜铺进自己的页: 名次占引导位 (播放中照旧顶成动条), 行右缘是
-    区间内播放次数 (trailingHTML 顶掉时长位), plain 连下载标一起收走。
-    三榜各自拉各自的 (拿不到只塌自己那一页), 点行开播的队列语境按页记。 */
+/** 拉一个榜铺进自己的页: 封面占引导位 (播放列表同款, 播放中罩纱动条),
+    行右缘是区间内播放次数 (trailingHTML 顶掉时长位), plain 连下载标一起
+    收走。三榜各自拉各自的 (拿不到只塌自己那一页), 点行开播按页记语境。 */
 async function loadTopPage(target, period) {
   let tracks = null;
   try {
@@ -75,8 +76,8 @@ async function loadTopPage(target, period) {
   bindTrackLists(element, () => pageState.topPanes[period.key] || []);
   pageState.topPanes[period.key] = tracks;
   element.innerHTML = tracks.length
-    ? tracks.map((track, index) => trackRowHTML(
-        track, `<i class="top-rank">${index + 1}</i>`, "",
+    ? tracks.map((track) => trackRowHTML(
+        track, trackArtHTML(track), "art",
         `×${track.play_count}`, true)).join("")
     : listPlaceholderHTML(period.empty);
   syncPlayerIndicators();

@@ -11,14 +11,16 @@ from .library_engine import (DEFAULT_DATABASE_URL, DEFAULT_MUSIC_DIRECTORY,
                              init_engine, music_directory, session_factory)
 from .library_migrations import ensure_columns
 from .library_models import (AUDIO_EXTENSION_FORMATS,
-                             BROWSER_PLAYABLE_FORMATS, Album, Artist,
+                             BROWSER_PLAYABLE_FORMATS, POSTER_FILE_NAMES,
+                             Album, Artist,
                              MusicLibraryBase, MusicSetting,
                              PlayEvent, PlayStat, Playlist, PlaylistItem,
                              ShareLink, Track)
 
 __all__ = [
     "AUDIO_EXTENSION_FORMATS", "BROWSER_PLAYABLE_FORMATS",
-    "DEFAULT_DATABASE_URL", "DEFAULT_MUSIC_DIRECTORY", "PROJECT_DIR",
+    "DEFAULT_DATABASE_URL", "DEFAULT_MUSIC_DIRECTORY", "POSTER_FILE_NAMES",
+    "PROJECT_DIR",
     "Album", "Artist", "MusicLibraryBase", "MusicSetting",
     "PlayEvent", "PlayStat", "Playlist", "PlaylistItem", "ShareLink",
     "Track",

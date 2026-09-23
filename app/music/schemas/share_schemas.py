@@ -13,10 +13,12 @@ class ShareCreateRequest(BaseModel):
 
 
 class ShareCreated(BaseModel):
-    """开出来的分享 (前端拼 /music/share/{token} 发出去)。"""
+    """开出来的分享 (前端拼 /music/share/{token} 发出去; 1.8.47 起 artwork
+    是这份分享的封面地址 —— 应用抓它当系统分享面板的缩略图)。"""
 
     token: str
-    expires_at: float          # epoch 秒 (创建 + 24h)
+    expires_at: float           # epoch 秒 (创建 + 24h)
+    artwork: str | None = None  # 封面相对地址 (选图逻辑与 og 卡片同一段)
 
 
 class SharePageData(BaseModel):

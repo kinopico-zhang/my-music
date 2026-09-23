@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..library_database import (BROWSER_PLAYABLE_FORMATS, Album, Artist,
-                                Track)
+                                Track, music_directory)
 from ..library_languages import language_for_script
 from ..schemas import (AlbumCard, AlbumPage, AlbumPageList, ArtistBrief,
                        ArtistPage, ArtistPageList, FormatCount, LibraryStats,
@@ -79,6 +79,18 @@ def album_page(session: Session, album_id: int) -> AlbumPage | None:
                              for track in tracks])
 
 
+def _poster_version(artist: Artist) -> float:
+    """海报文件的 mtime (?v= 版本号): 换过海报 URL 就变 —— 后端长缓存和
+    SW 的封面缓存都按 URL 存, 没有版本号换了图永远读的是旧的。"""
+    if not artist.poster_file:
+        return 0.0
+    try:
+        return (music_directory() / artist.directory
+                / artist.poster_file).stat().st_mtime
+    except OSError:
+        return 0.0          # 海报文件不在了: 0 让前端走占位图
+
+
 def list_artists(session: Session, offset: int = 0,
                  limit: int = 60) -> ArtistPageList:
     """艺人列表 (排序名优先, 字母序)。"""
@@ -94,7 +106,8 @@ def list_artists(session: Session, offset: int = 0,
     artists = [ArtistBrief(
         artist_id=artist.id, name=artist.name or artist.directory,
         album_count=album_count, track_count=track_count,
-        has_poster=bool(artist.poster_file))
+        has_poster=bool(artist.poster_file),
+        poster_version=_poster_version(artist))
         for artist, album_count, track_count in session.execute(statement)]
     total = session.scalar(select(func.count()).select_from(Artist)) or 0
     return ArtistPageList(artists=artists, total_count=total,
@@ -108,7 +121,8 @@ def artist_page(session: Session, artist_id: int) -> ArtistPage | None:
         return None
     brief = ArtistBrief(
         artist_id=artist.id, name=artist.name or artist.directory,
-        album_count=0, track_count=0, has_poster=bool(artist.poster_file))
+        album_count=0, track_count=0, has_poster=bool(artist.poster_file),
+        poster_version=_poster_version(artist))
     albums = session.execute(
         select(Album).where(Album.artist_id == artist_id)
         .order_by(Album.year.desc(), Album.title, Album.id)).scalars()

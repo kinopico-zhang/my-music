@@ -3,10 +3,12 @@
 "use strict";
 /* global $, audioElement, bindDismissDrag, bindPlayerAudioEvents, bindQueueDrag,
           cancelLyricsScroll, closeFullPlayer,
-          fpDismissDragged: writable, loadTrack,
+          fpDismissDragged: writable, initArtStage, loadTrack,
           lyricsAutoScrolling, lyricsFollowPaused: writable, lyricsLastScrollAt: writable,
-          openFullPlayer, playQueue, playerNext, playerPrevious, playerToggle,
-          queueCycleRepeat, queueJump, queueSetShuffle, renderQueueView, resumeLyricsFollow,
+          lyricsViewOpen, openFullPlayer, playQueue, playerNext, playerOpen,
+          playerPrevious, playerToggle,
+          queueCycleRepeat, queueJump, queueSetShuffle, queueViewOpen,
+          renderQueueView, resumeLyricsFollow,
           savePlayerState, toast, toggleLyricsView, toggleQueueView,
           updateShuffleRepeatButtons */
 /* exported bindPlayerEvents, lyricsFollowPaused, lyricsLastScrollAt */
@@ -25,14 +27,15 @@ function bindPlayerEvents() {
       fpDismissDragged = false;
       return;
     }
-    closeFullPlayer();
+    closeFullPlayer("morph");         // 1.8.63 水滴收回气泡
   });
-  bindDismissDrag($("#fp-grab"), false, true);   // 抓手条: 下拉收起 + 横拖右甩收起
-  bindDismissDrag($("#fp-art-wrap"), true);   // 封面: 下拉收起 + 左右划切歌
+  bindDismissDrag($("#fp-grab"), true);   // 抓手条: 下拉收起 + 横拖右甩收起
+  bindDismissDrag($("#fp-art-wrap"));     // 封面: 下拉收起 (左右划归 3D 舞台)
+  initArtStage();   // 1.8.60 3D 封面舞台: 两侧站上一首/下一首, 左右划跟手切歌
   // 1.8.2 整页下拉收起 (用户点名): 没有自带手势/滚动的点都能拖 —— 歌词、
   // 队列自带滚动, 抓手/封面自带拖动, 按钮/滑杆各有点击与拖拽语义, 全让路
-  bindDismissDrag($(".fp-sheet"), false, false, true);
-  bindDismissDrag($(".fp-bg"), false, false, true);
+  bindDismissDrag($(".fp-sheet"), false, true);
+  bindDismissDrag($(".fp-bg"), false, true);
   $("#fp-play").addEventListener("click", playerToggle);
   $("#fp-next").addEventListener("click", playerNext);
   $("#fp-prev").addEventListener("click", playerPrevious);
@@ -40,7 +43,7 @@ function bindPlayerEvents() {
     if (!playQueue) return;
     queueSetShuffle(playQueue, !playQueue.shuffle);
     updateShuffleRepeatButtons();
-    renderQueueView();
+    if (queueViewOpen) renderQueueView();   // 没开着不重铺 (翻开现铺, 1.8.61)
     savePlayerState();
     toast(playQueue.shuffle ? "随机播放: 开" : "随机播放: 关");
   });
@@ -61,6 +64,9 @@ function bindPlayerEvents() {
   $("#fp-lyrics").addEventListener("pointerdown", cancelLyricsScroll);
   $("#fp-lyrics").addEventListener("scroll", () => {
     if (lyricsAutoScrolling) return;
+    // 1.8.53 修「开播放页在封面页上见着 回到当前句」: 关页途中歌词的
+    // 惯性滚动还会补发几拍 scroll, 这时点亮浏览态会残留到下次开页
+    if (!playerOpen || !lyricsViewOpen) return;
     if (!$("#fp-lyrics").classList.contains("static")) {   // 无时间轴: 没跟唱可暂停
       lyricsFollowPaused = true;
       $("#fp-lyrics").classList.add("browsing");

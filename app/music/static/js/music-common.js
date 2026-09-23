@@ -6,10 +6,10 @@
    trackArtworkURL, playlistCoverURL, PLACEHOLDER_ARTWORK,
    describeDuration,
    ICON_PLAY, ICON_PAUSE, ICON_BARS, ICON_DOWNLOAD, ICON_LYRICS,
-   ICON_PLAY_BIG, ICON_PAUSE_BIG,
+   ICON_PLAY_BIG, ICON_PAUSE_BIG, ICON_CANCEL,
    ICON_ACTION_PLAY, ICON_ACTION_SHUFFLE, ICON_ACTION_TRASH,
    ICON_ACTION_IMAGE, ICON_ACTION_SHARE, ICON_ACTION_MORE, ICON_REPEAT,
-   ICON_REPEAT_ONE */   // 供 music-player.js / music.js 引用
+   ICON_ACTION_REFRESH, ICON_REPEAT_ONE */   // 供 music-player.js / music.js 引用
 
 function $(selector) {
   return document.querySelector(selector);
@@ -54,9 +54,10 @@ function albumArtworkURL(album) {
   return `/music/media/albums/${album.album_id}/artwork?v=${album.added_at || 0}`;
 }
 
-/** 艺人海报 URL (曲库 poster.* 透传)。 */
+/** 艺人海报 URL (曲库 poster.* 透传; ?v= 是海报文件 mtime —— 换过海报
+    重扫后地址跟着变, 长缓存/离线封面缓存才读得到新头像, 不会永远是旧的)。 */
 function artistArtworkURL(artist) {
-  return `/music/media/artists/${artist.artist_id}/artwork`;
+  return `/music/media/artists/${artist.artist_id}/artwork?v=${artist.poster_version || 0}`;
 }
 
 /** 单曲自己的内嵌封面 URL (播放列表里每行用各首歌的; ?v= 是文件 mtime,
@@ -103,7 +104,8 @@ const ICON_BARS = '<span class="bars" aria-hidden="true"><i></i><i></i><i></i></
 // ❝ 引号 glyph (与全屏页歌词键同款): 曲目行「有词」的标记。
 // 17×17 与下载标同大, 行内同一高度 (小了看着像上标)。
 const ICON_LYRICS = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M11.049 7.801L11.049 13.662Q11.406 15.378 10.242 16.689Q9.078 18 7.332 17.848Q7.244 17.9 7.146 17.87Q7.049 17.84 7.005 17.748Q6.9 17.71 6.858 17.608Q6.815 17.505 6.863 17.404L6.863 15.73Q6.83 15.576 6.931 15.454Q7.032 15.333 7.189 15.336Q7.857 15.352 8.276 14.832Q8.695 14.311 8.537 13.662L8.537 12.825L6.026 12.825Q5.286 12.952 4.755 12.421Q4.224 11.89 4.351 11.15L4.351 7.801Q4.224 7.062 4.755 6.531Q5.286 6 6.026 6.127L9.375 6.127Q10.114 6 10.645 6.531Q11.176 7.062 11.049 7.801L11.049 7.801M17.747 6.127L14.398 6.127Q13.658 6 13.127 6.531Q12.597 7.062 12.723 7.801L12.723 11.15Q12.597 11.89 13.127 12.421Q13.658 12.952 14.398 12.825L16.91 12.825L16.91 13.662Q17.068 14.311 16.649 14.832Q16.23 15.352 15.562 15.336Q15.399 15.335 15.298 15.462Q15.197 15.589 15.235 15.747L15.235 17.421Q15.194 17.517 15.236 17.611Q15.279 17.706 15.377 17.739Q15.421 17.832 15.518 17.862Q15.616 17.892 15.704 17.84Q17.448 17.992 18.612 16.684Q19.776 15.376 19.421 13.662L19.421 7.801Q19.548 7.062 19.017 6.531Q18.487 6 17.747 6.127L17.747 6.127" fill="currentColor"/></svg>';
-// 下载 (曲目行右侧; 已下载时 music.js 换成勾)
+// 下载 (曲目行右侧; 已下载时 music.js 换成勾; 正在下时换 ICON_CANCEL)
+const ICON_CANCEL = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
 const ICON_DOWNLOAD = '<svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 3v11M7.5 9.5 12 14l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 17.5v1.5a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-1.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 const ICON_ACTION_PLAY = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M6.583 17.075L6.583 6.925Q6.583 5.5 7.805 6.233L16.176 11.256Q17.416 12 16.176 12.744L7.805 17.767Q6.583 18.5 6.583 17.075z" fill="currentColor"/></svg>';
 const ICON_ACTION_SHUFFLE = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M16.5 3q0.31 0 0.533 0.223l3 3q0.217 0.217 0.217 0.527q0 0.316-0.217 0.533l-3 3q-0.217 0.217-0.533 0.217q-0.31 0-0.53-0.22t-0.22-0.53q0-0.299 0.217-0.527l1.723-1.723l-1.19 0q-1.055 0-1.981 0.46t-1.552 1.257q-0.967 1.231-0.967 2.783q0 1.564-0.75 2.906q-0.398 0.721-0.967 1.295q-0.832 0.85-1.94 1.325t-2.344 0.475l-1.5 0q-0.31 0-0.53-0.22t-0.22-0.53t0.22-0.53t0.53-0.22l1.5 0q1.061 0 1.984-0.457t1.55-1.254q0.967-1.231 0.967-2.789q0-1.564 0.75-2.906q0.404-0.727 0.967-1.289q0.832-0.85 1.94-1.327t2.344-0.478l1.19 0l-1.723-1.717q-0.217-0.229-0.217-0.533q0-0.31 0.22-0.53t0.53-0.22zM16.5 13.5q0.31 0 0.533 0.223l3 3q0.217 0.217 0.217 0.533q0 0.31-0.217 0.527l-3 3q-0.217 0.217-0.533 0.217q-0.31 0-0.53-0.217t-0.22-0.527q0-0.305 0.217-0.533l1.723-1.723l-1.19 0q-1.236 0-2.344-0.475t-1.94-1.325q0.451-0.662 0.75-1.412q0.627 0.796 1.55 1.254t1.984 0.457l1.19 0l-1.723-1.717q-0.217-0.229-0.217-0.533q0-0.31 0.22-0.53t0.53-0.22zM4.5 6l1.5 0q1.236 0 2.344 0.478t1.94 1.327q-0.457 0.673-0.75 1.412q-0.627-0.796-1.552-1.257t-1.981-0.46l-1.5 0q-0.31 0-0.53-0.22t-0.22-0.53t0.22-0.53t0.53-0.22z" fill="currentColor"/></svg>';
@@ -111,6 +113,8 @@ const ICON_ACTION_TRASH = '<svg viewBox="0 0 24 24" width="15" height="15" aria-
 // 更多操作 … (1.8.45 收缩顶栏的动作条): 三点横排, 点开收着的额外键
 const ICON_ACTION_MORE = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><g fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></g></svg>';
 const ICON_ACTION_IMAGE = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4.5 5.5h15v13h-15zM4.5 15l4.5-4 4 3.5 3-2.5 4 3.5M9 9.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+// 刷新 (艺人页「刷新元数据」): 环形箭头, 与下载标同一套描边画法
+const ICON_ACTION_REFRESH = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M23 4v6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 // 分享图标 (1.8.25 换 iconfont「分享」搜索第 8 个, 用户点名): 三节点互连的
 // 共享网络画法 (iconfont id 809967, fill 填充), 曲目菜单那颗同款
 // (music.html 内联 18px)。1.8.23 的 iOS 共享样式 (方框 + 顶边缺口箭头) 随之退役

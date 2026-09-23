@@ -53,7 +53,7 @@ async function renderPlaylistView(playlistId, target) {
                 aria-label="随机播放" ${playable.length ? "" : "disabled"}>
           ${ICON_ACTION_SHUFFLE}</button>
         ${downloadsEnabled ? `
-        <button class="action icon" id="playlist-download" title="下载全部"
+        <button class="action icon" id="playlist-download" data-dl-all title="下载全部"
                 aria-label="下载全部" ${playable.length ? "" : "disabled"}>
           ${ICON_DOWNLOAD}</button>` : ""}
         <button class="action icon" id="playlist-share" title="分享"

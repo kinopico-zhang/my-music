@@ -1,8 +1,12 @@
-// music-player-fullpage — My Music 全屏播放页开合: 滑入滑出, 下拉/横划收起, 封面左右划切歌。
-// 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
+// music-player-fullpage — My Music 全屏播放页开合: 滑入滑出, 下拉/横划收起。
+// 拆自 music-player.js (结构化重构, 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
+// 1.8.60 封面的左右划切歌拆去 music-player-art-stage (3D 封面舞台接手)。
+// 1.8.63 开场换成流体胶囊形变 (music-player-fluid-morph): 点气泡从胶囊轮廓
+// 原位延展成整页 (水滴铺开), 程序化收起收拢回胶囊; 拖拽收起 (下拉/右甩)
+// 照旧滑出 —— 手上有惯性, 滑出才是连续的动作语言。
 "use strict";
-/* global $, closeQueueView, lyricsViewOpen, playerNext, playerPrevious, queueViewOpen,
-          toggleLyricsView */
+/* global $, FLUID_CLOSE_MS, closeQueueView, fluidCollapse, fluidExpand,
+          fluidReset, lyricsViewOpen, queueViewOpen, toggleLyricsView */
 /* exported bindDismissDrag, closeFullPlayer, fpDismissDragged, openFullPlayer, playerOpen */
 
 let fpHideTimer = 0;
@@ -12,49 +16,70 @@ let playerOpen = false;   // 全屏页开着吗 (防重入; 开关是纯视图�
 function openFullPlayer() {
   const fullPlayer = $("#full-player");
   clearTimeout(fpHideTimer);
+  // 1.8.53 兜底: 关页途中惯性滚动补发的 scroll 可能把「回到当前句」又
+  // 亮出来, 开页先按下去 (封面页上不该见着它)
+  $("#lyrics-resume").hidden = true;
   fullPlayer.hidden = false;
   fullPlayer.style.pointerEvents = "";
+  // 1.8.63 流体胶囊形变: 从气泡的胶囊轮廓原位延展成整页, 尺寸/圆角走
+  // 高阻尼流体曲线 —— 没在播 (没有气泡可依) 才退回滑入
+  if (fluidExpand(fullPlayer)) {
+    fullPlayer.classList.add("open");   // 先上: 落位后样式表无缝接手
+    playerOpen = true;
+    return;
+  }
+  fluidReset(fullPlayer);    // 清形变残留, 滑入世界量准起点
   void fullPlayer.offsetWidth;   // 强制起点样式先落地再放滑入 (rAF 在安静页会饿死)
   fullPlayer.classList.add("open");
   playerOpen = true;
 }
 
-// direction "right" = 向右甩出收起 (抓手条横拖); 默认向下收 (下拉/Esc)。
+// direction "morph" = 流体收拢回气泡 (水滴收回); "right" = 向右甩出收起
+// (抓手条横拖); 默认向下收 (拖拽松手的收起 —— 带着惯性走滑出)。
 function closeFullPlayer(direction) {
   if (!playerOpen) return;
   playerOpen = false;
   const fullPlayer = $("#full-player");
+  if (lyricsViewOpen) toggleLyricsView();
+  if (queueViewOpen) closeQueueView();
+  fullPlayer.style.pointerEvents = "none";   // 出场途中别挡下层
+  clearTimeout(fpHideTimer);
+  // 1.8.63 流体收场: 收拢回气泡的胶囊轮廓, 落位清场交还气泡
+  if (direction === "morph" && fluidCollapse(fullPlayer)) {
+    fpHideTimer = setTimeout(() => {
+      fullPlayer.hidden = true;
+      fullPlayer.style.pointerEvents = "";
+      fullPlayer.classList.remove("open");
+      fluidReset(fullPlayer);   // 清行内几何, 交还气泡
+    }, FLUID_CLOSE_MS);
+    return;
+  }
+  fluidReset(fullPlayer);   // 形变残留清掉 (滑出世界不认行内几何)
   fullPlayer.classList.remove("open");
   if (direction === "right") fullPlayer.classList.add("dismiss-right");
-  fullPlayer.style.pointerEvents = "none";   // 滑出途中别挡下层
-  clearTimeout(fpHideTimer);
   fpHideTimer = setTimeout(() => {
     fullPlayer.hidden = true;
     fullPlayer.style.pointerEvents = "";
     fullPlayer.classList.remove("dismiss-right");
   }, 300);
-  if (lyricsViewOpen) toggleLyricsView();
-  if (queueViewOpen) closeQueueView();
 }
 
-// ------------------------------------------------------------ 下拉收起 / 横划切歌
-// 抓手条/封面往下拖: 播放页跟手下滑, 松手拖得够远或够快就收起, 否则弹回。
-// 封面另有左右划: 跟手平移, 松手拖过三分之一 (或带甩劲) 就切上一首/下一首,
-// 封面朝划的方向滑出, 新封面从另一侧滑入。抓手条还有横拖收起: 往右拖整页
-// 跟手走, 松手拖过三分之一 (或带甩劲) 就向右甩出收起。拖动后的尾随 click
-// 不算 (不然小拖一下也收起)。
+// ------------------------------------------------------------ 下拉/横划收起
+// 抓手条/封面/整页空白往下拖: 播放页跟手下滑, 松手拖得够远或够快就收起,
+// 否则弹回。抓手条另有横拖收起: 往右拖整页跟手走, 松手拖过三分之一
+// (或带甩劲) 就向右甩出收起。拖动后的尾随 click 不算 (不然小拖一下也收起)。
 // 1.8.2 整页化 (用户点名「任何一点都能拖」): .fp-sheet/.fp-bg 也绑一份
 // (ignoreInteractive), 起手点落在自带手势的东西上就让路 —— 歌词/队列自带
 // 滚动, 抓手/封面自带拖动, 按钮/滑杆各有点击与拖拽语义。
+// 1.8.60 封面上的左右划归 3D 封面舞台 (music-player-art-stage), 这里只管
+// 竖向收起 —— 横向在这直接放掉。
 let fpDismissDragged = false;
 
 // horizontalClose: 抓手条上的横划改成拖整页收起 (true), 而不是放掉。
 // ignoreInteractive: 起手点命中按钮/输入/滑杆/歌词/队列 (或已绑拖动的
 // 抓手/封面) 时整个手势放掉, 让位给它们自己的行为。
-function bindDismissDrag(target, swipeTracks = false, horizontalClose = false,
-                         ignoreInteractive = false) {
+function bindDismissDrag(target, horizontalClose = false, ignoreInteractive = false) {
   const player = $("#full-player");
-  const art = $("#fp-art-wrap");
   let dragging = false;
   let pointerId = -1;
   let startX = 0;
@@ -64,8 +89,7 @@ function bindDismissDrag(target, swipeTracks = false, horizontalClose = false,
   let lastTime = 0;
   let velocity = 0;                  // px/ms, 松手那刻的甩速 (竖向)
   let hVelocity = 0;                 // 横向甩速
-  let mode = "";                     // "" 未定 / "down" 收起 / "side" 切歌
-                                     //   / "across" 抓手横拖收起
+  let mode = "";                     // "" 未定 / "down" 收起 / "across" 抓手横拖收起
   target.addEventListener("pointerdown", (event) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
     if (ignoreInteractive && event.target.closest(
@@ -103,24 +127,18 @@ function bindDismissDrag(target, swipeTracks = false, horizontalClose = false,
     if (!mode) {
       if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
       if (Math.abs(dy) >= Math.abs(dx)) mode = "down";
-      else if (swipeTracks) mode = "side";
       else if (horizontalClose) mode = "across";
       else { dragging = false; return; }   // 横划没意义的目标, 放掉
+      fluidReset(player);    // 形变半路抓起: 先回干净世界再跟手拖
       player.style.transition = "none";
-      if (mode === "side") art.style.transition = "none";
       target.setPointerCapture(event.pointerId);
     }
     if (mode === "down") {
       if (dy > 10) fpDismissDragged = true;
       player.style.transform = dy > 0 ? `translateY(${dy * 0.92}px)` : "";
-    } else if (mode === "across") {
+    } else {
       if (dx > 10) fpDismissDragged = true;
       player.style.transform = dx > 0 ? `translateX(${dx * 0.92}px)` : "";
-    } else {
-      const drag = dx * 0.9;         // 横向轻阻尼
-      art.style.transform =
-        `translateX(${drag}px) scale(${Math.max(.88, 1 - Math.abs(drag) / 900)})`;
-      art.style.opacity = `${Math.max(.55, 1 - Math.abs(drag) / 700)}`;
     }
   });
   const finish = (event) => {
@@ -133,49 +151,15 @@ function bindDismissDrag(target, swipeTracks = false, horizontalClose = false,
       if (lastY - startY > 90 || velocity > 0.55) closeFullPlayer();
       return;
     }
-    if (mode === "across") {
-      const width = player.offsetWidth || 1;
-      const flick = hVelocity > 0.5 && lastX - startX > 30;
-      if (lastX - startX >= width / 3 || flick) {
-        closeFullPlayer("right");    // 样式交给 .dismiss-right 接管 (从当前位置甩出)
-      }
-      return;                        // 没拖够: 行内样式已清, 弹回原位
-    }
-    if (mode !== "side") return;
-    const width = art.offsetWidth || 1;
-    const flick = Math.abs(hVelocity) > 0.5 && Math.abs(lastX - startX) > 30;
-    if (lastX - startX <= -width / 3 || (flick && hVelocity < 0)) {
-      swipeCoverTo("left");          // 样式交给动画接管 (从当前位置滑出)
-    } else if (lastX - startX >= width / 3 || (flick && hVelocity > 0)) {
-      swipeCoverTo("right");
-    } else {
-      art.style.transition = "";     // 没拖够: transition 回来, 弹回原位
-      art.style.transform = "";
-      art.style.opacity = "";
-    }
+    if (mode !== "across") return;
+    const width = player.offsetWidth || 1;
+    const flick = hVelocity > 0.5 && lastX - startX > 30;
+    if (lastX - startX >= width / 3 || flick) {
+      closeFullPlayer("right");    // 样式交给 .dismiss-right 接管 (从当前位置甩出)
+    }                              // 没拖够: 行内样式已清, 弹回原位
   };
   target.addEventListener("pointerup", finish);
   target.addEventListener("pointercancel", finish);
-}
-
-/** 封面切歌动画: 朝划的方向滑出淡出 → 换歌 → 新封面从另一侧滑入。 */
-function swipeCoverTo(direction) {
-  const art = $("#fp-art-wrap");
-  const swap = direction === "left" ? playerNext : playerPrevious;
-  art.style.transition = "transform .2s ease-in, opacity .2s ease-in";
-  art.style.transform = `translateX(${direction === "left" ? -70 : 70}%)`;
-  art.style.opacity = "0";
-  setTimeout(() => {
-    swap();
-    art.style.transition = "none";
-    art.style.transform = `translateX(${direction === "left" ? 60 : -60}%)`;
-    void art.offsetWidth;           // 起点先落地再放滑入 (rAF 在安静页会饿死)
-    art.style.transition =
-      "transform .24s cubic-bezier(.32,.72,.35,1), opacity .24s ease-out";
-    art.style.transform = "";
-    art.style.opacity = "";         // 滑入连带淡入 —— 不恢复就一直透明!
-    setTimeout(() => { art.style.transition = ""; }, 260);
-  }, 200);
 }
 
 /** 歌词结果/外部入口: 打开歌词视图 (已开着就不动; 没歌词的曲子点不开)。 */

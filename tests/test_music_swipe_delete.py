@@ -1,8 +1,8 @@
 """My Music 左滑删除接线测试: iOS 同款红色删除钮 —— 静态文本断言,
 不碰数据库。拆自 test_music_wiring_library.py (1.8.23 改款批次它长到
 超 200 行上限, 按域再分家); 改款后的样式断言在
-test_music_playlist_rename_reorder, 下载页选择态压住左滑在
-test_music_page_wiring。"""
+test_music_playlist_rename_reorder, 已下载页多选删除 (含选择态压住
+左滑) 在本文件 test_music_downloads_select_wiring (1.8.59 挪来)。"""
 
 from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
                                       music_page_shell, music_player_js)
@@ -76,3 +76,42 @@ def test_music_swipe_delete_wiring():
     # 删除钮的点击走捕获层 (}, true); 行自己的冒泡 click 处理器看不到它
     assert 'container.addEventListener("click", async (event) => {' in js
     assert "}, true);" in js
+
+
+def test_music_downloads_select_wiring():
+    """已下载页的多选删除 (1.8.59 从 test_music_page_wiring 挪来 —— 那文件
+    顶到 200 行上限): 1.8.6 「多选」选择模式 (capture 截下点行改勾选);
+    1.8.17 选择态压住左滑 (两套手势不打架); 1.8.18 封面即复选框 +
+    垃圾桶/多选并成右上一对椭圆键。"""
+    html = music_page_shell()
+    js = music_browser_js()
+    # 1.8.6 多选删除 (用户点名): 「多选」进选择模式, capture 阶段截下点行
+    # 改勾选 (不再开播), 删完/「完成」退出; 状态住模块, 整页重铺后
+    # syncDownloadsSelect 按 state 补勾
+    assert "music-downloads-select.css?v=" in html        # 选择态样式
+    select_js = (MUSIC_STATIC / "js" / "music-downloads-select.js").read_text(
+        encoding="utf-8")
+    for frag in ["function bindDownloadsSelect", "function syncDownloadsSelect",
+                 "function deleteSelected", "const dlSelected = new Set();",
+                 "event.stopPropagation();",          # capture 截下: 不走开播
+                 "删除选中的 ${dlSelected.size} 首?",
+                 "await downloads.removeDownload(trackId);"]:
+        assert frag in select_js, f"多选删除缺 {frag}"
+    assert "bindDownloadsSelect(target);" in js          # 挂 pane 层 (重铺不丢)
+    assert 'id="dl-select-toggle"' in js and 'id="dl-select-delete"' in js
+    # 1.8.18 改版 (用户点名「封面即复选框」): 不再左移出行画选择圈 —— 勾
+    # 画在封面上 (蒙暗 + 白勾, .dl-art 裹层挂伪元素), 行布局一毫米不动
+    assert '#dl-pane-body.selecting .dl-row.sel .dl-art::after' in html
+    assert "#dl-pane-body.selecting .dl-row.sel .dl-art::before" in html
+    assert '<span class="dl-art">' in js                 # 封面裹层 (模板带出)
+    assert "padding-left: 32px" not in html              # 左移出行那套撤了
+    # 1.8.17: 勾中出垃圾桶; 多选模式压住左滑 (删除钮和延伸纱一起藏),
+    # 两套手势不打架
+    assert 'aria-label="删除选中"' in js
+    assert "#dl-pane-body.selecting .swipe-del { display: none; }" in html \
+        and "#dl-pane-body.selecting .swipe-wrap::after { display: none; }" in html
+    # 1.8.18 垃圾桶/多选并成右上一对黑白灰椭圆键 (原先 space-between
+    # 隔在两头, 用户点名「距离太远了」)
+    assert '<span class="dl-actions">' in js
+    assert ".dl-actions { display: flex; align-items: center; gap: 8px;" in html
+    assert "border-radius: 999px;" in html and "min-height: 32px;" in html

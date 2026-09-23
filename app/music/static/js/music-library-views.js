@@ -3,11 +3,11 @@
 // 专辑/艺人/已下载各自成推入层, 缓存仍按段名住 pageState.lists。
 "use strict";
 /* global $, appendListPage, bindDownloadsSelect, bindSwipeDelete,
-          downloadAllCancelled: writable, downloadRingHTML, downloads,
+          cancelDownloadAll, downloadRingHTML, downloads,
           downloadsEnabled, escapeHTML, formatBytes, listPlaceholderHTML,
           loadListPage, navigate, pageState, playerStart, toast,
           syncDownloadsSelect */
-/* exported downloadAllCancelled, playDownloadedRow, refreshDownloadsBody, renderAlbumsPane,
+/* exported playDownloadedRow, refreshDownloadsBody, renderAlbumsPane,
             renderArtistsPane, renderDownloadsBody, renderDownloadsPane,
             resetLibraryLists */
 
@@ -60,7 +60,7 @@ function renderDownloadsPane(target) {
   bindSwipeDelete(target, async (wrap) => {
     const trackId = Number(wrap.dataset.dlWrap);
     const busy = Boolean(wrap.querySelector(".busy"));
-    if (busy) downloadAllCancelled = true;   // 批量下载在跑: 这首取消即整批叫停
+    if (busy) cancelDownloadAll();   // 批量下载在跑: 这首取消即整批叫停
     try {
       await downloads.removeDownload(trackId);
       toast(busy ? "已取消下载" : "已删除下载");

@@ -82,13 +82,13 @@ def test_lyrics_online_fetch_and_negative_cache(tmp_path, monkeypatch):
     library_queries.lyrics_queries._lyrics_fetch_misses.clear()   # 模块级账本, 别让别的测试留旧账
     calls = []
 
-    def fake_fetch(api_base, title, artist, album_title):
+    def fake_fetch(provider, api_base, title, artist, album_title):
         calls.append(title)
         return "[00:01.00]联网歌词" if title == "曲B" else ""
 
     monkeypatch.setattr(library_queries.lyrics_queries, "fetch_lyrics",
                         fake_fetch)
-    api = (True, "https://lrc.invalid/api")
+    api = (True, "netease", "https://lrc.invalid/api")
     with session_factory()() as session:
         page = library_queries.list_tracks(session, limit=10)
         ids = {track.title: track.track_id for track in page.tracks}
@@ -120,7 +120,7 @@ def test_lyrics_first_fetch_on_fresh_boot(tmp_path, monkeypatch):
     monkeypatch.setattr("time.monotonic", lambda: 45.0)   # 开机 45 秒
     monkeypatch.setattr(library_queries.lyrics_queries, "fetch_lyrics",
                         lambda *a: "[00:01.00]联网歌词")
-    api = (True, "https://lrc.invalid/api")
+    api = (True, "netease", "https://lrc.invalid/api")
     with session_factory()() as session:
         page = library_queries.list_tracks(session, limit=10)
         ids = {track.title: track.track_id for track in page.tracks}

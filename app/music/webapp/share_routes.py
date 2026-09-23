@@ -28,12 +28,17 @@ def music_share_create(body: ShareCreateRequest, request: Request,
     """开一条分享链接 (歌/列表/专辑), 24 小时内任何人凭链接可看可听。"""
     user = _require_user(request, users)
     try:
-        return library_shares.create_share(library, body.kind, body.id,
+        made = library_shares.create_share(library, body.kind, body.id,
                                            user.uuid)
     except KeyError as exc:
         raise HTTPException(404, "分享的对象不存在") from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+    # 1.8.47 (你报的「iOS 分享面板上没有封面」): 应答带上这份分享的封面
+    # 地址, 应用抓它当系统分享面板的缩略图 (选图逻辑与 og 卡片同一段)
+    shared = library_shares.share_page_data(library, made.token)
+    made.artwork = _share_artwork_path(shared, made.token) if shared else None
+    return made
 
 
 # share.html <head> 里的占位注释, 服务端换成 og: 标签 (微信卡片全靠它)
@@ -56,22 +61,28 @@ def _share_og_tags(data: SharePageData | None, token: str,
             f'<meta property="og:image" content="{escape_html(image)}">')
 
 
-def _share_og_image(data: SharePageData, token: str, base_url: str) -> str:
-    """卡片缩略图 (绝对地址): 单曲 = 自己的内嵌图, 没有退专辑图;
-    专辑 = 专辑封面; 列表 = 自定义封面, 没传过退第一首的专辑图。"""
-    def artwork_url(kind: str, item_id: int) -> str:
-        """公开封面路由的绝对地址。"""
-        return f"{base_url}music/share/{token}/artwork/{kind}/{item_id}"
+def _share_artwork_path(data: SharePageData, token: str) -> str:
+    """这份分享的封面 (相对地址): 单曲 = 自己的内嵌图, 没有退专辑图;
+    专辑 = 专辑封面; 列表 = 自定义封面, 没传过退第一首的专辑图。
+    og 卡片 (绝对地址) 与系统分享面板的缩略图 (应用内抓取) 共用这一段。"""
+    def artwork_path(kind: str, item_id: int) -> str:
+        """公开封面路由的地址 (相对)。"""
+        return f"/music/share/{token}/artwork/{kind}/{item_id}"
     if data.kind == "track":
         track = data.tracks[0]
         if track.has_artwork:
-            return artwork_url("track", track.track_id)
-        return artwork_url("album", track.album_id)
+            return artwork_path("track", track.track_id)
+        return artwork_path("album", track.album_id)
     if data.kind == "album":
-        return artwork_url("album", data.album_id)
+        return artwork_path("album", data.album_id)
     if data.playlist is not None and data.playlist.cover_version:
-        return artwork_url("playlist", data.playlist.playlist_id)
-    return artwork_url("album", data.tracks[0].album_id)
+        return artwork_path("playlist", data.playlist.playlist_id)
+    return artwork_path("album", data.tracks[0].album_id)
+
+
+def _share_og_image(data: SharePageData, token: str, base_url: str) -> str:
+    """卡片缩略图 (绝对地址): 选图逻辑见 _share_artwork_path。"""
+    return f"{base_url}{_share_artwork_path(data, token).lstrip('/')}"
 
 
 @router.get("/share/{token}")

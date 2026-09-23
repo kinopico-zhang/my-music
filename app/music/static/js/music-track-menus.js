@@ -1,17 +1,15 @@
-// music-track-menus — My Music 曲目长按菜单: 开合/定位/按列表语境开播, 分享链接。
-// 拆自 music.js (结构化重构: 代码逐字节未动, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
+// music-track-menus — My Music 曲目长按菜单: 开合/定位/按列表语境开播。
+// 拆自 music.js (结构化重构); 分享链接 1.8.47 拆去 music-share-links.js。
 "use strict";
-/* global $, downloads, downloadsEnabled, fetchJSON, playDownloadedRow, playerStart,
+/* global $, downloads, downloadsEnabled, playDownloadedRow, playerStart,
           rowForTrackMenu: writable, toast, trackListBindings */
 /* exported closeTrackMenu, menuTrackDirect, openTrackMenu, openTrackMenuForTrack,
-            pickerTrack, placeMenuAt, playTrackFromMenu, rowForTrackMenu, shareAlbum,
-            sharePlaylist, shareTrack, trackFromRow */
+            pickerTrack, placeMenuAt, playTrackFromMenu, rowForTrackMenu, trackFromRow */
 
 // ------------------------------------------------------------ 曲目长按菜单
 // 任何界面的曲目行 (含「已下载」栏) 长按 500ms / 桌面右键, 弹出菜单:
 // 播放 (在所在列表的语境里开播) / 进入艺人主页 / 进入专辑主页 (1.8.2) /
-// 下载 (1.8.6) / 添加到播放列表 / 分享。全屏页 ⋯ 也走这个菜单 (对着当前
-// 曲目直接开, 没有「播放」项)。
+// 下载 (1.8.6) / 添加到播放列表 / 分享。全屏页 ⋯ 也走这个菜单。
 let pickerTrack = null;                   // 正在挑列表往里加的曲目
 let menuTrackDirect = null;               // 全屏页 ⋯ 直接对着曲目开时用这个
 
@@ -61,60 +59,6 @@ function tracksOfRow(row) {
   return null;
 }
 
-/** 分享 = 后端开一条 24 小时免登录的 uuid 链接, 有系统分享就发 URL
-    (歌名 - 歌手 + 链接), 没有 (明文 HTTP) 退化为复制链接。 */
-async function shareByLink(kind, id, title, text) {
-  let url = "";
-  try {
-    const made = await fetchJSON("/music/api/shares", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind, id }),
-    });
-    url = `${location.origin}/music/share/${made.token}`;
-  } catch (error) {
-    toast(`分享链接没生成: ${error.message}`);
-    return;
-  }
-  if (typeof navigator.share === "function") {
-    try { await navigator.share({ title, text, url }); }
-    catch (_error) { /* 用户取消/环境拒绝: 不算失败 */ }
-    return;
-  }
-  let copied = false;
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(url);
-      copied = true;
-    } else {
-      const input = document.createElement("textarea");
-      input.value = url;
-      document.body.appendChild(input);
-      input.select();
-      copied = document.execCommand("copy");
-      input.remove();
-    }
-  } catch (_error) { /* 复制失败走下面的提示 */ }
-  toast(copied ? "链接已复制, 24 小时内有效" : "这个环境分享不了");
-}
-
-async function shareTrack(track) {
-  await shareByLink("track", track.track_id, track.title,
-                    `${track.title} - ${track.artist}`);
-}
-
-/** 列表页的分享钮: 分享整个播放列表 (打开的人能看能听整张)。 */
-async function sharePlaylist(playlist) {
-  await shareByLink("playlist", playlist.playlist_id, playlist.name,
-                    `播放列表「${playlist.name}」`);
-}
-
-/** 专辑页的分享钮 (1.8.33 用户点名): 分享整张专辑, 打开的人能看能听全碟。 */
-async function shareAlbum(album) {
-  await shareByLink("album", album.album_id, album.title,
-                    `专辑「${album.title}」`);
-}
-
 function openTrackMenu(row, point) {
   const track = trackFromRow(row);
   if (!track || row.classList.contains("busy")
@@ -150,7 +94,7 @@ function openTrackMenuForTrack(track, point) {
 }
 
 /** 「下载」项 (1.8.6 用户点名加进 ⋯ 菜单): 离线下载没开 (明文 HTTP)
-    或这首已在库/已下载行上点出来的 — 藏掉, 别给点了没反应的钮。 */
+    或这首已下好 — 藏掉, 别给点了没反应的钮。 */
 function hideDownloadMenuItem(track) {
   $("#track-menu-download").hidden = !downloadsEnabled
     || !downloads || downloads.isDownloaded(track.track_id);

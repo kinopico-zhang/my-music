@@ -38,6 +38,19 @@ def test_music_downloads_wiring():
     assert "bindSwipeDelete(target, async (wrap) => {" in js   # 左滑删除挂下载行
     assert "await downloads.removeDownload(trackId);" in js    # 左滑/多选同一条删径
     assert "navigator.storage.estimate" in js      # 手机存储占用
+    # 1.8.50 (用户点名「全部下载按钮变成取消按钮」): 批量在跑 → 操作行和
+    # 收缩顶栏的「下载全部」键都换成 ✕/「取消下载」, 点了整批叫停 (连
+    # 在下的那首一起掐断); 已下载页删掉在下那首也整批叫停; 单曲下载标
+    # 照旧进度环, 不掺和取消 (1.8.50 头版做错的单曲取消已全数回退)
+    assert "let downloadAllJob = null;" in js
+    assert "async function cancelDownloadAll" in js
+    assert "function syncDownloadAllButtons" in js
+    assert "if (downloadAllJob) { await cancelDownloadAll(); return; }" in js
+    assert '[data-bar-act="download"], [data-dl-all]' in js
+    assert "downloadRingHTML(state.progress, 17)" in js
+    assert 'id="album-download" data-dl-all' in js
+    assert 'id="playlist-download" data-dl-all' in js
+    assert "if (busy) cancelDownloadAll();" in js
     # 1.8.2: 下载中的进度从百分比文字换成圆环 (r=8.5 周长切 dashoffset,
     # 正上方顺时针画满; 已下载照旧是勾)
     assert "function downloadRingHTML" in js
@@ -55,36 +68,6 @@ def test_music_downloads_wiring():
     assert "AbortController" in downloads_js       # 下载中的删除 = 取消下载
     html = music_page_shell()
     assert ".dl-stats" in html and ".dl-clear" in html    # 统计行样式
-    # 1.8.6 多选删除 (用户点名): 「多选」进选择模式, capture 阶段截下点行
-    # 改勾选 (不再开播), 删完/「完成」退出; 状态住模块, 整页重铺后
-    # syncDownloadsSelect 按 state 补勾
-    assert "music-downloads-select.css?v=" in html        # 选择态样式
-    select_js = (MUSIC_STATIC / "js" / "music-downloads-select.js").read_text(
-        encoding="utf-8")
-    for frag in ["function bindDownloadsSelect", "function syncDownloadsSelect",
-                 "function deleteSelected", "const dlSelected = new Set();",
-                 "event.stopPropagation();",          # capture 截下: 不走开播
-                 "删除选中的 ${dlSelected.size} 首?",
-                 "await downloads.removeDownload(trackId);"]:
-        assert frag in select_js, f"多选删除缺 {frag}"
-    assert "bindDownloadsSelect(target);" in js          # 挂 pane 层 (重铺不丢)
-    assert 'id="dl-select-toggle"' in js and 'id="dl-select-delete"' in js
-    # 1.8.18 改版 (用户点名「封面即复选框」): 不再左移出行画选择圈 —— 勾
-    # 画在封面上 (蒙暗 + 白勾, .dl-art 裹层挂伪元素), 行布局一毫米不动
-    assert '#dl-pane-body.selecting .dl-row.sel .dl-art::after' in html
-    assert "#dl-pane-body.selecting .dl-row.sel .dl-art::before" in html
-    assert '<span class="dl-art">' in js                 # 封面裹层 (模板带出)
-    assert "padding-left: 32px" not in html              # 左移出行那套撤了
-    # 1.8.17: 勾中出垃圾桶; 多选模式压住左滑 (删除钮和延伸纱一起藏),
-    # 两套手势不打架
-    assert 'aria-label="删除选中"' in js
-    assert "#dl-pane-body.selecting .swipe-del { display: none; }" in html \
-        and "#dl-pane-body.selecting .swipe-wrap::after { display: none; }" in html
-    # 1.8.18 垃圾桶/多选并成右上一对黑白灰椭圆键 (原先 space-between
-    # 隔在两头, 用户点名「距离太远了」)
-    assert '<span class="dl-actions">' in js
-    assert ".dl-actions { display: flex; align-items: center; gap: 8px;" in html
-    assert "border-radius: 999px;" in html and "min-height: 32px;" in html
     scripts = re.findall(r'<script src="([^"]+)"', html)
     # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
     # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select; 1.8.14:
@@ -92,21 +75,28 @@ def test_music_downloads_wiring():
     # 1.8.23: +root-rubber; 1.8.31: +top-pane 播放排行页; 1.8.34:
     # +hero-collapse; 1.8.35: +client; 1.8.39: +desktop-keys; 1.8.45:
     # +hero-bar-actions 收缩顶栏动作条; 1.8.46: +hero-bar-tap 被吞点按
-    # 补发), 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 54 and all("?v=" in src for src in scripts)
+    # 补发; 1.8.47: +share-links; 1.8.57: +settings-account; 1.8.59:
+    # +player-prefetch 预取拆分; 1.8.60: +player-art-stage 3D 封面舞台),
+    # 引用一律带版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 59 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
+    assert "js/music-player-prefetch.js?v=" in html   # 1.8.59 下一曲预取拆分
+    assert "js/music-player-art-stage.js?v=" in html  # 1.8.60 3D 封面舞台
     assert "js/music-downloads-select.js?v=" in html   # 1.8.6 已下载多选删除
     assert "js/music-root-rubber.js?v=" in html        # 1.8.23 根层橡皮筋
     assert "js/music-hero-collapse.js?v=" in html      # 1.8.34 封面收缩顶栏
     assert "js/music-hero-bar-actions.js?v=" in html   # 1.8.45 顶栏动作条
     assert "js/music-hero-bar-tap.js?v=" in html       # 1.8.46 被吞点按补发
+    assert "js/music-share-links.js?v=" in html       # 1.8.47 分享链接拆分
     assert "js/music-client.js?v=" in html             # 1.8.35 客户端识别
     assert "js/music-desktop-keys.js?v=" in html       # 1.8.39 桌面键盘层
+    assert "js/music-settings-account.js?v=" in html   # 1.8.57 账号自助块
     assert "css/music-hero-bar.css?v=" in html         # 1.8.45 动作条样式
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v56" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v66" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
 
@@ -129,16 +119,26 @@ def test_music_track_context_menu_wiring():
     assert 'hideDownloadMenuItem(track)' in js
     assert '$("#track-menu-download").hidden' in js
     assert 'downloadTrackFromUI(track);' in js
+    # 1.8.50 头版的菜单图标/文字换装已回退: 菜单项回归单图标「下载」
+    assert 'id="track-menu-dl-cancel-icon"' not in html
+    assert "track-menu-dl-label" not in html and "track-menu-dl-label" not in js
+    assert "downloadMarkAria" not in js          # 单曲取消那套撤干净了
     for frag in ["function openTrackMenu", "function cancelTrackPress",
                  "function trackFromRow", "function shareTrack",
                  "function openPlaylistPicker", "trackListBindings",
                  "trackPressTimer = setTimeout",            # 500ms 长按计时
                  'document.addEventListener("contextmenu"',
                  "navigator.share", "execCommand",          # 分享 + 复制回落
+                 # 1.8.47 拆出的分享链接域 (music-share-links.js): 封面抓成
+                 # 本地文件递给系统分享面板 —— 面板只认 files 里的图
+                 "function shareCoverFile",
+                 "navigator.canShare({ files: [file] })",
+                 "await navigator.share(cover ? { files: [cover], title, text, url }",
                  "suppressTrailingTarget",                 # 长按尾随点击按元素吞
                  # 1.8.2: 艺人/专辑两项并一路跳转 —— 先收全屏播放页
                  # (z90 盖着 z44 的推入层, 不收 = 看着没反应), 再按项分目标
-                 "if (playerOpen) closeFullPlayer();",
+                 # (1.8.63 收法 = 水滴收回, 层滑入与收拢同场)
+                 'if (playerOpen) closeFullPlayer("morph");',
                  '? `artist/${track.artist_id}` : `album/${track.album_id}`);',
                  'fetchJSON("/music/api/playlists"',
                  '`/music/api/playlists/${playlistId}/tracks`',

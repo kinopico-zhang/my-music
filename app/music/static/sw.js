@@ -1,6 +1,8 @@
 // sw.js — My Music 的 Service Worker (scope /music):
-//  - 曲目音频流: 已下载的从 Cache API 直接回 (拖进度条的 Range 请求切 206),
-//    没下载的原样走网络;
+//  - 曲目音频流: 1.8.59 起播放全程绕开 SW —— 流媒体请求带 ?direct 标记
+//    (fetch 监听里放行直连), 已下载的由页面直读 Cache API 成 blob;
+//    起因: iOS 锁屏会冻结 SW, 插在音频管线里的流会断粮自停 (开屏解冻
+//    又自动续播)。serveTrack 只兜还没换到新壳的旧缓存页;
 //  - 封面图: 缓存优先 —— 后端虽已发长缓存头, iOS 的 HTTP 缓存容易被系统
 //    整体清掉, 50k 曲库一刷列表就是几百张图全回源; Cache API 里存一份,
 //    系统清不动 (配合 storage.persist), 只在没缓存过时才走网络;
@@ -12,37 +14,29 @@
 //    已下载的歌照播 (已下载栏读的是本机索引, 不走接口);
 //  - activate 时清掉旧版壳/数据缓存 + 接管已打开的页面 (clients.claim,
 //    不用等重载)。
-// 下载动作本身是页面脚本直连 Cache API, 这里只管离线时把缓存喂给 <audio>。
-// 注意: 只在安全上下文 (HTTPS / localhost) 能注册, 明文 HTTP 下不存在。
+//  下载取流同样带 ?direct (拉网络的字节不经 SW, 落盘仍走页面 Cache API)。
+//  注意: 只在安全上下文 (HTTPS / localhost) 能注册, 明文 HTTP 下不存在。
 "use strict";
 
 const DOWNLOAD_CACHE = "music-downloads-v1";
-// 壳缓存 v56 (2026-09-21 1.8.46 十改三轮: 层根滚动器外铺接点条罩住收
-// 拢簇 —— iOS 惯性里点按整个吞给滚动器, 页头监听/touch-action 全没
-// 用, 滚动器外才有原生响应; 惯性里点 播放/… 一下就灵);
-// v55: 二轮: 补发上提 document·双通道; v54: 一轮按视觉位置认键补发;
-// v53: 补程只管页头收放中间; v52: 八改: 被吞点按补发; v51: 停稳自动
-// 补程; v50: 六改: 键衬底 20px 软边; v49: 五改: 纱钉收拢簇左缘, 150);
-// v48: 四改: 开 … 后五颗键等距 (首键让 8px); 飞行不掉帧 (GPU 层 +
-// 起飞立即显形不吃 250ms 淡入);
-// v47: 1.8.46 三改: 收拢的键错峰走弧线飞进 … —— 途中
-// 两两不叠 (逐帧算过: 任意时刻轴距 ≥ 44px > 键宽 40); 遮罩罩满整个
-// 按钮区域 —— 播放键整高衬底 + 额外键箱整高衬底, 开 … 时上下露边不
-// 漏字; 修了飞行期额外键箱被最小内容宽撑开、纱跟着跑偏的根;
-// v46: 1.8.46 二改: 收拢的键不再缩小 —— 全尺寸飞到 … 键上互相叠成一摞,
-// 末段化进 … 里;
-// v45: 1.8.46 收缩顶栏换岗改路径平移 —— 播放键从操作行一路平移进槽位,
-// 其余四颗收拢进 … 键, 不再闪现; 遮罩拉宽越靠左越透;
-// v44: 1.8.45 收缩顶栏改单行 —— 播放 + … 两颗在封面同行右靠, … 点开
-// 随机/下载/分享/删除 顶替它, 挤到的标题用阴影渐隐;
-// v43: 1.8.44 蓝牙车机封面实验 —— 锁屏封面先取成 blob 再重设元数据,
-// 车机的 AVRCP 通道才有机会拿到图;
+// 壳缓存 v66 (2026-09-23 1.8.75 艺人页可一键刷新元数据, 换海报立马见新图);
+// v65 (1.8.74 拖进度条剩余时间 0 + 封面方回来); v64 (2026-09-21 1.8.59 锁屏自停根修: 音频流绕开 SW; 1.8.58 队列动条; 1.8.57 账号自助/歌词多厂商/普通账号收走管理员配置);
+// v57: 1.8.47+1.8.48: 分享面板带封面 (封面抓成本地文件递 navigator.share); 按钮按下果冻 Q 弹;
+// v56: 十改三轮: 层根滚动器外接点条 (惯性里点 播放/… 一下就灵);
+// v55: 二轮: 补发上提 document·双通道; v54: 一轮按视觉位置认键补发; v53 补程只管页头收放;
+// v52: 八改被吞点按补发; v51 停稳自动补程; v50 键衬底软边; v49 纱钉簇左缘);
+// v48: 四改: 开 … 后五颗键等距 (首键让 8px); 飞行不掉帧 (GPU 层, 起飞立即显形);
+// v47: 1.8.46 三改: 收拢的键错峰走弧线飞进 … (逐帧算过不叠), 遮罩罩满按钮区, 修了飞行期纱跑偏的根;
+// v46: 1.8.46 二改: 收拢的键不再缩小, 全尺寸飞到 … 键上叠成一摞末段化进;
+// v45: 1.8.46 收缩顶栏换岗改路径平移: 播放键平移进槽位, 其余四颗收拢进 …, 遮罩拉宽越靠左越透;
+// v44: 1.8.45 收缩顶栏改单行: 播放 + … 两颗在封面同行右靠, … 点开四键顶替, 挤到的标题阴影渐隐;
+// v43: 1.8.44 蓝牙车机封面实验: 锁屏封面先取成 blob 再重设元数据, 车机 AVRCP 才有机会拿到图;
 // v42: 1.8.43 视口体检红框弹窗撤了, 打点改静默回传;
 // v41: 1.8.42 收缩顶栏的标题/副标题左对齐;
 // v40: 1.8.41 双指缩放全禁 + 分享页列表行序号换歌曲封面 / 1.8.40 收缩顶栏
 // 两行布局·副标题并进上行·短列表补行程·横向晃动修复 / 1.8.39 桌面键鼠
 // 适配 —— 换版本号让 activate 清旧账)
-const SHELL_CACHE = "music-shell-v56";
+const SHELL_CACHE = "music-shell-v66";
 const ARTWORK_CACHE = "music-artwork-v1";
 // 列表数据档 (1.8.4): /music/api/ 的 GET 全缓存 (search 除外 —— 词组合
 // 无限多, 缓存不值), 网络优先断网回档
@@ -62,8 +56,13 @@ function isShellPath(path) {
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;
-  const path = new URL(request.url).pathname;
+  const url = new URL(request.url);
+  const path = url.pathname;
   if (TRACK_URL_PATTERN.test(path)) {
+    // 1.8.59 锁屏自停根修: 带 ?direct 标记的流不接管 —— iOS 锁屏后系统
+    // 冻结 SW, 插在音频管线里的流会断粮自停 (开屏解冻又自动续播)。
+    // 不 respondWith, 浏览器媒体栈自己连网络, SW 冻不冻都碍不着。
+    if (url.searchParams.has("direct")) return;
     event.respondWith(serveTrack(request));
   } else if (ARTWORK_PATTERN.test(path)) {
     event.respondWith(serveArtwork(request));
@@ -89,7 +88,8 @@ async function serveShell(request) {
   }
 }
 
-/** 缓存里有就回缓存 (Range 切 206, iOS Safari 拖进度条需要), 没有走网络。 */
+/** 缓存里有就回缓存 (Range 切 206, iOS Safari 拖进度条需要), 没有走
+    网络。1.8.59 起页面播放已不经这里 —— 只兜还没换到新壳的旧缓存页。 */
 async function serveTrack(request) {
   const cache = await caches.open(DOWNLOAD_CACHE);
   const cached = await cache.match(request.url);

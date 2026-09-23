@@ -19,6 +19,7 @@ _COLUMN_MIGRATIONS: Final[dict[str, dict[str, str]]] = {
                   "cover_version": "INTEGER NOT NULL DEFAULT 0",
                   "updated_at": "REAL NOT NULL DEFAULT 0"},
     "playlist_items": {"added_locally": "BOOLEAN NOT NULL DEFAULT 0"},
+    "music_settings": {"lyrics_api_provider": "TEXT NOT NULL DEFAULT ''"},
 }
 
 

@@ -1,7 +1,8 @@
 // music-app-boot — My Music 开局: 绑全局事件, 旧深链消化一次, 回到上次停的页。
 // 拆自 music.js (结构化重构: 代码逐字节未动, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global bindGlobalEvents, navigate, parseRoute, readLastRoute */
+/* global bindGlobalEvents, navigate, parseRoute, playerUpgradeDownloadedSource,
+          readLastRoute */
 
 bindGlobalEvents();
 // 旧深链只消化一次 (#playlist/5 之类 → 按它开局), 随即把 URL 洗成光杆
@@ -20,3 +21,6 @@ let journey = saved.split(",").map((key) => key.trim())
 if (!journey.length || journey[0] !== "home") journey = ["home", ...journey];
 history.replaceState(null, "", location.pathname + location.search);
 journey.forEach(navigate);
+// 1.8.59 锁屏自停根修的收尾: 恢复现场跑在下载模块加载前, 已下载的当前曲
+// 那时只能按流媒体占位 —— 全模块就位后补一刀, 换成缓存直读的 blob 源
+playerUpgradeDownloadedSource();

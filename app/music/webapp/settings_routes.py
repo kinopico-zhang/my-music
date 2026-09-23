@@ -29,9 +29,7 @@ def music_settings_save(body: MusicSettingsUpdate, request: Request,
     """保存设置 (仅管理员); 曲库路径变了就同库换目录起全量重扫。"""
     _require_admin(request, users)
     try:
-        new_directory = library_settings.save_settings(
-            library, body.music_directory, body.lyrics_api_enabled,
-            body.lyrics_api_base)
+        new_directory = library_settings.save_settings(library, body)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     if new_directory is not None:

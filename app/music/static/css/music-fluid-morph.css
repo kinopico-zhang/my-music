@@ -1,0 +1,62 @@
+/* music-fluid-morph — 流体胶囊形变的形变态样式 (1.8.63 用户点名「播放气泡
+   被点击要实现流体胶囊形变, 像水滴一样平滑流动延展成新的面板」+ AI 描述词
+   「实现胶囊按钮向弹窗面板的流体形态变换, 尺寸与圆角采用高阻尼流体曲线
+   无缝过渡」; 1.8.64 用户回评「展开动画再慢一点, 细节多一些」: 铺开放缓
+   一拍, 内容分层进场)。几何五件套 (left/top/width/height/border-radius)
+   和皮肤 (胶囊的影子/底色) 的行内过渡在 music-player-fluid-morph.js;
+   这里管内容的状态机: .morphing = 面板在动, 内容整体退场 (visibility 的
+   隐藏延迟到淡出之后 —— 不吃逐帧重排也不吃命中), 各层顺势沉到自己的
+   进场位; .revealed = 长成过半, 分层回场 —— 抓手先落, 封面带着升起,
+   文字和控件一排排跟上, 氛围底慢一拍铺满 (水滴铺开后的余韵)。 */
+
+/* 基态带进场过渡 (撤 .morphing 那拍淡入回场; 收拢的退场快一拍) */
+.fp-bg, .fp-sheet > * {
+  transition: opacity .34s cubic-bezier(.22,.61,.36,1),
+              transform .34s cubic-bezier(.22,.61,.36,1),
+              visibility 0s 0s;
+}
+/* 形变途中: 内容退场 (visibility 延迟到淡出后); 圆角裁切开着 ——
+   氛围底 -60px 出血别漏到胶囊外 */
+#full-player.morphing { overflow: hidden; }
+#full-player.morphing .fp-bg,
+#full-player.morphing .fp-sheet > * {
+  opacity: 0; visibility: hidden; transform: translateY(14px);
+  transition: opacity .22s cubic-bezier(.22,.61,.36,1),
+              transform .22s cubic-bezier(.22,.61,.36,1),
+              visibility 0s .22s;
+}
+/* 封面区是主角: 退得更深一点, 回场带着升起 */
+#full-player.morphing .fp-sheet > .fp-body { transform: translateY(20px) scale(.97); }
+/* 长成过半: 分层回场 (默认无错峰, 下面逐层排开) */
+#full-player.morphing.revealed .fp-bg,
+#full-player.morphing.revealed .fp-sheet > * {
+  opacity: 1; visibility: visible; transform: none;
+}
+#full-player.morphing.revealed .fp-bg {   /* 氛围底慢一拍铺满 */
+  transition: opacity .55s ease 110ms, visibility 0s 0s;
+}
+#full-player.morphing.revealed .fp-sheet > .fp-body {
+  transition: opacity .34s cubic-bezier(.22,.61,.36,1) 70ms,
+              transform .34s cubic-bezier(.22,.61,.36,1) 70ms,
+              visibility 0s 0s;
+}
+#full-player.morphing.revealed .fp-sheet > .fp-meta {
+  transition: opacity .34s cubic-bezier(.22,.61,.36,1) 130ms,
+              transform .34s cubic-bezier(.22,.61,.36,1) 130ms,
+              visibility 0s 0s;
+}
+#full-player.morphing.revealed .fp-sheet > .fp-controls {
+  transition: opacity .34s cubic-bezier(.22,.61,.36,1) 175ms,
+              transform .34s cubic-bezier(.22,.61,.36,1) 175ms,
+              visibility 0s 0s;
+}
+#full-player.morphing.revealed .fp-sheet > .fp-transport {
+  transition: opacity .34s cubic-bezier(.22,.61,.36,1) 215ms,
+              transform .34s cubic-bezier(.22,.61,.36,1) 215ms,
+              visibility 0s 0s;
+}
+#full-player.morphing.revealed .fp-sheet > .fp-actions {
+  transition: opacity .34s cubic-bezier(.22,.61,.36,1) 245ms,
+              transform .34s cubic-bezier(.22,.61,.36,1) 245ms,
+              visibility 0s 0s;
+}
