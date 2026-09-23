@@ -3,6 +3,10 @@
 flac pictures / ID3 APIC (mp3, dsf) / MP4 covr / APE 的 Cover Art 键
 (ape, tak)。探测端 (tag_readers._has_embedded_artwork) 认得出的路,
 这里都得能走通 —— 否则 has_artwork=1 却抽不出图, 前端裂一张 404。
+1.8.82 出口统一过质检: 有的标签器把 PICTURE/APIC 块写歪 (描述长度
+声明 0, "Cover Art (Front).jpg\\0" 这类文件名混进图数据 —— APE 式写法
+灌进 flac), 图字节前头挂着文字浏览器解不开, 前端一片占位块; 现在
+开头不是图魔数的先试着剥掉 "名字\\0" 前缀, 剥不出图按没有封面算。
 """
 from pathlib import Path
 
@@ -17,8 +21,9 @@ def extract_album_artwork(audio_path: Path) -> bytes | None:
         return None        # 文件没了/打不开: 当作没有封面
     if audio is None:
         return None
-    return (_flac_artwork(audio) or _id3_artwork(audio)
-            or _tag_dict_artwork(audio))
+    artwork = (_flac_artwork(audio) or _id3_artwork(audio)
+               or _tag_dict_artwork(audio))
+    return _strip_ape_cover_name(artwork) if artwork else None
 
 
 def _flac_artwork(audio: object) -> bytes | None:
@@ -74,9 +79,11 @@ def _tag_dict_artwork(audio: object) -> bytes | None:
 
 
 def _strip_ape_cover_name(raw: bytes) -> bytes | None:
-    """APE 封面值 = "文件名\\0图像字节"; 也有不带文件名直接写图像的, 都兜住。
-
-    不是图像开头又切不出图像的, 当没有封面 (None)。"""
+    """封面字节出口质检 (1.8.82 起管所有格式, 不只 APE):
+    开头就是图魔数的原样放行; 不是的试着剥 "名字\\0" 前缀 (APE 封面值
+    本来就是这个形状; 写歪的 flac PICTURE / ID3 APIC 也会漏出同款前缀),
+    剥完还不见图魔数按没有封面算 —— 免得文字开头的"图"落进缓存,
+    浏览器解不开, 专辑位一片占位块 (EVA HR Remaster 四张实报)。"""
     if _looks_like_image(raw):
         return raw
     name_end = raw.find(b"\x00")

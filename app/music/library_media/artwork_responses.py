@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse, Response
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..library_database import (Album, Artist, Playlist, Track,
@@ -41,14 +41,18 @@ def _extract_to_cache(track: Track, cache_path: Path) -> None:
 def album_artwork_response(session: Session, album_id: int) -> Response:
     """专辑封面: 优先缓存, 失效/没有就抽一遍 (抽不出 404, 前端放占位图)。
 
-    有效性 = 缓存文件 mtime ≥ 专辑 added_at (专辑进了新文件就重抽);
-    URL 带 ?v={added_at} 作版本, 应答可长缓存。"""
+    有效性 = 缓存文件 mtime ≥ 专辑曲目 file_mtime 最大值 (1.8.82 起跟文件
+    内容走; added_at 是入库时刻, 原地换文件不动它, 旧图会赖在缓存里);
+    URL 带 ?v={artwork_version} 作版本, 应答可长缓存。"""
     album = session.get(Album, album_id)
     if album is None:
         raise HTTPException(404, "专辑不存在")
+    artwork_version = session.scalar(
+        select(func.max(Track.file_mtime))
+        .where(Track.album_id == album_id)) or 0.0
     cache_path = artwork_cache_directory() / f"album-{album_id}.jpg"
     if not (cache_path.is_file()
-            and cache_path.stat().st_mtime >= album.added_at):
+            and cache_path.stat().st_mtime >= artwork_version):
         track = _first_artwork_track(session, album_id)
         if track is None:
             raise HTTPException(404, "没有封面")

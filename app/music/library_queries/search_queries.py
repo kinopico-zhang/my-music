@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from ..library_database import Album, Artist, Track
 from ..library_search_keys import query_patterns
 from ..schemas import ArtistBrief, LyricHit, SearchResult
-from .browse_queries import album_card, track_brief
+from .browse_queries import (_artwork_version, _poster_version, album_card,
+                             track_brief)
 from .query_conditions import (_TRACK_ORDER, _album_language_condition,
                                _any_like, _artist_name_expression,
                                _like_patterns, _script_condition, _text_match)
@@ -67,15 +68,16 @@ def search_library(session: Session, query: str,
                      session.execute(track_statement.limit(SEARCH_TRACK_LIMIT))]
 
     album_statement = (
-        select(Album, _artist_name_expression().label("artist_name"))
+        select(Album, _artist_name_expression().label("artist_name"),
+               _artwork_version().label("artwork_version"))
         .join(Artist, Album.artist_id == Artist.id)
         .where(_text_match(Album.search_keys, Album.title, patterns=patterns))
         .order_by(Album.added_at.desc(), Album.id))
     if album_condition is not None:
         album_statement = album_statement.where(album_condition)
     result.album_total = _total(session, album_statement)
-    result.albums = [album_card(album, artist_name)
-                     for album, artist_name in
+    result.albums = [album_card(album, artist_name, artwork_version)
+                     for album, artist_name, artwork_version in
                      session.execute(album_statement.limit(SEARCH_ALBUM_LIMIT))]
 
     # 艺人板块带专辑/歌曲计数 (1.8.5 修「搜艺人显示 0专辑0首歌」):
@@ -95,7 +97,8 @@ def search_library(session: Session, query: str,
     result.artists = [ArtistBrief(
         artist_id=artist.id, name=artist.name or artist.directory,
         album_count=album_count, track_count=track_count,
-        has_poster=bool(artist.poster_file))
+        has_poster=bool(artist.poster_file),
+        poster_version=_poster_version(artist))
         for artist, album_count, track_count
         in session.execute(artist_statement.limit(SEARCH_ARTIST_LIMIT))]
 

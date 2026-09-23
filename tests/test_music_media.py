@@ -1,11 +1,14 @@
 """My Music 媒体流测试: Range 头解析 + 媒体接口边界 (DSF/M4a/
 无封面/超长标题等)。"""
 
+import time
+
 import pytest
 from fastapi import HTTPException
 
 from app.music.library_media import parse_range_header
-from tests.music_audio_seed import PICTURE_BYTES, _write_dsf_audio
+from tests.music_audio_seed import (PICTURE_BYTES, PNG_BYTES,
+                                    _write_audio, _write_dsf_audio)
 from tests.music_library_helpers import _make_library, _wait_scan_done
 
 
@@ -99,3 +102,49 @@ def test_media_edge_cases(auth, tmp_path):
     # _file_slice 读过文件尾: 产出到 EOF 就收手, 不无限读
     flac = root / "AI机组/2019 甲 [aaaa1111]/01 曲A.flac"
     assert b"".join(_file_slice(flac, 0, 10 ** 12)) == flac.read_bytes()
+
+
+def test_album_artwork_follows_file_replacement(auth, tmp_path):
+    """专辑封面版本跟文件内容走 (1.8.82, EVA 四张换完文件手机一直占位
+    块的根): 原地换文件时 added_at 是入库时刻, 扫描器刻意不改 —— 封面
+    URL 的 ?v= 若跟 added_at 走就永远不变, 手机端长缓存/SW 封面档里的
+    旧图换不掉。现在版本跟曲目 file_mtime 最大值走: 换完文件扫一遍,
+    接口版本号变了, 服务端缓存也判失效重抽新图。"""
+    root = tmp_path / "music-library"
+    _make_library(root)
+    assert auth.post("/music/api/rescan").status_code == 200
+    _wait_scan_done(auth)
+    listing = auth.get("/music/api/albums").json()["albums"]
+    album = next(a for a in listing if a["title"] == "甲")
+    album_id = album["album_id"]
+    assert album["artwork_version"] == 2000.0          # 曲目 file_mtime
+    old_added_at = album["added_at"]                   # 入库时刻, 换文件不动
+    assert auth.get(f"/music/media/albums/{album_id}/artwork"
+                    ).content == PICTURE_BYTES
+
+    # 原地换文件: 封面换成 PNG, mtime 更新 (重扫只更新曲目行, 不重插)
+    replacement_mtime = time.time()
+    _write_audio(root, "AI机组/2019 甲 [aaaa1111]/01 曲A.flac",
+                 {"TITLE": "曲A", "ARTIST": "AI机组", "ALBUMARTIST": "AI机组",
+                  "SCRIPT": "Jpan", "ALBUM": "甲", "DATE": "2019"},
+                 picture=PNG_BYTES, mtime=replacement_mtime)
+    assert auth.post("/music/api/rescan").status_code == 200
+    _wait_scan_done(auth)
+
+    album = next(a for a in auth.get("/music/api/albums").json()["albums"]
+                 if a["title"] == "甲")
+    assert album["artwork_version"] == replacement_mtime   # 版本跟内容走了
+    assert album["added_at"] == old_added_at               # 入库时刻没动
+    # 详情页/搜索结果同样带新版本 (同一个 album_card 出的)
+    page = auth.get(f"/music/api/albums/{album_id}").json()["album"]
+    assert page["artwork_version"] == replacement_mtime
+    search = auth.get("/music/api/search?q=甲").json()
+    hit = next(a for a in search["albums"] if a["album_id"] == album_id)
+    assert hit["artwork_version"] == replacement_mtime
+    # 搜索里的艺人也带海报版本 (没传的话 ?v= 恒 0, 换头像读不到新图)
+    artists = auth.get("/music/api/search?q=AI").json()["artists"]
+    artist = next(a for a in artists if a["name"] == "AI机组")
+    assert artist["has_poster"] and artist["poster_version"] > 0
+    # 服务端缓存判失效重抽: 新图字节直接可见
+    assert auth.get(f"/music/media/albums/{album_id}/artwork"
+                    ).content == PNG_BYTES

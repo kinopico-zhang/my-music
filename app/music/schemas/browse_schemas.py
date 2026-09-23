@@ -30,6 +30,7 @@ class AlbumCard(BaseModel):
     track_count: int
     duration_seconds: float
     added_at: float
+    artwork_version: float = 0.0   # 曲目 file_mtime 最大值 (封面 ?v= 版本号)
     has_artwork: bool
 
 
