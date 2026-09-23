@@ -5,6 +5,10 @@
 // 歌名 + 艺人 (选列表的提示文字撤了, 用户点名)。1.8.20: 顶栏小字补专辑名
 // (艺人 · 专辑); 行图标换顶栏封面同款 .t-art —— 列表自家封面照出, 没有的
 // 给灰音符占位, 不再是紫红渐变大块 (用户点名「合上面专辑封面图标一样」)。
+// 1.8.79 修「新建播放列表失败」(用户实报): 建列表请求一来一回不短 (NAS +
+// 外网中转), 按钮没在途闸, 手快点出连环 POST —— 第一击其实建成了, 后几
+// 击撞名 409 (赶上服务器内存盘满还会 503), 一串「没建起来」把成功的也盖
+// 成失败。在途不重复发; 撞名直说「已经有了」, 不再说"没建起来"。
 "use strict";
 /* global $, describeDuration, escapeHTML, fetchJSON, listPlaceholderHTML,
           pickerTrack: writable, playlistCoverURL, toast, trackArtHTML */
@@ -90,11 +94,14 @@ $("#picker-list").addEventListener("click", async (event) => {
                                      pick.querySelector("b").textContent);
 });
 
+let creatingPlaylist = false;   // 建列表请求在途: 响应没回来前再点不重复发
+
 $("#picker-create").addEventListener("click", async () => {
   const input = $("#picker-name");
   const name = input.value.trim();
   if (!name) { toast("先给新列表起个名字"); input.focus(); return; }
-  if (!pickerTrack) return;
+  if (!pickerTrack || creatingPlaylist) return;
+  creatingPlaylist = true;
   try {
     const playlist = await fetchJSON("/music/api/playlists", {
       method: "POST",
@@ -104,7 +111,12 @@ $("#picker-create").addEventListener("click", async () => {
     input.value = "";
     await addTrackToPlaylist(playlist.playlist_id, playlist.name);
   } catch (error) {
-    toast(`没建起来: ${error.message}`);
+    // 409 = 同名列表已经在了 (多半第一击已建成, 或早就建过) —— 直说
+    // 原因, 不报「没建起来」把成功的也盖成失败
+    if (error.status === 409) toast("已经有叫这个名字的列表了, 点它加歌");
+    else toast(`没建起来: ${error.message}`);
+  } finally {
+    creatingPlaylist = false;
   }
 });
 

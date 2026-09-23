@@ -135,3 +135,21 @@ def test_music_playlist_rename_reorder_wiring():
     # 1.8.31 把手退役 (整行拖, 用户点名): 预备亮顶上, 右缘让位的衬法撤了
     assert ".pl-grip" not in html
     assert "#playlist-tracks .swipe-wrap.drag-armed > button {" in html
+
+
+def test_playlist_create_inflight_guard():
+    """1.8.79 修「新建播放列表失败」(用户实报): 建列表请求一来一回不短
+    (NAS + 外网中转), 按钮没在途闸, 手快点出连环 POST —— 第一击其实建成了,
+    后几击撞名 409 (服务器内存盘满时还 503), 一串「没建起来」把成功的也盖
+    成失败 (服务日志实锤: 一次 200 + 四次 409 + 两次 503, 列表 19 早就建好
+    且歌已加进去)。接线: 在途不重复发; 撞名 (409) 直说「已经有了」,
+    不再说"没建起来"。"""
+    picker_js = (MUSIC_STATIC / "js" / "music-playlist-picker.js"
+                 ).read_text(encoding="utf-8")
+    assert "let creatingPlaylist = false;" in picker_js
+    assert "if (!pickerTrack || creatingPlaylist) return;" in picker_js
+    assert "creatingPlaylist = true;" in picker_js
+    assert "creatingPlaylist = false;" in picker_js     # finally 里放行
+    assert 'if (error.status === 409) toast("已经有叫这个名字的列表了, 点它加歌");' \
+        in picker_js
+    assert "没建起来" in picker_js            # 其余错误照旧直报原因

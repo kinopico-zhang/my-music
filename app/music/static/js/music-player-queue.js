@@ -4,17 +4,19 @@
 // 1.8.66 切歌不改播放状态; 1.8.68 修播放键误报「被浏览器拦」; 1.8.71 起播/暂停搬去 audio-events;
 // 1.8.76 音频源解析与失败兜底拆去 music-player-sources, loadTrack 源同步落定
 // (锁屏/后台连播主刀: ended 到下一曲 play() 之间不再隔着异步读缓存)。
+// 1.8.78 换曲作废打断续播排程 (在途重试别把暂停切的歌自己放出来)。
 "use strict";
-/* global audioElement, createPlayQueue, currentTrack: writable,
-          directStreamURL, discardPrefetch, loadLyrics,
-          lyricsActiveIndex: writable, lyricsCache, lyricsViewOpen,
-          noteAudioSourceChanged, pauseAudio, playQueue: writable,
-          playRecorded: writable, playerUpgradeDownloadedSource,
-          playingObjectURL: writable, prefetchLyrics, prefetchNextTrack,
-          prefetched: writable, queueAdvance, queueCurrent, queueGoBack,
-          queueShuffleAll, queueViewOpen, renderPlayerChrome,
-          renderQueueView, savePlayerState, startAudio, syncLyricsButton,
-          toast, trackChangeListeners, trackLocalCached, updateMediaSession */
+/* global audioElement, cancelInterruptResume, createPlayQueue,
+          currentTrack: writable, directStreamURL, discardPrefetch,
+          loadLyrics, lyricsActiveIndex: writable, lyricsCache,
+          lyricsViewOpen, noteAudioSourceChanged, pauseAudio,
+          playQueue: writable, playRecorded: writable,
+          playerUpgradeDownloadedSource, playingObjectURL: writable,
+          prefetchLyrics, prefetchNextTrack, prefetched: writable,
+          queueAdvance, queueCurrent, queueGoBack, queueShuffleAll,
+          queueViewOpen, renderPlayerChrome, renderQueueView,
+          savePlayerState, startAudio, syncLyricsButton, toast,
+          trackChangeListeners, trackLocalCached, updateMediaSession */
 /* exported loadTrack, lyricsActiveIndex, onTrackChange, playRecorded,
             playerCurrentTrack, playerCurrentTrackId, playerIsPlaying,
             playerNext, playerPrevious, playerStart, playerToggle */
@@ -94,6 +96,7 @@ function advanceToPlayable() {
 
 async function loadTrack(track, autoplay, startTime = 0) {
   currentTrack = track;
+  cancelInterruptResume();   // 1.8.78 换曲 = 打断续播排程作废 (重试带的是旧曲的位置)
   playRecorded = false;
   lyricsCache.delete(track.track_id);      // 每次换曲重取 (歌词可能刚扫描进来)
   syncLyricsButton();    // 1.8.20 键默认灰 (当没词), 探明有词才亮 (视图开着保持可点)
