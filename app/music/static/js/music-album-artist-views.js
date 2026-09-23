@@ -1,7 +1,8 @@
 // music-album-artist-views — My Music 专辑详情页 + 艺人详情页 (推入层内容)。
 // 拆自 music.js (结构化重构: 代码逐字节未动, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global ICON_ACTION_PLAY, ICON_ACTION_SHARE, ICON_ACTION_SHUFFLE, ICON_DOWNLOAD,
+/* global ICON_ACTION_PLAY, ICON_ACTION_REFRESH, ICON_ACTION_SHARE,
+          ICON_ACTION_SHUFFLE, ICON_DOWNLOAD,
           PLACEHOLDER_ARTWORK, albumArtworkURL, albumCardHTML, artistArtworkURL,
           bindHeroCollapse, bindTrackLists, describeDuration, downloadAllFromUI,
           downloadsEnabled, escapeHTML, fetchJSON, heroBarHTML,
@@ -48,7 +49,7 @@ async function renderAlbumView(albumId, target) {
                 aria-label="随机播放" ${playable.length ? "" : "disabled"}>
           ${ICON_ACTION_SHUFFLE}</button>
         ${downloadsEnabled ? `
-        <button class="action icon" id="album-download" title="下载全部"
+        <button class="action icon" id="album-download" data-dl-all title="下载全部"
                 aria-label="下载全部" ${playable.length ? "" : "disabled"}>
           ${ICON_DOWNLOAD}</button>` : ""}
         <button class="action icon" id="album-share" title="分享"
@@ -112,6 +113,8 @@ async function renderArtistView(artistId, target) {
                 aria-label="播放">${ICON_ACTION_PLAY}</button>
         <button class="action icon" id="artist-shuffle" title="随机播放"
                 aria-label="随机播放">${ICON_ACTION_SHUFFLE}</button>
+        <button class="action icon" id="artist-refresh" title="刷新元数据"
+                aria-label="刷新元数据">${ICON_ACTION_REFRESH}</button>
       </div>
       ${heroBarHTML({ play: true, shuffle: true })}
     </div>
@@ -132,6 +135,23 @@ async function renderArtistView(artistId, target) {
   };
   target.querySelector("#artist-play").addEventListener("click", () => playArtist(false));
   target.querySelector("#artist-shuffle").addEventListener("click", () => playArtist(true));
+  // 刷新元数据 (1.8.75): 重读这位艺人全部文件和海报 (改过的标签/新海报
+  // 都按盘上的来), 完了整页重拉 —— 海报带 mtime 版本号, 换过图自动换址
+  const refreshArtist = async () => {
+    const button = target.querySelector("#artist-refresh");
+    button.disabled = true;
+    toast("正在刷新元数据…");
+    try {
+      await fetchJSON(`/music/api/artists/${artistId}/refresh`,
+                      { method: "POST" });
+      await renderArtistView(artistId, target);
+      toast("元数据已刷新");
+    } catch (error) {
+      toast(`刷新失败: ${error.message}`);
+      button.disabled = false;
+    }
+  };
+  target.querySelector("#artist-refresh").addEventListener("click", refreshArtist);
   wireHeroBarActions(target, {          // 顶栏动作条 (1.8.45): 就两颗, 不收 …
     play: () => playArtist(false), shuffle: () => playArtist(true),
   });

@@ -25,6 +25,7 @@
  * @property {Function} cachePut      (url, body, contentType) => Promise
  * @property {Function} cacheDelete   (url) => Promise
  * @property {Function} cacheSize     (url) => Promise<number>  这首在缓存里的字节数, 没有则 0
+ * @property {Function} cacheRead     (url) => Promise<Blob|null> 缓存里的整曲字节, 没有则 null
  * @property {Function} now           () => number   epoch 秒 (测试可注入)
  */
 
@@ -32,6 +33,8 @@
  * 下载管理器。
  * @typedef {Object} DownloadsManager
  * @property {Function} isDownloaded    (trackId: number) => boolean
+ * @property {Function} cachedBlob      (trackId: number) => Promise<Blob|null>
+ *                                    缓存里的整曲字节 (1.8.59 播放直读, 不绕 SW)
  * @property {Function} stateOf         (trackId: number) => {status: string, progress: number}|null
  * @property {Function} entries         () => Array<DownloadEntry & {state}>   下载时刻倒序
  * @property {Function} downloadTrack   (track: Object) => Promise<boolean>    已在库/已在下/被取消返回 false
@@ -74,6 +77,14 @@ function createDownloads(adapters) {
     return indexEntries().some((entry) => entry.track_id === trackId);
   }
 
+  /** 已下载曲目的整曲字节 (1.8.59 锁屏自停根修): 页面直读 Cache API ——
+      播放不再绕 SW (iOS 锁屏冻结 SW, 插在音频管线里的流会断粮自停);
+      缓存里没了 (被系统清) 给 null, 调用方回落流媒体直连。 */
+  async function cachedBlob(trackId) {
+    if (!isDownloaded(trackId)) return null;
+    return adapters.cacheRead(streamURL(trackId));
+  }
+
   function stateOf(trackId) {
     return states.get(trackId) || null;
   }
@@ -103,8 +114,10 @@ function createDownloads(adapters) {
     aborts.set(trackId, controller);
     notify();
     try {
+      // 1.8.59: 取流带 ?direct 标记 —— SW 放行直连 (iOS 锁屏冻结 SW, 经它
+      // 中转的流会断); 缓存键仍是光杆地址, SW 旧壳兜底认得
       const { body, contentType } = await adapters.downloadBody(
-        streamURL(trackId), (progress) => {
+        streamURL(trackId) + "?direct=1", (progress) => {
           const state = states.get(trackId);
           if (state) {
             state.progress = Math.min(1, Math.max(0, progress));
@@ -169,8 +182,8 @@ function createDownloads(adapters) {
     listeners.push(listener);
   }
 
-  return { isDownloaded, stateOf, entries, downloadTrack, removeDownload,
-           removeAll, storageUsage, onChange };
+  return { cachedBlob, isDownloaded, stateOf, entries, downloadTrack,
+           removeDownload, removeAll, storageUsage, onChange };
 }
 
 if (typeof module !== "undefined" && module.exports) {

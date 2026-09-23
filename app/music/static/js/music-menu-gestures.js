@@ -118,7 +118,7 @@ $("#track-menu").addEventListener("click", async (event) => {
            || action.dataset.trackAction === "album") {
     // 1.8.2 修: 全屏页 (z90) 盖着推入层 (z44), 不先收播放页的话
     // 艺人/专辑页在底下开了也看不见 —— 表现就是「点了没反应」
-    if (playerOpen) closeFullPlayer();
+    if (playerOpen) closeFullPlayer("morph");   // 1.8.63 水滴收回 (层滑入与收拢同场)
     navigate(action.dataset.trackAction === "artist"
              ? `artist/${track.artist_id}` : `album/${track.album_id}`);
   }

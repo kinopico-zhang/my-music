@@ -117,31 +117,33 @@ def share_page_data(session: Session, token: str) -> SharePageData | None:
               for track in tracks if track.album_id in albums]
     if not briefs:
         return None                          # 目标被删空了: 当作链接失效
+    # 查不到本体的两种 (播放列表/专辑被删) 掉到收尾的 None —— 与删空同罪,
+    # 各分支只留「查到了怎么装」一条正路出口 (7 个 return 压回 6)
     if link.kind == "playlist":
         playlist = session.get(Playlist, link.target_id)
-        if playlist is None:
-            return None
-        minutes = int(sum(track.duration_seconds for track in briefs) // 60)
-        return SharePageData(
-            kind="playlist", title=playlist.name,
-            subtitle=f"{len(briefs)} 首 · {minutes} 分钟",
-            expires_at=link.created_at + SHARE_TTL_SECONDS,
-            tracks=briefs,
-            playlist=playlist_brief(playlist))
-    if link.kind == "album":
+        if playlist is not None:
+            minutes = int(sum(track.duration_seconds for track in briefs) // 60)
+            return SharePageData(
+                kind="playlist", title=playlist.name,
+                subtitle=f"{len(briefs)} 首 · {minutes} 分钟",
+                expires_at=link.created_at + SHARE_TTL_SECONDS,
+                tracks=briefs,
+                playlist=playlist_brief(playlist))
+    elif link.kind == "album":
         album = session.get(Album, link.target_id)
-        if album is None:
-            return None
-        artist = session.get(Artist, album.artist_id) if album.artist_id else None
-        artist_name = (artist.name or artist.directory) if artist else ""
-        minutes = int(sum(track.duration_seconds for track in briefs) // 60)
-        subtitle = " · ".join(part for part in
-                              (artist_name, f"{len(briefs)} 首",
-                               f"{minutes} 分钟") if part)
+        if album is not None:
+            artist = session.get(Artist, album.artist_id) if album.artist_id else None
+            artist_name = (artist.name or artist.directory) if artist else ""
+            minutes = int(sum(track.duration_seconds for track in briefs) // 60)
+            subtitle = " · ".join(part for part in
+                                  (artist_name, f"{len(briefs)} 首",
+                                   f"{minutes} 分钟") if part)
+            return SharePageData(
+                kind="album", title=album.title, subtitle=subtitle,
+                expires_at=link.created_at + SHARE_TTL_SECONDS,
+                tracks=briefs, album_id=album.id)
+    else:
         return SharePageData(
-            kind="album", title=album.title, subtitle=subtitle,
-            expires_at=link.created_at + SHARE_TTL_SECONDS,
-            tracks=briefs, album_id=album.id)
-    return SharePageData(
-        kind="track", title=tracks[0].title, subtitle=tracks[0].artist,
-        expires_at=link.created_at + SHARE_TTL_SECONDS, tracks=briefs[:1])
+            kind="track", title=tracks[0].title, subtitle=tracks[0].artist,
+            expires_at=link.created_at + SHARE_TTL_SECONDS, tracks=briefs[:1])
+    return None                              # 本体被删了: 同样当链接失效

@@ -2,8 +2,10 @@
 
 增量规则: 文件的 size/mtime 与索引一致就跳过 (只 stat 不读标签); 磁盘上没
 了的行为删除; 专辑/艺人的汇总每轮扫完在 scanner_index_writer 重算。扫描在
-后台线程跑, 进度对象线程安全, 重复触发会被拒绝。
+后台线程跑, 进度对象线程安全, 重复触发会被拒绝。单艺人重扫 (scan_artist,
+艺人页按钮) 走 scanner_artist_writer: 强制重读, 落库只收那棵子树。
 """
+from collections.abc import Callable
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -13,15 +15,15 @@ from pathlib import Path
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, sessionmaker
 
-from ..library_database import AUDIO_EXTENSION_FORMATS, Album
+from ..library_database import (AUDIO_EXTENSION_FORMATS, POSTER_FILE_NAMES,
+                                Album)
 from ..library_tags import read_track_metadata
 from ..schemas import ScanStatus, ScanSummary, ScannedTrack
+from .scanner_artist_writer import (collect_artist_files,
+                                    refresh_artist_index)
 from .scanner_index_writer import (finalize_library, known_file_signatures,
                                    remove_vanished_tracks,
                                    store_scanned_tracks)
-
-_POSTER_FILE_NAMES = frozenset({"poster.jpg", "poster.png", "poster.webp",
-                                "poster.jpeg"})
 
 
 class LibraryScanner:
@@ -49,6 +51,28 @@ class LibraryScanner:
             raise RuntimeError("扫描正在进行中")
         try:
             return self._run_scan()
+        finally:
+            self._scan_lock.release()
+
+    def scan_artist(self, directory: str) -> None:
+        """重扫单个艺人 (艺人页「刷新元数据」按钮): 旗下文件全部强制重读
+        (不看 size/mtime 签名), 落库收尾也只收这棵子树 (采集与落库在
+        scanner_artist_writer); 与全库扫描共用一把锁, 两个写者不并行。
+
+        同步跑完 (一位艺人秒级), 全局扫描状态不动 —— 那是全库扫描的
+        进度表, 按钮有自己的界面反馈。"""
+        if not self._scan_lock.acquire(blocking=False):  # pylint: disable=consider-using-with
+            raise RuntimeError("扫描正在进行中")
+        try:
+            if not self._music_directory.is_dir():
+                raise FileNotFoundError(
+                    f"曲库目录不存在: {self._music_directory}")
+            candidates, poster = collect_artist_files(
+                self._music_directory, directory)
+            refresh_artist_index(
+                self._database_sessions, directory,
+                self._read_files(candidates),
+                {candidate[0] for candidate in candidates}, poster)
         finally:
             self._scan_lock.release()
 
@@ -90,8 +114,10 @@ class LibraryScanner:
         posters: dict[str, str] = {}
         root = self._music_directory
         for directory, subdirectories, file_names in root.walk():
-            subdirectories[:] = [name for name in subdirectories
-                                 if not name.startswith(".")]
+            # 子目录排序走: walk 给的是 readdir 顺序 (不稳定), 里面文件本就
+            # 按名排 —— 顺序定了「首个非空标签胜」的结果才可复现
+            subdirectories[:] = sorted(
+                name for name in subdirectories if not name.startswith("."))
             relative_directory = directory.relative_to(root).as_posix()
             if relative_directory == ".":
                 continue
@@ -99,7 +125,7 @@ class LibraryScanner:
             for file_name in sorted(file_names):
                 if file_name.startswith("."):
                     continue
-                if is_artist_level and file_name.lower() in _POSTER_FILE_NAMES:
+                if is_artist_level and file_name.lower() in POSTER_FILE_NAMES:
                     posters[relative_directory] = file_name
                 if (directory / file_name).suffix.lower() \
                         not in AUDIO_EXTENSION_FORMATS:
@@ -126,14 +152,8 @@ class LibraryScanner:
             tracks_skipped=len(candidates) - len(pending))
         self._set_status(phase="reading", files_total=len(pending),
                          files_done=0)
-        scanned: list[ScannedTrack] = []
-        with ThreadPoolExecutor(max_workers=self._worker_count) as pool:
-            for index, result in enumerate(pool.map(self._read_one_file,
-                                                    pending), start=1):
-                if result is not None:
-                    scanned.append(result)
-                if index % 50 == 0:
-                    self._set_status(files_done=index)
+        scanned = self._read_files(
+            pending, lambda done: self._set_status(files_done=done))
         self._set_status(files_done=len(pending), phase="commit")
         store_scanned_tracks(self._database_sessions, scanned)
         summary.tracks_removed = remove_vanished_tracks(
@@ -145,6 +165,21 @@ class LibraryScanner:
                 select(func.count()).select_from(Album)) or 0
             session.commit()
         return summary
+
+    def _read_files(self, pending: list[tuple[str, int, float]],
+                    report: Callable[[int], None] | None = None) -> list[ScannedTrack]:
+        """并发读一批文件 (读不动的丢掉, 不拖垮整轮); report(已读数) 报进度。"""
+        scanned: list[ScannedTrack] = []
+        with ThreadPoolExecutor(max_workers=self._worker_count) as pool:
+            for index, result in enumerate(pool.map(self._read_one_file,
+                                                    pending), start=1):
+                if result is not None:
+                    scanned.append(result)
+                if report is not None and index % 50 == 0:
+                    report(index)
+        if report is not None:
+            report(len(pending))
+        return scanned
 
     def _read_one_file(
             self, candidate: tuple[str, int, float]) -> ScannedTrack | None:

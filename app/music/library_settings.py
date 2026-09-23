@@ -1,4 +1,4 @@
-"""运行时设置 (曲库路径 / 歌词 API)。
+"""运行时设置 (曲库路径 / 歌词取词)。
 
 设置恒单行 id=1, 空字段回落 env 默认; 改曲库路径由服务层
 (service.apply_music_directory) 换扫描根目录并起全量重扫, 这里只管
@@ -8,8 +8,9 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from . import library_lyrics_api
 from .library_database import DEFAULT_MUSIC_DIRECTORY, MusicSetting
-from .schemas import MusicSettingsState
+from .schemas import MusicSettingsState, MusicSettingsUpdate
 
 # 歌词 API 的默认地址 (LRCLIB: 免费, 兼容 /get?artist_name=…&track_name=…)
 LYRICS_API_DEFAULT = "https://lrclib.net/api"
@@ -31,10 +32,10 @@ def effective_music_directory(session: Session) -> Path:
     return Path(configured or DEFAULT_MUSIC_DIRECTORY)
 
 
-def effective_lyrics_api(session: Session) -> tuple[bool, str]:
-    """歌词 API 现值: (开不开, 地址); 地址空 = 默认 LRCLIB。"""
+def effective_lyrics_api(session: Session) -> tuple[bool, str, str]:
+    """歌词取词现值: (开不开, 厂商, LRCLIB 兼容地址); 厂商空串 = 自动。"""
     row = settings_row(session)
-    return (row.lyrics_api_enabled,
+    return (row.lyrics_api_enabled, row.lyrics_api_provider.strip(),
             row.lyrics_api_base.strip() or LYRICS_API_DEFAULT)
 
 
@@ -46,26 +47,31 @@ def settings_state(session: Session) -> MusicSettingsState:
         music_directory_default=DEFAULT_MUSIC_DIRECTORY,
         lyrics_api_enabled=row.lyrics_api_enabled,
         lyrics_api_base=row.lyrics_api_base,
-        lyrics_api_default=LYRICS_API_DEFAULT)
+        lyrics_api_default=LYRICS_API_DEFAULT,
+        lyrics_api_provider=row.lyrics_api_provider)
 
 
-def save_settings(session: Session, music_directory: str | None,
-                  lyrics_api_enabled: bool | None,
-                  lyrics_api_base: str | None) -> Path | None:
+def save_settings(session: Session, body: MusicSettingsUpdate) -> Path | None:
     """保存设置 (None 字段不动); 返回新生效的曲库目录 (路径没变才为 None)。
 
-    曲库路径要求目录真的存在 (连不上的路径扫不了); 歌词 API 地址要带协议头。"""
+    曲库路径要求目录真的存在 (连不上的路径扫不了); 歌词地址要带协议头,
+    厂商要在注册表里 (自动/LRCLIB/网易云/QQ)。"""
     row = settings_row(session)
-    if lyrics_api_base is not None:
-        cleaned = lyrics_api_base.strip()
+    if body.lyrics_api_base is not None:
+        cleaned = body.lyrics_api_base.strip()
         if cleaned and not cleaned.startswith(("http://", "https://")):
             raise ValueError(f"歌词 API 地址要以 http:// 或 https:// 开头: {cleaned}")
         row.lyrics_api_base = cleaned
-    if lyrics_api_enabled is not None:
-        row.lyrics_api_enabled = lyrics_api_enabled
+    if body.lyrics_api_provider is not None:
+        provider = body.lyrics_api_provider.strip()
+        if provider not in ("", "auto", *library_lyrics_api.LYRICS_PROVIDERS):
+            raise ValueError(f"不认识的歌词厂商: {provider}")
+        row.lyrics_api_provider = provider
+    if body.lyrics_api_enabled is not None:
+        row.lyrics_api_enabled = body.lyrics_api_enabled
     new_directory: Path | None = None
-    if music_directory is not None:
-        cleaned = music_directory.strip()
+    if body.music_directory is not None:
+        cleaned = body.music_directory.strip()
         if cleaned != row.music_directory:
             if cleaned and not Path(cleaned).is_dir():
                 raise ValueError(f"曲库目录不存在: {cleaned}")

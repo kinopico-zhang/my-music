@@ -19,6 +19,8 @@
   position: relative; height: 100%; max-width: 520px; margin: 0 auto;
   display: flex; flex-direction: column;
 }
+/* 流体胶囊形变 (1.8.63) 的形变态样式拆在 music-fluid-morph.css
+   (1.8.64 分层进场后超了本文件的行数上限) */
 /* 顶部抓手条: 点一下 (或往下拖) 收起播放页 (1.8.1 起用 --top-floor 下限
    躲独立模式的系统磨砂带; 1.8.19 并进全局上边界 --top-clear —— 固定
    控件一律不越过它)。下推走 margin 不走 padding: 命中区还是抓手
@@ -36,13 +38,45 @@
   display: flex; align-items: center; justify-content: center;
   padding: 41px 24px 42px;
 }
-#fp-art-wrap { width: 100%; aspect-ratio: 1; max-height: 100%;
-               max-width: min(100%, 440px); touch-action: none; }
+/* 封面舞台 (1.8.60 3D 翻页, 用户点名「封面两边显示上一首下一首, 立体视角,
+   左右划 3D 切换」): 上一首/下一首斜插两侧 (CoverFlow 同款)。姿态由 JS
+   直接落到每张卡的行内 transform/filter (槽位 = 自身位 + 拖拽进度,
+   见 music-player-art-stage), 松手落定走原生过渡 —— 合成器线程插值,
+   切歌那一拍主线程再忙也不掉帧 (1.8.61 修「切歌很卡」)。
+   1.8.62 平面叠放显式排 z (preserve-3d 深度排序对挂 filter 的卡不生效,
+   对穿时图层乱序 = 穿模)。1.8.65 修「侧卡突兀跳到前卡上面」: 换曲那拍
+   退去的旧曲卡 .handoff 压顶 (z5) 溶出让位。1.8.66 过场中段扇形张开
+   (JS 侧 fanOf: 过卡那拍两侧分最开), 来卡过半 .rise-* 浮上 z4 ——
+   翻层藏在缝最大处看不见; 交班只留程序切歌 (1.8.67 拖动松手不溶解)。perspective 给三卡各自透视 */
+#fp-art-wrap { position: relative; width: 100%; aspect-ratio: 1; max-height: 100%;
+               max-width: min(100%, 440px); touch-action: none;
+               perspective: 920px; }
 /* 封面不许原生拖拽/长按呼出 (不然下拉手势被 dragstart 劫持, 桌面端直接断流) */
-#fp-art-wrap, #fp-art { -webkit-user-drag: none; user-select: none;
-                        -webkit-touch-callout: none; }
-#fp-art { width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
-          background: rgba(255,255,255,.08); box-shadow: 0 18px 50px rgba(0,0,0,.55); }
+#fp-art-wrap, .art-card { -webkit-user-drag: none; user-select: none;
+                          -webkit-touch-callout: none; }
+/* 当前卡缩到八成见方给两侧留缝; 深度/压暗是槽位的平方 (越偏越退越暗)。
+   1.8.74 修「封面不是正方形」(用户实报): 1.8.60 起 .art-card 宽八成高
+   满铺, 方形封面被裁成 4:5 竖长方。现在宽高都从卡自身宽出 — aspect-ratio
+   保见方; top:50% + margin-top:-40% (百分数 margin 按容器宽取值) 把卡
+   垂直居中, 横屏 wrap 被 max-height 压矮时卡照样是方的 */
+.art-card { position: absolute; top: 50%; margin-top: -40%; left: 10%;
+            width: 80%; aspect-ratio: 1;
+            object-fit: cover; border-radius: 8px; z-index: 1;
+            background: rgba(255,255,255,.08); box-shadow: 0 18px 50px rgba(0,0,0,.55);
+            will-change: transform, filter;
+            transition: transform .36s cubic-bezier(.22,.61,.36,1),
+                        filter .36s cubic-bezier(.22,.61,.36,1),
+                        opacity .3s cubic-bezier(.22,.61,.36,1); }
+#fp-art-wrap.dragging .art-card { transition: none; }  /* 拖动跟手, 松手才交给过渡 */
+#fp-art { transform: translateZ(0); z-index: 3; }   /* 当前曲: 默认画在侧卡之上 */
+#fp-art-prev { transform: translateX(-55%) translateZ(-150px) rotateY(-40deg);
+               filter: brightness(.58); }
+#fp-art-next { transform: translateX(55%) translateZ(-150px) rotateY(40deg);
+               filter: brightness(.58); }
+.art-card.handoff { z-index: 5; }   /* 换曲交班: 旧曲卡压顶溶出让位 (JS 掐点撤层) */
+#fp-art-wrap.rise-next #fp-art-next,
+#fp-art-wrap.rise-prev #fp-art-prev { z-index: 4; }   /* 拖过半来卡浮上 (缝最大处翻层看不见) */
+.art-card.off { visibility: hidden; }   /* 队首/队尾没邻居: 侧位空着 */
 #fp-lyrics {
   position: absolute; inset: 0; overflow-y: auto; z-index: 2;
   overscroll-behavior: contain;   /* 滚到顶再往下拖不做橡皮筋, 下拉收起通吃 */
@@ -136,14 +170,12 @@
 #fp-lyrics-btn.on { color: #fff; }
 #fp-lyrics-btn:disabled { opacity: .35; }   /* 探明没歌词的曲子, 键灰掉点不开 */
 #fp-queue-btn.on { color: #fff; }           /* 队列翻开着 (封面区显示队列) */
-.fp-source { margin-top: 10px; padding: 0 32px; text-align: center; font-size: 13px;
-             color: rgba(255,255,255,.75); overflow: hidden; white-space: nowrap;
-             text-overflow: ellipsis; }
 .fp-pad { height: 22px; flex-shrink: 0; touch-action: none; }   /* 底衬条: 下拉收起命中区 (1.8.2) */
-/* 横屏 (矮屏): 藏来源行, 收紧留白, 保控件行完整 */
+/* 横屏 (矮屏): 收紧留白, 保控件行完整; 封面舞台改高度说了算
+   (width:auto+height:100% 保方形 —— 宽满铺会宽过高) */
 @media (max-height: 520px) {
   .fp-body { padding: 12px 24px; }
-  .fp-source { display: none; }
+  #fp-art-wrap { width: auto; height: 100%; }
   .fp-controls { margin-top: 8px; }
   .fp-transport { margin-top: 6px; }
   .fp-actions { margin-top: 10px; }

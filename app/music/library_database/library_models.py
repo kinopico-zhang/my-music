@@ -18,6 +18,9 @@ AUDIO_EXTENSION_FORMATS = {
 BROWSER_PLAYABLE_FORMATS = frozenset({
     "flac", "mp3", "m4a", "ogg", "opus", "wav", "aac",
 })
+# 艺人一级目录里认作海报的文件名 (全库 walk 和单艺人重扫共用)
+POSTER_FILE_NAMES = frozenset({"poster.jpg", "poster.png", "poster.webp",
+                               "poster.jpeg"})
 
 
 class MusicLibraryBase(DeclarativeBase):
@@ -151,7 +154,7 @@ class PlayEvent(MusicLibraryBase):
 
 
 class MusicSetting(MusicLibraryBase):
-    """运行时设置 (恒单行 id=1): 曲库路径 / 歌词 API。
+    """运行时设置 (恒单行 id=1): 曲库路径 / 歌词取词。
 
     空字段 = 回落 env 默认; 改曲库路径由服务层换扫描根目录并全量重扫。"""
 
@@ -161,6 +164,7 @@ class MusicSetting(MusicLibraryBase):
     music_directory: Mapped[str] = mapped_column(default="")     # 曲库根目录 (空 = 默认)
     lyrics_api_enabled: Mapped[bool] = mapped_column(default=True)
     lyrics_api_base: Mapped[str] = mapped_column(default="")     # 空 = LRCLIB 默认
+    lyrics_api_provider: Mapped[str] = mapped_column(default="")  # 空 = 自动依次试
 
 
 class ShareLink(MusicLibraryBase):

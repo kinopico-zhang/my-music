@@ -9,11 +9,10 @@ from ...schemas import OkResponse
 from .. import library_queries, library_settings, service
 from ..library_database import Album, Artist, Track, get_db
 from ..schemas import (AlbumPage, AlbumPageList, ArtistPage, ArtistPageList,
-                       LibraryStats, LyricsResponse,
-                       MusicStatusResponse,
-                       PlayRecordRequest, RecentPlaysResponse,
-                       RescanResponse, SearchResult, TopPlaysResponse,
-                       TrackCredits, TrackPageList)
+                       LibraryStats, LyricsResponse, MusicStatusResponse,
+                       PlayRecordRequest, RecentPlaysResponse, RescanResponse,
+                       SearchResult, TopPlaysResponse, TrackCredits,
+                       TrackPageList)
 from .common import _require_user, _validate_language
 
 router = APIRouter(prefix="/api")
@@ -25,19 +24,15 @@ def music_status(request: Request,
                  library: Session = Depends(get_db)) -> MusicStatusResponse:
     """扫描进度 + 库规模 (前端首屏轮询)。"""
     _require_user(request, users)
-    return MusicStatusResponse(
-        scan=service.scanner().status(),
-        artist_count=library.scalar(
-            select(func.count()).select_from(Artist)) or 0,
-        album_count=library.scalar(
-            select(func.count()).select_from(Album)) or 0,
-        track_count=library.scalar(
-            select(func.count()).select_from(Track)) or 0)
+    counts = {name: library.scalar(select(func.count()).select_from(model))
+              or 0 for name, model in (("artist_count", Artist),
+                                       ("album_count", Album),
+                                       ("track_count", Track))}
+    return MusicStatusResponse(scan=service.scanner().status(), **counts)
 
 
 @router.get("/stats", response_model=LibraryStats)
-def music_stats(request: Request,
-                users: Session = Depends(database.get_users_db),
+def music_stats(request: Request, users: Session = Depends(database.get_users_db),
                 library: Session = Depends(get_db)) -> LibraryStats:
     """统计页: 艺人/专辑/曲目数 + 总时长 + 各格式分布。"""
     _require_user(request, users)
@@ -56,8 +51,7 @@ def music_rescan(request: Request,
 
 @router.get("/albums", response_model=AlbumPageList)
 def music_albums(
-        request: Request,
-        language: str = Query(default="全部"),
+        request: Request, language: str = Query(default="全部"),
         sort: str = Query(default="added", pattern="^(added|title)$"),
         offset: int = Query(default=0, ge=0),
         limit: int = Query(default=60, ge=1, le=200),
@@ -83,8 +77,7 @@ def music_album(album_id: int, request: Request,
 
 @router.get("/artists", response_model=ArtistPageList)
 def music_artists(
-        request: Request,
-        offset: int = Query(default=0, ge=0),
+        request: Request, offset: int = Query(default=0, ge=0),
         limit: int = Query(default=60, ge=1, le=200),
         users: Session = Depends(database.get_users_db),
         library: Session = Depends(get_db)) -> ArtistPageList:
@@ -105,10 +98,25 @@ def music_artist(artist_id: int, request: Request,
     return page
 
 
+@router.post("/artists/{artist_id}/refresh", response_model=OkResponse)
+def music_artist_refresh(artist_id: int, request: Request,
+                         users: Session = Depends(database.get_users_db),
+                         library: Session = Depends(get_db)) -> OkResponse:
+    """重扫单个艺人 (艺人页按钮): 旗下文件和海报全部强制重读, 同步等结果。"""
+    _require_user(request, users)
+    artist = library.get(Artist, artist_id)
+    if artist is None:
+        raise HTTPException(404, "艺人不存在")
+    try:
+        service.scanner().scan_artist(artist.directory)
+    except RuntimeError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return OkResponse(ok=True)
+
+
 @router.get("/tracks", response_model=TrackPageList)
 def music_tracks(
-        request: Request,
-        language: str = Query(default="全部"),
+        request: Request, language: str = Query(default="全部"),
         offset: int = Query(default=0, ge=0),
         limit: int = Query(default=100, ge=1, le=300),
         users: Session = Depends(database.get_users_db),
@@ -132,8 +140,7 @@ def music_record_play(body: PlayRecordRequest, request: Request,
 
 @router.get("/plays/recent", response_model=RecentPlaysResponse)
 def music_recent_plays(
-        request: Request,
-        limit: int = Query(default=30, ge=1, le=100),
+        request: Request, limit: int = Query(default=30, ge=1, le=100),
         users: Session = Depends(database.get_users_db),
         library: Session = Depends(get_db)) -> RecentPlaysResponse:
     """本人的最近播放 (时刻倒序, 同一首只一行)。"""
@@ -144,17 +151,15 @@ def music_recent_plays(
 
 @router.get("/plays/top", response_model=TopPlaysResponse)
 def music_top_plays(
-        request: Request,
-        period: str = Query(default="week", pattern="^(week|month|year)$"),
+        request: Request, period: str = Query(default="week",
+                                              pattern="^(week|month|year)$"),
         users: Session = Depends(database.get_users_db),
         library: Session = Depends(get_db)) -> TopPlaysResponse:
     """本人的播放排行: 本周 (周一起) / 本月 (1 号起) / 今年 (元旦起),
     按区间内播放次数排 (次数同则最近播过的在前)。"""
     user = _require_user(request, users)
-    return TopPlaysResponse(
-        period=period,
-        tracks=library_queries.top_plays(
-            library, user.uuid, library_queries.period_start(period)))
+    return TopPlaysResponse(period=period, tracks=library_queries.top_plays(
+        library, user.uuid, library_queries.period_start(period)))
 
 
 @router.get("/search", response_model=SearchResult)
@@ -173,9 +178,7 @@ def music_search(request: Request,
 def music_lyrics(track_id: int, request: Request,
                  users: Session = Depends(database.get_users_db),
                  library: Session = Depends(get_db)) -> LyricsResponse:
-    """单曲歌词原文 (lrc 时间轴由前端解析)。
-
-    库里没有时按设置联网求一遍 (求到写回索引)。"""
+    """单曲歌词原文 (lrc 时间轴由前端解析); 库里没有时按设置联网求一遍 (求到写回索引)。"""
     _require_user(request, users)
     lyrics = library_queries.lyrics_for_track(
         library, track_id,

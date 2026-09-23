@@ -10,6 +10,7 @@ class MusicSettingsState(BaseModel):
     lyrics_api_enabled: bool = True
     lyrics_api_base: str = ""
     lyrics_api_default: str = ""
+    lyrics_api_provider: str = ""      # 空 = 自动 (依次试各家)
 
 
 class MusicSettingsUpdate(BaseModel):
@@ -18,3 +19,4 @@ class MusicSettingsUpdate(BaseModel):
     music_directory: str | None = None
     lyrics_api_enabled: bool | None = None
     lyrics_api_base: str | None = None
+    lyrics_api_provider: str | None = None

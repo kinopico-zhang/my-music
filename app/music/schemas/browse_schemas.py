@@ -68,6 +68,7 @@ class ArtistBrief(BaseModel):
     album_count: int
     track_count: int
     has_poster: bool
+    poster_version: float = 0.0    # 海报文件 mtime (?v= 版本号, 换海报即换址)
 
 
 class ArtistPage(BaseModel):

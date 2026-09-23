@@ -1,176 +1,167 @@
-"""1.8 系列的版本条目 · 活跃段 (1.8.33 起, 新的 1.8.x 补丁版加在文件顶上)。
-更老的 1.8 线全部冻结分家: 1.8.25–1.8.32 / 1.8.19–1.8.24 / 1.8.17–1.8.18 /
-1.8.14–1.8.16 / 1.8.10–1.8.13 / 1.8.5–1.8.9 / 1.8.0–1.8.4 七个数据文件 ——
-1.8 一整线塞一个文件超了 200 行的硬上限 (2026-09-18 CI pylint 揪的, 之后
-1.8.15/1.8.18/1.8.19/1.8.23/1.8.32/1.8.43 上线时又各超一回), 按仓里
-1_0_to_1_3 / 1_4_to_1_6 的先例分家。"""
+"""1.8 系列的版本条目 · 活跃段 (1.8.40 起, 新的 1.8.x 补丁版加在文件顶上)。
+更老的 1.8 线全部冻结分家 (1.8.33–1.8.39 / … / 1.8.0–1.8.4 八个数据文件,
+当年一整线塞一个文件超 200 行硬上限, 分了七次家)。条目规矩: 用户视角,
+一条一句话 (test_music_changelog 有断言把着)。"""
 from typing import Final
 
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.75", date="2026-09-23", items=[
+        ChangelogItem(kind="新增", text="艺人主页加了「刷新元数据」按钮, "
+                                       "点一下按盘上现在的标签和海报重读这位"
+                                       "艺人的全部信息 —— 换过的头像点完就能"
+                                       "看到新图, 不用再等整库重扫"),
+    ]),
+    ChangelogVersion(version="1.8.74", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="播放页拖完进度条, 剩余时间和进度条"
+                                       "不再提前归零, 会一直跟到歌真正播完"),
+        ChangelogItem(kind="修复", text="播放页封面恢复正方形, 不再是被裁"
+                                       "掉两边的竖长条"),
+    ]),
+    ChangelogVersion(version="1.8.73", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="在线歌曲放不出来或响几秒就断的问题"
+                                       "修好了, 下载过的歌不受影响"),
+    ]),
+    ChangelogVersion(version="1.8.72", date="2026-09-22", items=[
+        ChangelogItem(kind="改进", text="播放页封面下面那行作词署名撤掉了, "
+                                       "看着更清爽"),
+    ]),
+    ChangelogVersion(version="1.8.71", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="被来电或别的应用声音打断后, 锁屏点"
+                                       "播放键能接着播了"),
+    ]),
+    ChangelogVersion(version="1.8.70", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="重启应用后直接点气泡播放, 锁屏上"
+                                       "也有上一首/下一首了"),
+    ]),
+    ChangelogVersion(version="1.8.69", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="iOS 锁屏按键换成上一首/下一首和暂停, "
+                                       "不再是 10 秒快退快进"),
+    ]),
+    ChangelogVersion(version="1.8.68", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="点播放不再误弹「被浏览器拦了」,"
+                                       "歌还在缓冲时连点播放键也不会互相掐断"),
+    ]),
+    ChangelogVersion(version="1.8.67", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="滑动封面切歌时旧封面不再闪一下"
+                                       "消失再出现"),
+    ]),
+    ChangelogVersion(version="1.8.66", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="切歌不再改变播放状态, 本来暂停的"
+                                       "保持暂停, 自然播完的连播照旧"),
+        ChangelogItem(kind="改进", text="左右划封面时两侧封面过场张得更开, "
+                                       "滚动中不再叠在一起"),
+    ]),
+    ChangelogVersion(version="1.8.65", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="左右划封面时后侧封面不再突然跳到前面"
+                                       "盖过当前封面, 遮盖交接改成平滑的溶解过渡"),
+    ]),
+    ChangelogVersion(version="1.8.64", date="2026-09-22", items=[
+        ChangelogItem(kind="改进", text="播放气泡展开成播放页的水滴动画放慢"
+                                       "了, 封面和控件分层一排排浮现"),
+    ]),
+    ChangelogVersion(version="1.8.63", date="2026-09-22", items=[
+        ChangelogItem(kind="改进", text="点播放气泡打开播放页, 面板像水滴"
+                                       "一样从气泡原位平滑延展成整页, 不再"
+                                       "生硬弹窗"),
+    ]),
+    ChangelogVersion(version="1.8.62", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="封面 3D 切歌时两张封面互相穿过去"
+                                       "的问题修好了"),
+    ]),
+    ChangelogVersion(version="1.8.61", date="2026-09-22", items=[
+        ChangelogItem(kind="修复", text="封面 3D 切歌的卡顿修好了, 换曲"
+                                       "落定改走系统合成, 主线程再忙也不掉帧"),
+    ]),
+    ChangelogVersion(version="1.8.60", date="2026-09-21", items=[
+        ChangelogItem(kind="新增", text="播放页封面换成 3D 舞台, 上一首下一首"
+                                       "斜插在两侧, 左右划跟手转面切歌"),
+    ]),
+    ChangelogVersion(version="1.8.59", date="2026-09-21", items=[
+        ChangelogItem(kind="修复", text="锁屏听歌播着播着自己停的问题修好了"),
+    ]),
+    ChangelogVersion(version="1.8.58", date="2026-09-21", items=[
+        ChangelogItem(kind="修复", text="继续播放列表里正在播的那首, 封面"
+                                       "上的跳动动画终于亮出来了"),
+    ]),
+    ChangelogVersion(version="1.8.57", date="2026-09-21", items=[
+        ChangelogItem(kind="新增", text="设置里能改自己的账号名和密码了"),
+        ChangelogItem(kind="改进", text="联网补歌词能挑厂商了, 自动会按网"
+                                       "易云、QQ、LRCLIB 依次试"),
+        ChangelogItem(kind="改进", text="普通账号的设置页不再显示曲库和歌词"
+                                       "那些管理员配置"),
+    ]),
+    ChangelogVersion(version="1.8.56", date="2026-09-21", items=[
+        ChangelogItem(kind="改进", text="收进顶栏的换行标题不再缩成小字, 放"
+                                       "不下的尾字自动淡出"),
+    ]),
+    ChangelogVersion(version="1.8.55", date="2026-09-21", items=[
+        ChangelogItem(kind="改进", text="标题太长换行的专辑/播放列表, 收进顶"
+                                       "栏后只留第一行"),
+    ]),
+    ChangelogVersion(version="1.8.54", date="2026-09-21", items=[
+        ChangelogItem(kind="改进", text="排行榜每行左边带上歌曲封面了"),
+    ]),
+    ChangelogVersion(version="1.8.53", date="2026-09-21", items=[
+        ChangelogItem(kind="修复", text="打开播放页偶尔在封面页上见到「回到当"
+                                       "前句」的问题修好了"),
+    ]),
+    ChangelogVersion(version="1.8.52", date="2026-09-21", items=[
+        ChangelogItem(kind="改进", text="按压的 Q 弹只留列表页的操作键和收起后"
+                                       "的顶栏键"),
+    ]),
+    ChangelogVersion(version="1.8.51", date="2026-09-21", items=[
+        ChangelogItem(kind="修复", text="收拢顶栏的播放键按下时不再闪一下了"),
+    ]),
+    ChangelogVersion(version="1.8.50", date="2026-09-21", items=[
+        ChangelogItem(kind="改进", text="「下载全部」进行中会变成取消键, 点一"
+                                       "下整批停止, 已下好的保留"),
+    ]),
+    ChangelogVersion(version="1.8.49", date="2026-09-21", items=[
+        ChangelogItem(kind="修复", text="按播放键时毛玻璃界面不再跟着闪一下了"),
+    ]),
+    ChangelogVersion(version="1.8.48", date="2026-09-21", items=[
+        ChangelogItem(kind="改进", text="按钮按下有了轻轻压扁再弹回的 Q 弹反馈"),
+    ]),
+    ChangelogVersion(version="1.8.47", date="2026-09-21", items=[
+        ChangelogItem(kind="修复", text="分享到微信等系统分享面板时, 顶上能看"
+                                       "到封面了"),
+    ]),
     ChangelogVersion(version="1.8.46", date="2026-09-21", items=[
-        ChangelogItem(kind="修复", text="收缩顶栏换岗的四处毛病 (你报的): 键"
-                                       "在飞行途中会两两叠在一起 —— 收拢的键"
-                                       "改错峰走弧线, 按真机几何逐帧算过, "
-                                       "任意时刻轴距都不小于 44px, 比键宽还"
-                                       "多 4px; 开 … 后五颗键不等距 —— 首键"
-                                       "让回 8px, 播放键到首键、键与键之间全"
-                                       "是 8px; 飞行有点掉帧 —— 飞行的键各"
-                                       "上 GPU 合成层, 每帧只动合成器不重画"
-                                       "顶栏, 起飞那刻也不先暗一下; 开 … 时"
-                                       "没被任何键压到的标题/副标题也被整片"
-                                       "渐隐 —— 渐隐纱原是跟着播放键左缘一"
-                                       "起左移的, 现在钉在收拢簇左缘, 开 … "
-                                       "簇往左长、纱不动, 真被压到的字由键"
-                                       "自己的衬底接手盖住"),
-        ChangelogItem(kind="改进", text="换岗不闪现了 (你点的「平移不要闪现, "
-                                       "要通过路径丝滑平移过去」): 播放键从操"
-                                       "作行的键位一路平移进顶栏槽位; 随机/"
-                                       "下载/分享/删除 不缩小、全尺寸飞进 … "
-                                       "键里"),
-        ChangelogItem(kind="改进", text="遮罩罩满整个按钮区域 (你点的): 播放"
-                                       "键左边越靠左越透的渐隐纱之外, 播放键"
-                                       "和额外键的箱底下都衬了整行高的背景色"
-                                       " —— 点开 … 时标题从键缝和键的上下露"
-                                       "边里也不漏字了; 顺手修了飞行途中纱被"
-                                       "挤短跑偏的根"),
-        ChangelogItem(kind="改进", text="被键盖住的标题不再硬切 (你点的「按钮"
-                                       "和被遮盖的文字之间加一点缓冲」): 播放"
-                                       "键的衬底往左多铺 20px、从透明渐到背景"
-                                       "色 —— 文字贴着键边淡下去, 不再贴着键"
-                                       "的左缘被齐边切掉; 软边长在键上, 收拢"
-                                       "和开 … 的途中也跟着走"),
-        ChangelogItem(kind="修复", text="收缩顶栏的 播放/… 在列表滚动中点"
-                                       "不动 (你报的, 三轮才修好): 查明根子"
-                                       "—— iOS 把惯性中的点按整个吞给滚动"
-                                       "器, 连 touchstart 都不派给页面, 前"
-                                       "两轮挂在页头上/提到 document 上的"
-                                       "补发全收不到。船坞键从没这毛病,"
-                                       "因为它在滚动器外面 —— 照方抓药: "
-                                       "收缩到位后层根 (滚动器外) 有一条透"
-                                       "明接点条罩住 播放/…, 惯性里落在上"
-                                       "面的点按直接原生响应, 一下就灵; 操"
-                                       "作行和开了 … 的额外键还有补发兜底"
-                                       "按落点认键等开闸补发。停稳自动补程"
-                                       "原先算错了范围, 在列表深处翻页停稳"
-                                       "会被整个拽回列表顶 —— 现在只管页头"
-                                       "收放的中间地带, 深处翻列表的不碰"),
+        ChangelogItem(kind="修复", text="收进顶栏的按钮飞行时不再两两叠在一起"),
+        ChangelogItem(kind="改进", text="点开 … 出来的那排键间距排匀了"),
+        ChangelogItem(kind="改进", text="按钮飞进顶栏的动画顺滑不再掉帧"),
+        ChangelogItem(kind="改进", text="点开 … 时没被按钮压到的标题不再被误"
+                                       "淡化"),
+        ChangelogItem(kind="修复", text="列表滑动的余势里点收拢顶栏的 播放/… "
+                                       "立即有响应了"),
     ]),
     ChangelogVersion(version="1.8.45", date="2026-09-20", items=[
-        ChangelogItem(kind="改进", text="收缩顶栏改单行 (你点的): 播放和 … "
-                                       "两颗键上到封面同一行、靠右, … 在最边上"
-                                       "—— 点开 随机/下载/分享/删除 出来顶替"
-                                       "它, 播放键被挤向左边; 挤到标题的空间"
-                                       "就把标题用阴影渐隐一下表示被遮住; 原"
-                                       "先按钮占的第二行撤了, 顶栏矮了一截"),
+        ChangelogItem(kind="改进", text="收缩顶栏改成单行, 播放和 … 两颗键上到"
+                                       "封面同一行"),
     ]),
     ChangelogVersion(version="1.8.44", date="2026-09-20", items=[
-        ChangelogItem(kind="改进", text="试修蓝牙车机不显示封面 (你在车里"
-                                       "报的「锁屏有封面、车机没有」): 锁屏"
-                                       "封面改成先取成本地数据再上报 —— 有"
-                                       "的车机蓝牙通道只认这种; 特斯拉那头"
-                                       "亮不亮试了才知道, 手机侧不退步"),
+        ChangelogItem(kind="改进", text="试着修蓝牙车机上不显示封面 (效果要上"
+                                       "车才知道)"),
     ]),
     ChangelogVersion(version="1.8.43", date="2026-09-20", items=[
-        ChangelogItem(kind="改进", text="撤掉调试用的红框弹窗 (你点的「打"
-                                       "点就偷偷打点就行了, 别弹框了」) —— "
-                                       "出问题照旧自动补、流水照旧记日志, "
-                                       "只是屏幕上再也不弹框"),
+        ChangelogItem(kind="改进", text="出问题时不再弹红框提示, 修复照旧自动"
+                                       "完成"),
     ]),
     ChangelogVersion(version="1.8.42", date="2026-09-20", items=[
-        ChangelogItem(kind="改进", text="顶栏收缩后封面旁边的标题和副标题"
-                                       "左对齐 (你点的) —— 原先窄的那行在"
-                                       "文字块里居着中, 收进去看着飘; 现在"
-                                       "两行左缘都贴住封面右边"),
+        ChangelogItem(kind="改进", text="顶栏收缩后标题和副标题改成左对齐"),
     ]),
     ChangelogVersion(version="1.8.41", date="2026-09-20", items=[
-        ChangelogItem(kind="修复", text="双指捏合能放大整个 app (你点的「整"
-                                       "个app任何地方都不允许」) —— iOS 上"
-                                       "touch-action 挡不住捏合缩放, 换手"
-                                       "势事件掐; app 和分享页都禁了"),
-        ChangelogItem(kind="改进", text="分享页的歌单列表行去序号, 左边换 "
-                                       "44px 歌曲封面 (跟 app 里歌单同款), "
-                                       "正播的那行封面上蒙跳条"),
+        ChangelogItem(kind="修复", text="双指捏合再也不能放大整个应用了"),
+        ChangelogItem(kind="改进", text="分享页的歌单列表行换上歌曲封面, 和应"
+                                       "用里同款"),
     ]),
     ChangelogVersion(version="1.8.40", date="2026-09-20", items=[
-        ChangelogItem(kind="修复", text="页面上划的途中整层能左右晃 (你报"
-                                       "的) —— 层内滚动器在 iOS 上单向也配"
-                                       "横向橡皮筋, 竖滑稍带偏就左右荡; 横"
-                                       "向显式掐掉, 只留上下滑"),
-        ChangelogItem(kind="改进", text="收缩顶栏改两行 (你点的): 上行是封"
-                                       "面加标题和副标题 (如 8首14分钟), "
-                                       "下行是控制按键 —— 原先文字淡没了, "
-                                       "按钮挤在封面右边一行"),
-        ChangelogItem(kind="改进", text="列表特别短的页上划到一半动画没播"
-                                       "完就停了 (你报的) —— 滚到底自动补"
-                                       "足行程, 继续上滑直到顶栏收齐、所有"
-                                       "空间归位"),
-    ]),
-    ChangelogVersion(version="1.8.39", date="2026-09-20", items=[
-        ChangelogItem(kind="新增", text="电脑上能用键盘了 (你点的): 空格 "
-                                       "播放/暂停, 左右箭头切上一首/下一首, "
-                                       "/ 直达搜索, Esc 收层照旧; 焦点在输"
-                                       "入框或按钮上时键归控件, 不抢"),
-        ChangelogItem(kind="改进", text="鼠标手感一整套 (你点的): 行/卡/按"
-                                       "钮悬停亮一档, 光标变手型, 曲目行悬"
-                                       "停时封面上浮出播放符, 左滑删除在电"
-                                       "脑上改成悬停亮出删除钮, 纯图标钮悬"
-                                       "停显示文字提示, Tab 键盘焦点有焦点"
-                                       "环"),
-    ]),
-    ChangelogVersion(version="1.8.38", date="2026-09-20", items=[
-        ChangelogItem(kind="改进", text="播放页的「继续播放」队列改成歌单"
-                                       "同款行 (你点的): 去掉序号, 左边换成"
-                                       " 44px 歌曲封面, 右边歌名上行/作者下"
-                                       "行 —— 正在播的那首封面上盖半透纱和"
-                                       "白色动条, 跟歌单里播放中的行一套语"
-                                       "言"),
-    ]),
-    ChangelogVersion(version="1.8.37", date="2026-09-20", items=[
-        ChangelogItem(kind="新增", text="分享页播放器中排加随机/循环键 (你"
-                                       "点的): 标题和进度条之间现在是 歌词/"
-                                       "随机/循环 三颗键并排; 循环点两下是单"
-                                       "曲循环, 开着循环或随机时列表头尾的"
-                                       "上一首/下一首不再被灰掉 —— 不登录也"
-                                       "能像 app 里一样轮着听"),
-    ]),
-    ChangelogVersion(version="1.8.36", date="2026-09-20", items=[
-        ChangelogItem(kind="修复", text="搜索歌词结果每行补上歌曲封面 (你反"
-                                       "馈的): 以前歌词命中行只有字, 现在"
-                                       "左边跟歌曲/专辑结果一样有封面块"),
-        ChangelogItem(kind="改进", text="搜索结果列表上方「歌曲 114」这类重"
-                                       "复标题撤了 (你点的): 数量页签上已有,"
-                                       " 列表直接开铺, 版面更省"),
-    ]),
-    ChangelogVersion(version="1.8.35", date="2026-09-20", items=[
-        ChangelogItem(kind="新增", text="前端会识别客户端是手机还是电脑了"
-                                       " (你点的): 手机/平板走移动端, 鼠标键"
-                                       "盘走桌面端, 以后两边的界面设计可以"
-                                       "各自长各自的样子; 地址后缀 ?ui="
-                                       "desktop 可预览桌面端。第一处分叉已"
-                                       "落地: 电脑上恢复滚动条"),
-    ]),
-    ChangelogVersion(version="1.8.34", date="2026-09-20", items=[
-        ChangelogItem(kind="新增", text="专辑/播放列表/艺人页的封面会收进顶"
-                                       "栏 (你点的): 上划列表时封面边缩小边"
-                                       "挪向左上角, 播放那排钮挪向右上角, "
-                                       "收齐后钉成小顶栏不再动, 列表内容从"
-                                       "它底下滚过被遮住; 反向下划再慢慢放"
-                                       "大回原样。顶栏和页头让开手机顶部的"
-                                       "模糊带 (跟搜索框同一条线), 全程只做"
-                                       "位移和缩放, 跟手顺滑不卡"),
-    ]),
-    ChangelogVersion(version="1.8.33", date="2026-09-20", items=[
-        ChangelogItem(kind="新增", text="专辑也能分享了 (你点的): 专辑页"
-                                       "新增分享钮, 生成 24 小时有效的临时"
-                                       "链接, 打开的人能看能听整张 —— 和分"
-                                       "享播放列表同款, 微信卡片带专辑封"
-                                       "面和艺人"),
-        ChangelogItem(kind="改进", text="专辑页的 播放/随机/下载全部 三颗"
-                                       "钮改成纯图标 (你点的「跟播放列表的"
-                                       "风格差不多」): 图标自带长按提示,"
-                                       " 页头一排更清爽; 艺人页的 播放/随机"
-                                       " 两颗同批改齐"),
+        ChangelogItem(kind="修复", text="往上划页面时整层不再左右晃"),
+        ChangelogItem(kind="改进", text="收缩顶栏改成两行, 文字和按键分上下排"
+                                       "开"),
+        ChangelogItem(kind="修复", text="列表特别短的页, 上划的收拢动画不再中"
+                                       "途停住"),
     ]),
 ]

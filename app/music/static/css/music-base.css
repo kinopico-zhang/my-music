@@ -108,3 +108,4 @@ main {
   #root-view { padding-left: 28px; padding-right: 28px; }
   .album-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 }
+

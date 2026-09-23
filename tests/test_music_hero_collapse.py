@@ -35,7 +35,11 @@ def test_music_1834_hero_collapse_geometry():
     窄的那行在块里居着中, 收进顶栏就飘 (用户点名)。
     1.8.45 单行顶栏: 顶栏高 52 (封面 44 + 下沿 8, 按钮上到封面那行),
     操作行不再竖移成第二行 —— 1.8.46 起行键一进收缩就藏, 顶栏那套从
-    行键位沿路径平移进来 (见 test_music_hero_bar)。"""
+    行键位沿路径平移进来 (见 test_music_hero_bar)。
+    1.8.55 换行标题只收第一行 (用户点名): 落位按第一行的行盒量, 第二行
+    起随行程用 clip-path 裁掉; 1.8.56 二连 (用户点名「大小没必要缩小,
+    按一行的样式来渲染」): 换行标题退出缩宽约束, 收拢态按原字号, 溢出
+    条簇的一截右刀裁掉 (渐隐纱 .bar-sheen 正好罩住裁口)。"""
     js = music_browser_js()
     assert "const HERO_MINI = 44;" in js and "const HERO_BAR = 52;" in js
     assert "dist: head.offsetHeight - padTop - HERO_BAR," in js
@@ -50,16 +54,39 @@ def test_music_1834_hero_collapse_geometry():
     assert "subTx: subRect ? textX - (subRect.left - headRect.left) : 0," in js
     assert "const stackY = padTop + (HERO_MINI - stackH * textScale) / 2;" in js
     assert "titleTy: stackY - (titleRect.top - headRect.top)," in js
-    assert "const lineW = Math.max(titleRect.width," in js
+    assert "const lineW = Math.max(titleClip ? 0 : titleRect.width," in js
     assert "HERO_MINI / Math.max(1, stackH));" in js
     assert 'for (const el of movers) el.style.transformOrigin = "0 0";' in js
     assert "textMove(ctrl.title, ctrl.titleTx, ctrl.titleTy);" in js
     assert "if (ctrl.sub) textMove(ctrl.sub, ctrl.subTx, ctrl.subTy);" in js
+    # 1.8.55 换行标题只收第一行: 量第一行的行盒 (Range), 第二行起随行程
+    # clip-path 从底边裁掉 —— 裁口在本地坐标里, 缩放同步作用其上, 裁缝
+    # 永远落在行缝; 单行标题 titleClip=0 照旧 (✎ 铅笔位不扰动)
+    assert "const tRange = document.createRange();" in js
+    assert "tRange.selectNodeContents(title);" in js
+    assert "const tLines = tRange.getClientRects();" in js
+    assert "const titleClip = tLines.length > 1" in js
+    assert "? Math.max(0, titleRect.bottom - tLines[0].bottom) : 0;" in js
+    assert ("const stackH = (subRect ? subRect.bottom - titleRect.top"
+            " : titleRect.height)") in js
+    assert "- titleClip;" in js
+    assert "? stackY + (subRect.top - titleRect.top - titleClip) * textScale" in js
+    assert "title, sub, titleClip, titleCutR," in js
+    # 1.8.56 不缩小 (用户点名): 换行标题不参与缩宽 (宽约束只留副标题),
+    # 按原字号渲染; 放不下的溢出量折成右刀, 行程里乘 p —— 终点正好切在
+    # 条簇左缘 (availW 边界), 渐隐纱罩住裁口; 底刀右刀一把 inset 写就
+    assert "const titleCutR = titleClip" in js
+    assert "? Math.max(0, titleRect.width - availW / textScale) : 0;" in js
+    assert "if (ctrl.titleClip || ctrl.titleCutR)" in js
+    assert "`inset(0px ${(ctrl.titleCutR * p).toFixed(1)}px`" in js
+    assert "+ ` ${(ctrl.titleClip * p).toFixed(1)}px 0px)`;" in js
+    assert js.count('el.style.clipPath = "";') == 2   # 重测/回自然位都还原干净
     # 顶栏动作条让位 (1.8.45): 标题缩放按收拢态的条宽算, 别钻到键底下;
     # 条宽/起飞位/槽位都由 heroBarMeasure 量 (见 test_music_hero_bar),
     # 开 … 多挤出来的宽压住文字由 .bar-sheen 阴影渐隐, 不重算
     assert "const barInfo = heroBarMeasure(head, rowButtons, headRect);" in js
-    assert "(contentW - HERO_MINI - 12 - barInfo.barRowW - 10) / Math.max(1, lineW)," in js
+    assert "const availW = contentW - HERO_MINI - 12 - barInfo.barRowW - 10;" in js
+    assert "availW / Math.max(1, lineW)," in js
     assert "heroBarTravel(ctrl, p);" in js
     # 操作行的键一进收缩就藏 (1.8.46): 顶栏那套从它们的键位起飞接班
     # (起飞位逐像素重合, 两套不同屏), 藏着的键也不再截点

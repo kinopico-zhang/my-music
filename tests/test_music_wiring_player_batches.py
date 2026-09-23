@@ -7,8 +7,8 @@ from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
 
 
 def test_music_182_player_interaction_batch():
-    """1.8.2 播放页交互批 (用户点名): 专辑名并进艺人行 (来源行只留作词
-    标签, 没有整行收掉; 1.8.17 作曲也撤了); 弹出菜单加「进入专辑主页」;
+    """1.8.2 播放页交互批 (用户点名): 专辑名并进艺人行 (| 隔开; 底下那行
+    来源行 1.8.72 整行撤了); 弹出菜单加「进入专辑主页」;
     修「进艺人主页点了没反应」—— 页面其实开了, 但 z90 的全屏播放页
     盖着 z44 的推入层, 开了也看不见: 跳转前先把播放页收起来。"""
     html = music_page_shell()
@@ -17,18 +17,17 @@ def test_music_182_player_interaction_batch():
     # 专辑名并到艺人后 (| 隔开), 底下那一行省出来
     assert "[track.artist, track.album_title]" in player
     assert '.filter(Boolean).join(" | ");' in player
-    assert "function renderSourceLine" in player     # 来源行只留 作词 标签
-    assert 'id="fp-source" hidden' in html           # 没标签时整行收掉
-    # 1.8.17 撤作曲 (用户点名「播放页下面的作曲去掉」): 只认作词,
-    # credits 接口照旧返回作曲 —— 展示层不读它
-    assert "data.lyricist" in player
-    assert "data.composer" not in player
+    # 1.8.72 来源行整行撤了 (用户点名「整行撤掉」—— Deadman 六个署名挤成
+    # 省略号): 前端不再读 credits 接口, 接口本身照旧在 (无人消费)
+    assert "fp-source" not in html
+    assert "renderSourceLine" not in player and "updateSourceLine" not in player
+    assert "/credits" not in player
     # 菜单新条目: 进入专辑主页 (这首歌有专辑才亮)
     assert 'data-track-action="album" id="track-menu-album"' in html
     assert '进入专辑主页' in html
     assert '$("#track-menu-album").hidden = !track.album_id;' in js
-    # 修: 跳艺人/专辑前先收播放页 (盖在底下 = 看着没反应)
-    assert "if (playerOpen) closeFullPlayer();" in js
+    # 修: 跳艺人/专辑前先收播放页 (盖在底下 = 看着没反应; 1.8.63 水滴收回)
+    assert 'if (playerOpen) closeFullPlayer("morph");' in js
     assert "`album/${track.album_id}`" in js
 
 

@@ -85,3 +85,13 @@
   border: 1px solid rgba(125,179,240,.5); border-radius: 4px;
   padding: 0 4px; margin-left: auto; flex-shrink: 0;
 }
+/* ---------- 1.8.57 账号块行内编辑器 (改名称/改密码) ---------- */
+/* 收起时整盒 hidden 不占位; 展开时字段沿用 .settings-field, 保存钮收紧 */
+.set-editor .set-save-row { margin: 4px 0 10px; }
+/* ---------- 1.8.57 歌词厂商选择 (歌词页): 一排药丸键, .on 亮 ---------- */
+.set-prov { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.set-prov button {
+  font-size: 13px; font-weight: 600; color: var(--ink-3);
+  padding: 6px 13px; border-radius: 999px; background: var(--surface-3);
+}
+.set-prov button.on { color: #fff; background: var(--accent); }

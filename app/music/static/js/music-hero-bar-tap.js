@@ -13,6 +13,7 @@
 // 落点现场查 elementsFromPoint 只认视觉最上层那个层的页头; 真点按 20ms
 // 内必到 (来了就撤记, 不会重发)。
 "use strict";
+/* global jellyButton */
 /* exported heroTapRectBtn, wireHeroBarTapRecovery */
 
 /** 在条里按矩形认键 (rect 跟着飞行变换走, 淡尽的键不抢, 四边放宽 8px
@@ -55,7 +56,7 @@ function wireHeroBarTapRecovery(scope) {
       const head = pane.querySelector(".hero-head");
       const bar = head && head.querySelector(".hero-bar-actions");
       const btn = bar && heroTapRectBtn(bar, e.clientX, e.clientY);
-      if (btn) btn.click();             // 冒泡到 wireHeroBarActions 照常分派
+      if (btn) { jellyButton(btn); btn.click(); }   // 果冻 + 冒泡照常分派
     });
     pane.appendChild(strip);            // 铺在层根: 滚动器外, 不被惯性劫持
   }
@@ -83,6 +84,7 @@ function wireHeroBarTapRecovery(scope) {
         return;
       }
       eaten = null;
+      jellyButton(btn);                  // 合成点按也给果冻反馈 (1.8.48)
       btn.click();
     }, 220);
   };

@@ -5,7 +5,8 @@
 /* exported LYRICS_FOLLOW_RESUME_MS, PLAYER_STATE_KEY, audioElement, currentTrack,
             lyricsActiveIndex, lyricsAutoScrolling, lyricsCache, lyricsFollowPaused,
             lyricsLastScrollAt, lyricsViewOpen, playQueue, playRecorded, prefetchSequence,
-            prefetched, queueDrag, queueViewOpen, scrubbing, trackChangeListeners */
+            prefetched, queueDrag, queueViewOpen, scrubbing, trackChangeListeners,
+            playbackDuration */
 
 /* exported playerStart, openLyricsView, onTrackChange, playerCurrentTrack */   // 供 music.js 引用
 
@@ -36,5 +37,18 @@ let prefetchSequence = 0;          // 旧请求回来发现序号变了就丢弃
 
 function audioElement() {
   return $("#audio");
+}
+
+/** 播放总时长 (进度条与剩余时间的显示基准)。1.8.74 前直接信
+    audio.duration —— iOS 在流媒体上 seek 后元素时长会翻脸: NaN 一阵,
+    或按 seek 那段 206 响应重新估出个偏短的, 于是「剩余 -0:00 但歌照播」
+    (用户实报)。库里的 duration_seconds 是扫描器从文件本身读出来的,
+    不跟着 seek 变; 元素时长只在库里没有 (0) 时兜底。 */
+function playbackDuration() {
+  const fromLibrary = currentTrack
+    ? Number(currentTrack.duration_seconds) || 0 : 0;
+  if (fromLibrary > 0) return fromLibrary;
+  const duration = audioElement().duration;
+  return isFinite(duration) && duration > 0 ? duration : 0;
 }
 

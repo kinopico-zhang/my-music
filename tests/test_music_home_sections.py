@@ -100,8 +100,8 @@ def test_music_top_plays_page_wiring():
     """播放排行页接线 (1.8.31 用户点名): 菜单「播放排行」推入层, 本周/本月/
     今年三榜左右滑切换 (设置页同款壳法: 大标题 + 页签钉住, 正文横向 snap
     三页各自竖滚); 行上只显区间内的播放次数 —— 时长/下载标都不出, 引导位
-    是名次。数据来自播放流水 (老库没流水, 榜从这版起算, 接口测试在
-    test_music_endpoints)。"""
+    是歌曲封面 (1.8.54 用户点名, 原来标名次)。数据来自播放流水 (老库没
+    流水, 榜从这版起算, 接口测试在 test_music_endpoints)。"""
     html = music_page_shell()
     js = music_browser_js()
     top_js = (MUSIC_STATIC / "js" / "music-top-pane.js").read_text(
@@ -127,17 +127,19 @@ def test_music_top_plays_page_wiring():
                  "Math.round(body.scrollLeft / (body.clientWidth || 1))",
                  "bindTrackLists(element, () => pageState.topPanes[period.key]"]:
         assert frag in top_js, f"播放排行页缺 {frag}"
-    # 行: 名次占引导位, 右缘 = 区间内播放次数 (trailingHTML 顶掉时长位),
-    # plain 连下载标一起收走 (用户点名「只需要显示这个区间内的播放次数」)
-    assert '`<i class="top-rank">${index + 1}</i>`' in top_js
+    # 行: 封面占引导位 (播放列表同款 .art 槽), 右缘 = 区间内播放次数
+    # (trailingHTML 顶掉时长位), plain 连下载标一起收走 (用户点名)
+    assert "trackArtHTML, trackRowHTML */" in top_js
+    assert 'track, trackArtHTML(track), "art",' in top_js
     assert '`×${track.play_count}`, true)' in top_js
+    assert "trackArtHTML" in rendering                    # 封面引导位是现成件
+    assert "top-rank" not in top_js and "top-rank" not in html   # 名次位退役
     assert "${!plain && downloadsEnabled ?" in rendering  # plain 选项收下载标
-    # 样式: 设置页同款壳法 (层衬清零自己管布局) + snap 容器 + 名次位放宽
+    # 样式: 设置页同款壳法 (层衬清零自己管布局) + snap 容器
     for frag in ['.push-pane[data-view="top"] .pane-scroll {',
                  ".top-tabs button.on {", "#top-body {",
                  "scroll-snap-type: x mandatory; overscroll-behavior-x: contain;",
-                 ".top-page {", "scroll-snap-align: start;",
-                 ".top-page .t-lead { width: 28px; }", ".top-rank {"]:
+                 ".top-page {", "scroll-snap-align: start;"]:
         assert frag in html, f"播放排行样式缺 {frag}"
     # 最左页右划让回右划返回 (分页容器看门, 搜索/设置同款)
     assert '"#search-body.paged, #settings-body, #top-body"' in js

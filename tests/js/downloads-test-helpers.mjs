@@ -14,17 +14,21 @@ const { downloadsSupported, formatBytes } =
 const TRACK = { track_id: 7, title: "曲A", artist: "AI机组", album_id: 3,
                 album_title: "甲", duration_seconds: 200, playable: true };
 
-/** 桩适配器: 索引在内存里, 下载体可编排进度, 缓存记录调用。 */
+/** 桩适配器: 索引在内存里, 下载体可编排进度, 缓存记录调用 (put/delete
+   真动内存版缓存, cacheRead 能读回)。 */
 function stubAdapters({ bodyChunks = [new Uint8Array(10)], failAt = null,
                         sizes = {} } = {}) {
-  const calls = { puts: [], deletes: [], indexWrites: 0, progress: [] };
+  const calls = { puts: [], deletes: [], indexWrites: 0, progress: [],
+                  fetched: [] };
   let index = [];
+  const cacheStore = new Map();
   return {
     adapters: {
       readIndex: () => JSON.parse(JSON.stringify(index)),
       writeIndex: (entries) => { index = JSON.parse(JSON.stringify(entries)); calls.indexWrites += 1; },
       async downloadBody(url, onProgress) {
         if (failAt === "fetch") throw new Error("HTTP 503");
+        calls.fetched.push(url);
         let total = 0;
         for (const chunk of bodyChunks) total += chunk.byteLength;
         let seen = 0;
@@ -39,9 +43,11 @@ function stubAdapters({ bodyChunks = [new Uint8Array(10)], failAt = null,
       async cachePut(url, body, contentType) {
         if (failAt === "put") throw new Error("quota");
         calls.puts.push({ url, size: body.size, contentType });
+        cacheStore.set(url, body);
       },
-      async cacheDelete(url) { calls.deletes.push(url); },
+      async cacheDelete(url) { calls.deletes.push(url); cacheStore.delete(url); },
       async cacheSize(url) { return sizes[url] || 0; },
+      async cacheRead(url) { return cacheStore.get(url) || null; },
       now: () => 1000,
     },
     calls,

@@ -9,6 +9,7 @@ from app import account_store
 from app.music import service
 from app.music.library_database import session_factory
 from app.music import library_settings
+from app.music.schemas import MusicSettingsUpdate
 from tests.music_audio_seed import _write_plain_track
 from tests.music_library_helpers import _wait_scan_done
 
@@ -27,13 +28,14 @@ def test_settings_permissions(auth, usersdb):
     assert visible["music_directory_default"]
     assert other.post("/music/api/settings", json={}).status_code == 403
 
-    # 现值: 全默认 (没改过 = 空, 前端拿 *_default 作占位)
+    # 现值: 全默认 (没改过 = 空, 前端拿 *_default 作占位); 厂商空 = 自动
     state = auth.get("/music/api/settings").json()
     assert state["music_directory"] == ""
     assert state["music_directory_default"]            # 默认路径非空
     assert state["lyrics_api_enabled"] is True
     assert state["lyrics_api_base"] == ""
     assert state["lyrics_api_default"] == library_settings.LYRICS_API_DEFAULT
+    assert state["lyrics_api_provider"] == ""
     # 蜂窝流量上报接口 1.8.17 整个撤了 (月账/采集一起拆): 回归守卫
     # (路由没了, 匿名打这个路径被鉴权中间件先拦下 → 401)
     assert anon.post("/music/api/cellular-usage",
@@ -61,6 +63,13 @@ def test_settings_save_and_directory_switch(auth, tmp_path):
     assert auth.post("/music/api/settings", json={}).json()[
         "lyrics_api_base"] == "https://example.com/api"
 
+    # 1.8.57 歌词厂商: 键要在注册表里 (自动/LRCLIB/网易云/QQ); 存上换家
+    assert auth.post("/music/api/settings",
+                     json={"lyrics_api_provider": "飞歌"}).status_code == 400
+    assert auth.post("/music/api/settings",
+                     json={"lyrics_api_provider": "netease"}).json()[
+        "lyrics_api_provider"] == "netease"
+
     # 曲库路径: 不存在的 400; 换成新目录自动重扫, 甲被当消失清掉
     new_root = tmp_path / "switched-library"
     _write_plain_track(new_root, "B乐队/2002 乙 [bbbb2222]/01 曲B.flac", "曲B")
@@ -84,7 +93,8 @@ def test_startup_reads_music_directory_from_settings(auth, tmp_path):
     service.start_service(url, tmp_path / "music-library",
                           scan_immediately=False)
     with session_factory()() as session:
-        assert library_settings.save_settings(session, str(root), None, None)
+        assert library_settings.save_settings(
+            session, MusicSettingsUpdate(music_directory=str(root)))
 
     service.stop_service()
     service.start_service(url, None, scan_immediately=True)   # 读设置行扫新目录

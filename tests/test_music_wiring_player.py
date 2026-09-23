@@ -97,6 +97,14 @@ def test_music_queue_cover_view_wiring():
     assert '${on ? ICON_BARS : ""}${trackArtHTML(track)}' in player
     assert ".queue-row.on .bars {" in html
     assert ".queue-row.on .bars i { background: #fff;" in html
+    # 1.8.58 动条扶正 (用户点名「正在播放的动态」): 纱罩动条自 1.8.38 起
+    # 一直没亮 —— .bars 基类 display:none, 开它的 .playing 类没给到队列行。
+    # 现在真播着才亮 (渲染带类 + 暂停/续播 updatePlayButtons 同拍收放),
+    # 暂停只留白粗歌名认当前曲 (与列表行同一语言)
+    assert '${on && playerIsPlaying() ? " playing" : ""}' in player
+    assert ".queue-row.playing .bars { display: flex; }" in html
+    assert 'document.querySelectorAll(".queue-row")' in player
+    assert "row.dataset.queueTrackId) === playerCurrentTrackId() && playing" in player
     # 互斥: 开队列先收歌词, 开歌词先收队列; 收起播放页两个都收
     assert "if (lyricsViewOpen) toggleLyricsView();" in player
     assert "if (!lyricsViewOpen && queueViewOpen) closeQueueView();" in player
@@ -121,26 +129,27 @@ def test_music_player_dismiss_wiring():
     assert 'closeFullPlayer("right")' in player    # 抓手横拖的甩出收起
     assert 'if (direction === "right") fullPlayer.classList.add("dismiss-right")' \
         in player
-    # 抓手条横拖收起: bindDismissDrag 第三个参数开启, 拖整页不是拖封面
+    # 抓手条横拖收起: bindDismissDrag 第二参数开启, 拖整页不是拖封面
     assert "horizontalClose = false" in player
     assert 'player.style.transform = dx > 0 ? `translateX(${dx * 0.92}px)` : "";' \
         in player
-    assert 'bindDismissDrag($("#fp-grab"), false, true);' in player
-    assert 'bindDismissDrag($("#fp-art-wrap"), true);' in player   # 封面照旧划切歌
+    assert 'bindDismissDrag($("#fp-grab"), true);' in player
+    # 1.8.60 封面只剩下拉收起, 左右划交给 3D 封面舞台 (art-stage 模块)
+    assert 'bindDismissDrag($("#fp-art-wrap"));' in player
+    assert "initArtStage();" in player
     # 1.8.2 整页下拉收起 (用户点名「任何一点都能拖」): .fp-sheet/.fp-bg 也绑
-    # 一份, 第四参数让路自带手势/滚动/按钮的起手点 (歌词/队列要滚,
+    # 一份, 第三参数让路自带手势/滚动/按钮的起手点 (歌词/队列要滚,
     # 抓手/封面自带拖动, 按钮滑杆各有语义)
-    assert 'bindDismissDrag($(".fp-sheet"), false, false, true);' in player
-    assert 'bindDismissDrag($(".fp-bg"), false, false, true);' in player
+    assert 'bindDismissDrag($(".fp-sheet"), false, true);' in player
+    assert 'bindDismissDrag($(".fp-bg"), false, true);' in player
     # 1.8.5 修「切到待播放后全局下拉退出小了」: 歌词/待播放不再是免死金牌
     # —— 自己滚在半路才让路 (滚到顶时下拉归收起); 让路名单里其余照旧
     assert '"#fp-grab, #fp-art-wrap, .fp-scrub,"' in player
     assert 'event.target.closest("#fp-lyrics, #queue-list");' in player
-    # Esc = 电脑上的返回: 先收播放页, 没开收顶层二级页 (1.8.17 蜂窝流量
-    # 那段撤了, Esc 处理器后面的节标记换成键盘避让)
+    # Esc = 电脑上的返回: 先收播放页 (1.8.63 水滴收回), 没开收顶层二级页
     esc_handler = js[js.index('event.key !== "Escape"'):
                      js.index("// 键盘避让")]
-    assert "if (playerOpen) closeFullPlayer();" in esc_handler
+    assert 'if (playerOpen) closeFullPlayer("morph");' in esc_handler
     assert "closePushStack(pushStack.length - 1)" in esc_handler
 
 

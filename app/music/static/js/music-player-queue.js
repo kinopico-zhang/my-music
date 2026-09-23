@@ -1,15 +1,20 @@
-// music-player-queue — My Music 队列驱动: 开播/暂停/上下曲/跳过不可播, loadTrack 换源, 下一曲预取。
-// 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
+// music-player-queue — My Music 队列驱动: 开播/暂停/上下曲/跳过不可播, loadTrack 换源。
+// 拆自 music-player.js (结构化重构: 按 music.html 里的顺序加载, 跨模块引用走全局;
+// 1.8.59 下一曲预取拆去 music-player-prefetch)。
+// 1.8.66 切歌不改播放状态; 1.8.68 修播放键误报「被浏览器拦」; 1.8.71 起播/暂停搬去 audio-events。
 "use strict";
-/* global audioElement, createPlayQueue, currentTrack: writable, loadLyrics,
-          lyricsActiveIndex: writable, lyricsCache, lyricsViewOpen, playQueue: writable,
-          playRecorded: writable, prefetchLyrics, prefetchSequence: writable,
-          prefetched: writable, queueAdvance, queueCurrent, queueGoBack, queueShuffleAll,
-          queueUpcoming, renderPlayerChrome, renderQueueView, savePlayerState,
-          syncLyricsButton, toast, trackChangeListeners, updateMediaSession */
-/* exported loadTrack, lyricsActiveIndex, onTrackChange, playRecorded, playerCurrentTrack,
-            playerCurrentTrackId, playerIsPlaying, playerNext, playerPrevious, playerStart,
-            playerToggle, prefetchNextTrack, startAudio */
+/* global audioElement, createPlayQueue, currentTrack: writable, discardPrefetch,
+          downloads, downloadsEnabled, loadLyrics, lyricsActiveIndex: writable,
+          lyricsCache, lyricsViewOpen, noteAudioSourceChanged, pauseAudio,
+          playQueue: writable, playRecorded: writable, prefetchLyrics,
+          prefetchNextTrack, prefetched: writable, queueAdvance, queueCurrent,
+          queueGoBack, queueShuffleAll, queueViewOpen, renderPlayerChrome,
+          renderQueueView, savePlayerState, startAudio, syncLyricsButton, toast,
+          trackChangeListeners, updateMediaSession */
+/* exported loadTrack, lyricsActiveIndex, onTrackChange, playRecorded,
+            playerCurrentTrack, playerCurrentTrackId, playerIsPlaying, playerNext,
+            playerPrevious, playerStart, playerToggle, playerUpgradeDownloadedSource,
+            resolveTrackSource */
 
 // ------------------------------------------------------------ 队列驱动
 
@@ -26,29 +31,31 @@ function playerStart(tracks, startIndex, shuffleOn) {
   loadTrack(track, true);
 }
 
-/** 起播统一入口。 */
-function startAudio() {
-  return audioElement().play();
-}
+/** 起播统一入口 (1.8.71 起住 music-player-audio-events, 带打断解锁)。 */
 
 function playerToggle() {
   const audio = audioElement();
   if (!currentTrack) return;
-  if (audio.paused) {
-    startAudio().catch(() => toast("播放被浏览器拦了, 再点一次"));
-  } else {
-    audio.pause();
+  if (!audio.paused) {
+    if (audio.readyState < 3) return;   // 起播还在缓冲: 别掐 (掐了 = AbortError 误报拦截)
+    pauseAudio();
+    return;
   }
+  startAudio().catch((e) => {
+    // AbortError = 半路被换源/暂停打断 (正常接力), 只有真的被浏览器拦才提示
+    if (e && e.name === "NotAllowedError") toast("播放被浏览器拦了, 再点一次");
+  });
 }
 
-function playerNext() {
+function playerNext(forceAutoplay) {
   if (!playQueue) return;
   const track = queueAdvance(playQueue);
   if (!track) {                       // 队尾: 停在原地 (苹果同款)
     toast("播完了");
     return;
   }
-  loadTrack(track, true);
+  // 1.8.66 切歌不改播放状态: 暂停中切歌保持暂停 (自然播完连播传 true 强续)
+  loadTrack(track, forceAutoplay === true || !audioElement().paused);
 }
 
 function playerPrevious() {
@@ -59,7 +66,7 @@ function playerPrevious() {
     return;
   }
   const track = queueGoBack(playQueue);
-  if (track) loadTrack(track, true);
+  if (track) loadTrack(track, !audio.paused);   // 1.8.66 切歌不改播放状态
 }
 
 /** 不可播格式连跳, 直到遇到能播的 (全队都播不了就提示)。 */
@@ -76,10 +83,12 @@ function advanceToPlayable() {
 }
 
 /** 载入曲目: 音频源 (预取到位直接用 blob, 秒切) + 迷你条/全屏页/锁屏
-    元数据 + 歌词缓存失效 + 顺手预取下一曲。 */
-let playingObjectURL = "";   // audio 正在用的预取 blob; 换曲时 revoke (一首几十 MB, 攒着会撑爆手机内存)
+    元数据 + 歌词缓存失效 + 顺手预取下一曲。startTime = 待生效进度
+    (点播一律 0; 冷启动恢复带上存档进度)。 */
+let playingObjectURL = "";   // audio 正在用的 blob 源; 换曲时 revoke (一首几十 MB, 攒着会撑爆手机内存)
+let loadSequence = 0;        // 换源解析的过站号: 快速连切, 旧的解析回来直接作废
 
-function loadTrack(track, autoplay) {
+async function loadTrack(track, autoplay, startTime = 0) {
   currentTrack = track;
   playRecorded = false;
   lyricsCache.delete(track.track_id);      // 每次换曲重取 (歌词可能刚扫描进来)
@@ -89,67 +98,88 @@ function loadTrack(track, autoplay) {
   const audio = audioElement();
   const prefetchedURL = prefetched && prefetched.trackId === track.track_id
     ? prefetched.objectURL : "";
-  if (playingObjectURL) URL.revokeObjectURL(playingObjectURL);   // 上一曲用完的预取 blob
-  playingObjectURL = prefetchedURL;
+  if (playingObjectURL) URL.revokeObjectURL(playingObjectURL);   // 上一曲用完的 blob
+  playingObjectURL = "";
   if (prefetchedURL) prefetched = null;    // 占位交给 audio, 别再 revoke
   else discardPrefetch();                  // 其余情况旧预取作废
-  audio.src = prefetchedURL || `/music/media/stream/${track.track_id}`;
-  // 点播一律从头。冷启动恢复写过一次"待生效进度" (preload=none 时它一直挂着
-  // 不生效), Safari 会把它漏到之后点开的歌上 —— 从一半播起的真凶。
-  // 显式归零: HAVE_NOTHING 时是覆盖待生效进度, 已载入时是直接倒回开头。
-  audio.currentTime = 0;
   renderPlayerChrome();
-  renderQueueView();
+  // 队列没开着就不整页重铺 (翻开时会现铺) —— innerHTML 大重建在主线程,
+  // 切歌那一拍挤上去, 封面 3D 落定的动画跟着掉帧 (1.8.61 修「切歌很卡」)
+  if (queueViewOpen) renderQueueView();
   if (lyricsViewOpen) loadLyrics();
   updateMediaSession();
   for (const listener of trackChangeListeners) listener(track);
+  // 1.8.59 锁屏自停根修 (iOS 27 用户报「播着播着自己停了, 开 app 又自动
+  // 续播」): 音频流原本全经 SW 中转, iOS 锁屏会冻结 SW —— 管线要不到
+  // 数据断粮自停, 开屏解冻挂起请求补上又自动续播。现在播放全程绕开 SW:
+  // 流媒体带 ?direct 标记让 SW 放行 (同步赋址, 起播留在点按手势里);
+  // 已下载的直读 Cache API 成 blob (异步一步, 断网也照播)。
+  let source = prefetchedURL
+    || (trackDownloaded(track.track_id) ? "" : directStreamURL(track.track_id));
+  if (!source) {
+    if (!audio.paused) pauseAudio();   // 读缓存要一步: 先掐住旧曲别多响
+    const token = ++loadSequence;
+    const resolved = await resolveTrackSource(track.track_id);
+    if (token !== loadSequence || currentTrack !== track) return;   // 连切抢了先
+    source = resolved;
+  }
+  playingObjectURL = source.startsWith("blob:") ? source : "";
+  audio.src = source;
+  noteAudioSourceChanged();   // 换了新源, 打断解锁态作废 (1.8.71)
+  // 点播一律从头。冷启动恢复写过一次"待生效进度" (preload=none 时它一直
+  // 挂着不生效), Safari 会把它漏到之后点开的歌上 —— 从一半播起的真凶。
+  // 显式写 currentTime (换源之后写, 只落在新源上): HAVE_NOTHING 时是覆盖
+  // 待生效进度, 已载入时是直接倒到目标 (点播 0 / 恢复存档进度)。
+  audio.currentTime = startTime;
   savePlayerState();
   prefetchNextTrack();
   if (autoplay) startAudio().catch(() => { /* iOS 偶发拒绝: 保持暂停态 */ });
 }
 
-// ------------------------------------------------------------ 下一曲预取
-
-/** 后台拉下一曲的完整音频进 blob (已下载过的会被 SW 直接回缓存, 更快);
-    单槽: 只留即将播的那首, 旧的 revoke。下一曲的封面也顺手焐热 ——
-    冷门专辑的封面服务端要现抽 (NAS 盘一忙就是好几秒), 藏在整首歌的
-    播放时间里预取, 切歌时即取即有。 */
-function prefetchNextTrack() {
-  if (!playQueue || playQueue.repeat === "one") return;   // 单曲循环没有"下一曲"
-  const next = nextUpcomingTrack();
-  if (!next || !next.playable || next.track_id === playerCurrentTrackId()) return;
-  if (next.album_id) {
-    const warmCover = new Image();
-    warmCover.src = `/music/media/albums/${next.album_id}/artwork`;
-  }
-  if (prefetched && prefetched.trackId === next.track_id) return;   // 已就位
-  discardPrefetch();
-  const trackId = next.track_id;
-  const token = prefetchSequence;
-  fetch(`/music/media/stream/${trackId}`)
-    .then((response) => (response.ok ? response.blob()
-      : Promise.reject(new Error(`HTTP ${response.status}`))))
-    .then((blob) => {
-      if (token !== prefetchSequence) return;             // 目标已经变了
-      if (playerCurrentTrackId() === trackId) return;     // 已经切到这首了
-      if (nextUpcomingTrack() !== next) return;           // 不再是下一曲
-      prefetched = { trackId, objectURL: URL.createObjectURL(blob) };
-    })
-    .catch(() => { /* 预取失败: 到时候正常走网络 */ });
+/** 下载能力在线且这首歌已下载? (恢复现场跑在下载模块加载前 —— boot
+    顺序, typeof 兜住还没影子的全局, 不至于 ReferenceError。) */
+function trackDownloaded(trackId) {
+  return typeof downloadsEnabled !== "undefined" && downloadsEnabled
+    && downloads && downloads.isDownloaded(trackId);
 }
 
-/** 下一曲 (不含当前; 队列快播完且不循环时没有)。 */
-function nextUpcomingTrack() {
-  const upcoming = queueUpcoming(playQueue);
-  return upcoming.length > 1 ? upcoming[1] : null;
+/** 流媒体直连地址: SW 见 ?direct 标记放行, 浏览器媒体栈自己连网络。 */
+function directStreamURL(trackId) {
+  return `/music/media/stream/${trackId}?direct=1`;
 }
 
-function discardPrefetch() {
-  prefetchSequence++;              // 在途的旧请求回来也认作过期
-  if (prefetched) {
-    URL.revokeObjectURL(prefetched.objectURL);
-    prefetched = null;
+/** 曲目音频源: 已下载的直读 Cache API 成 blob, 其余流媒体直连。 */
+async function resolveTrackSource(trackId) {
+  if (trackDownloaded(trackId)) {
+    const blob = await downloads.cachedBlob(trackId);
+    if (blob) return URL.createObjectURL(blob);
   }
+  return directStreamURL(trackId);
+}
+
+/** 恢复现场的补刀 (1.8.59): 已下载的当前曲在恢复时只能按流媒体占位
+    (那时下载模块还没加载) —— 全模块就位后 (app-boot 收尾) 换成缓存
+    直读的 blob 源, 锁屏 SW 冻结掐不断, 断网也照播。 */
+async function playerUpgradeDownloadedSource() {
+  const track = currentTrack;
+  const audio = audioElement();
+  if (!track || !trackDownloaded(track.track_id)) return;
+  if (!audio.src || audio.src.startsWith("blob:")) return;   // 已是缓存源
+  const token = ++loadSequence;
+  const source = await resolveTrackSource(track.track_id);
+  if (token !== loadSequence || currentTrack !== track
+      || !source.startsWith("blob:")) {
+    if (source.startsWith("blob:")) URL.revokeObjectURL(source);
+    return;
+  }
+  const wasPaused = audio.paused;
+  const at = audio.currentTime;          // 恢复态的待生效进度别丢
+  if (playingObjectURL) URL.revokeObjectURL(playingObjectURL);
+  playingObjectURL = source;
+  audio.src = source;
+  noteAudioSourceChanged();   // 不然 startAudio 会把新源再白重挂一次
+  audio.currentTime = at;
+  if (!wasPaused) startAudio().catch(() => {});
 }
 
 function playerCurrentTrackId() {
@@ -168,4 +198,3 @@ function playerIsPlaying() {
 function onTrackChange(listener) {
   trackChangeListeners.push(listener);
 }
-

@@ -32,6 +32,17 @@ def test_music_search_page_and_lockscreen_wiring():
     assert "audio.paused ? 0 : audio.playbackRate" in player
     assert "setPositionState" in player
     assert "syncPositionState();" in player       # timeupdate 里也在报
+    # 1.8.69 锁屏键位 (用户点名「应该是前一首, 后一首和暂停键」):
+    # seekbackward/seekforward 一注册, iOS 键位就被 10 秒快退快进占了
+    # —— 撤了, 只留切歌三键; 进度条拖动走 seekto, 不占键位
+    assert '["play", "pause", "previoustrack", "nexttrack",' in player
+    assert '"seekto"])' in player                  # 进度条拖动保留
+    assert 'case "seekbackward"' not in player and 'case "seekforward"' not in player
+    # 1.8.70 气泡直接播锁屏没切歌键 (用户实报「重启应用直接点气泡播放,
+    # 锁屏没有上一首/下一首」): iOS 只认「出声那一刻」挂的键位, 开机恢复
+    # 挂得早会被丢 —— 挂键位抽成可重挂函数, play/playing 起播都重挂
+    assert "function rearmMediaSession" in player
+    assert player.count("rearmMediaSession();") == 3   # 换曲 + play/playing 起播
 
 
 def test_music_lyrics_animation_wiring():
@@ -65,17 +76,48 @@ def test_music_click_play_starts_from_beginning():
     """点播一律从头 (用户报"有时点一首歌从一半播起, 怀疑存了每首的进度"):
     并没有按曲存进度 —— 冷启动恢复在 preload=none 的 audio 上写
     currentTime 是"待生效进度", Safari 会把它漏到之后点开的歌上。
-    loadTrack 换源后显式归零兜底; 冷启动续听 (playerRestore) 不走
-    loadTrack, 特性照旧。"""
+    1.8.59 起恢复也走 loadTrack (startTime 参数带上存档进度, 且写在换源
+    之后 —— 待生效进度只落在新源上, 不外漏; 点播照旧归零)。"""
     player = music_player_js()
     html = music_page_shell()
     load_track = player[player.index("function loadTrack"):
                         player.index("function prefetchNextTrack")]
-    assert "audio.currentTime = 0;" in load_track  # 点播归零, 待生效进度不外漏
+    assert "audio.currentTime = startTime;" in load_track  # 换源后显式写 (0 = 点播归零)
     assert 'preload="none"' in html          # 恢复态不拉元数据 (待生效进度的温床)
     restore = player[player.index("function playerRestore"):
                      player.index("function renderPlayerChrome")]
-    assert "if (saved.time) audio.currentTime = saved.time;" in restore  # 续听保留
+    assert "loadTrack(track, false, saved.time || 0);" in restore  # 续听同一条路
+    assert "audio.src = " not in restore     # 恢复不再自己赋源 (loadTrack 管)
+
+
+def test_music_lockscreen_sw_bypass_wiring():
+    """1.8.59 锁屏自停根修 (用户报「iOS 27 锁屏播着播着自己停了, 开 app
+    又自动开始播放」): 每一轨音频流原本都经 SW 中转 (serveTrack 缓存回
+    源/代取网络), iOS 锁屏会冻结 SW —— 管线要不到数据断粮自停, 开屏解冻
+    挂起请求补上又自动续播。修法 = 播放全程绕开 SW: 流媒体带 ?direct 标记
+    (SW 放行直连, 同步赋址保住手势内起播); 已下载的直读 Cache API 成 blob;
+    预取同一条路; 下载模块加载晚于恢复现场, 就位后补刀换源。"""
+    queue_js = (MUSIC_STATIC / "js" / "music-player-queue.js").read_text(
+        encoding="utf-8")
+    prefetch_js = (MUSIC_STATIC / "js" / "music-player-prefetch.js").read_text(
+        encoding="utf-8")
+    boot_js = (MUSIC_STATIC / "js" / "music-app-boot.js").read_text(
+        encoding="utf-8")
+    assert 'const blob = await downloads.cachedBlob(trackId);' in queue_js
+    assert "`/music/media/stream/${trackId}?direct=1`" in queue_js
+    assert "async function resolveTrackSource" in queue_js
+    assert "typeof downloadsEnabled" in queue_js   # 恢复现场早于下载模块加载
+    assert "playerUpgradeDownloadedSource" in queue_js   # 补刀换源 (blob 源)
+    assert "let loadSequence = 0;" in queue_js     # 连切时旧的换源解析作废
+    assert "resolveTrackSource(trackId)" in prefetch_js  # 预取同一条源解析路
+    assert "function discardPrefetch" in prefetch_js
+    assert "playerUpgradeDownloadedSource();" in boot_js  # 全模块就位后补刀
+    downloads_js = (MUSIC_STATIC / "js" / "downloads.js").read_text(
+        encoding="utf-8")
+    # 下载取流同样直连 (?direct 标记); 缓存键仍光杆 (SW 旧壳兜底认得)
+    assert 'streamURL(trackId) + "?direct=1"' in downloads_js
+    assert "async function cachedBlob" in downloads_js   # 播放器直读缓存字节
+    assert "cacheRead" in downloads_js
 
 
 def test_music_volume_ui_removed():
@@ -120,6 +162,21 @@ def test_matching_lyric_line_pure():
     assert _matching_lyric_line(lyrics, "hello") == "Hello World"
     assert _matching_lyric_line(lyrics, "再见") == "再见"
     assert _matching_lyric_line(lyrics, "不存在") == ""
+
+
+def test_music_1853_lyrics_resume_residue_gone():
+    """1.8.53 修「打开播放页偶尔在封面页上见着 回到当前句」: 关页途中
+    歌词的惯性滚动还会补发几拍 scroll, 把浏览态 (含「回到当前句」键) 又
+    点亮, 残留到下次开页。闸门两道: scroll 监听只在播放页开着且歌词视图
+    在屏时才认; 开页先按下「回到当前句」兜底。"""
+    events_js = (MUSIC_STATIC / "js" / "music-player-events.js").read_text(
+        encoding="utf-8")
+    fullpage_js = (MUSIC_STATIC / "js" / "music-player-fullpage.js").read_text(
+        encoding="utf-8")
+    assert "if (!playerOpen || !lyricsViewOpen) return;" in events_js
+    assert ("lyricsViewOpen, openFullPlayer, playQueue, playerNext, playerOpen,"
+            in events_js)                            # 全局声明补齐 (eslint 把着)
+    assert '$("#lyrics-resume").hidden = true;' in fullpage_js   # 开页兜底
 
 
 def test_extract_artwork_empty_picture(tmp_path):

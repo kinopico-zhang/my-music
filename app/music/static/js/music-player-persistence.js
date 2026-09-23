@@ -1,10 +1,8 @@
 // music-player-persistence — My Music 播放现场持久化: localStorage 存/恢复 (队列/曲目/进度)。
 // 拆自 music-player.js (结构化重构: 代码逐字节未动, 按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
-/* global PLAYER_STATE_KEY, audioElement, createPlayQueue, currentTrack: writable,
-          playQueue: writable, prefetchLyrics, prefetchNextTrack, queueCurrent,
-          renderPlayerChrome, renderQueueView, syncLyricsButton, trackChangeListeners,
-          updateMediaSession */
+/* global PLAYER_STATE_KEY, audioElement, createPlayQueue, currentTrack,
+          loadTrack, playQueue: writable, queueCurrent */
 /* exported playerRestore, savePlayerState */
 
 // ------------------------------------------------------------ 持久化
@@ -50,16 +48,9 @@ function playerRestore() {
   playQueue.shuffle = orderRestored && !!saved.shuffle;
   const track = queueCurrent(playQueue);
   if (!track) { playQueue = null; return; }
-  const audio = audioElement();
-  audio.src = `/music/media/stream/${track.track_id}`;
-  currentTrack = track;
-  renderPlayerChrome();
-  renderQueueView();
-  updateMediaSession();
-  for (const listener of trackChangeListeners) listener(track);
-  syncLyricsButton();    // 1.8.20 键默认灰 (当没词), 探明有词才亮 (与 loadTrack 同款)
-  prefetchLyrics(track);
-  if (saved.time) audio.currentTime = saved.time;
-  prefetchNextTrack();            // 恢复现场时也把下一曲备好
+  // 1.8.59 起走 loadTrack 同一条换源路 (流媒体直连 / 已下载缓存直读),
+  // 存档进度由 startTime 带上 (换源之后才写 —— 待生效进度只落在新源上,
+  // 不会像旧版那样漏到之后点开的歌上)
+  loadTrack(track, false, saved.time || 0);
 }
 
