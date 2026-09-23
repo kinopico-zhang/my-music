@@ -35,7 +35,7 @@ function renderHomeView() {
     <div id="home-playlists" class="album-grid">${listPlaceholderHTML("加载中…")}</div>
     ${sectionHeadHTML("最近播放音乐", "recent")}
     <div id="home-recent">${listPlaceholderHTML("加载中…")}</div>
-    ${sectionHeadHTML("最近添加专辑", "albums")}
+    ${sectionHeadHTML("最近添加专辑", "albums-recent")}
     <div id="home-albums" class="album-grid">${listPlaceholderHTML("加载中…")}</div>`;
   // 事件绑在容器上 (内容是异步重铺的, 绑内容会重复累加)
   $("#home-playlists").addEventListener("click", (event) => {

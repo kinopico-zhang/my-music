@@ -63,6 +63,7 @@ function renderPushedView(view, ids, target) {
   else if (view === "playlist") renderPlaylistView(ids.playlistId, target);
   else if (view === "playlists") renderPlaylistsPane(target);
   else if (view === "albums") renderAlbumsPane(target);
+  else if (view === "albums-recent") renderAlbumsPane(target, "recent");
   else if (view === "artists") renderArtistsPane(target);
   else if (view === "recent") renderRecentPane(target);
   else if (view === "top") renderTopPane(target);

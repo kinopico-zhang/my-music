@@ -171,9 +171,9 @@ def test_music_single_url_navigation_wiring():
     # 播放列表/专辑/艺人/最近播放/播放排行/已下载/搜索/设置/统计/更新日志
     # 全是推入层)
     assert "function parseRoute" in js and "function currentRoute" in js
-    assert ('const PANE_VIEWS = ["playlists", "albums", "artists", '
-            '"recent", "top", "downloads",') in js
-    assert '"search", "settings", "stats", "changelog"];' in js
+    assert ('const PANE_VIEWS = ["playlists", "albums", "albums-recent", '
+            '"artists", "recent",') in js
+    assert '"top", "downloads", "search", "settings", "stats", "changelog"];' in js
     assert "PANE_VIEWS.includes(name)" in js
     assert 'const pushed = view !== "home";' in js
     assert "function routeRoot" in js and "function routePushed" in js

@@ -14,12 +14,16 @@ function resetLibraryLists() {
   pageState.lists = {};
 }
 
-/** 专辑页: 大标题 + 网格 (缓存有货直接铺, 不够的分页链自己续)。 */
-function renderAlbumsPane(target) {
+/** 专辑页: 大标题 + 网格 (缓存有货直接铺, 不够的分页链自己续)。
+    1.8.81 两种进法两个序: 主页「最近添加专辑」段头进来按添加时间倒排
+    (最新在前), 菜单「所有专辑」进来照旧按标题 —— 缓存也按段名分开住。 */
+function renderAlbumsPane(target, variant) {
+  const recent = variant === "recent";
   target.innerHTML = `
-    <div class="pane-title">所有专辑</div>
+    <div class="pane-title">${recent ? "最近添加" : "所有专辑"}</div>
     <div class="lib-body"></div>`;
-  mountSegmentList(target.querySelector(".lib-body"), "albums");
+  mountSegmentList(target.querySelector(".lib-body"),
+                   recent ? "albums-recent" : "albums");
 }
 
 /** 艺人页: 大标题 + 行列表 (与专辑页同一套分页链, 段名不同)。 */
