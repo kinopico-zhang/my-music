@@ -17,7 +17,7 @@ from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
 
 def test_music_home_page_wiring():
     """主页接线 (1.8.0: 主页是唯一根视图, 其余全是推入层; 1.8.24 改三段):
-    每段 10 个, 段头整条可点 (› 查看全部 → 最近播放页/所有专辑/播放列表页);
+    每段 10 个, 段头整条可点 (› 查看全部 → 最近播放页/最近添加专辑页/播放列表页);
     最近播放列表走新接口 (成员曲目最近被播过的在前, 没播过的按编辑时刻)。"""
     html = music_page_shell()
     js = music_browser_js()
@@ -38,9 +38,23 @@ def test_music_home_page_wiring():
     heads = [f'sectionHeadHTML("{title}", "{target}")'
              for title, target in [("最近播放列表", "playlists"),
                                    ("最近播放音乐", "recent"),
-                                   ("最近添加专辑", "albums")]]
+                                   ("最近添加专辑", "albums-recent")]]
     for head in heads:
         assert head in home_js
+    # 1.8.81 用户点名「从最新添加专辑进去, 应该按照添加的时间倒排, 而不是
+    # 按照字母顺序」: 段头改走 albums-recent 层 (标题「最近添加」, 按添加
+    # 时间倒排), 菜单「所有专辑」照旧字母序 —— 两种进法两个段名, 缓存分开住
+    views_js = (MUSIC_STATIC / "js" / "music-library-views.js").read_text(
+        encoding="utf-8")
+    pagination = (MUSIC_STATIC / "js" / "music-library-pagination.js").read_text(
+        encoding="utf-8")
+    assert 'recent ? "最近添加" : "所有专辑"' in views_js
+    assert 'recent ? "albums-recent" : "albums"' in views_js
+    assert 'renderAlbumsPane(target, "recent")' in js
+    assert 'if (segment === "albums") parameters.set("sort", "title");' \
+        in pagination
+    assert 'else if (segment === "albums-recent") parameters.set("sort", "added");' \
+        in pagination
     # 三段在 renderHomeView 里按 用户点的顺序铺 (列表 → 音乐 → 专辑)
     assert home_js.index(heads[0]) < home_js.index(heads[1]) \
         < home_js.index(heads[2])
@@ -81,7 +95,7 @@ def test_music_home_page_wiring():
     assert "function renderPlaylistsPane(" in js
     # 最近播放独立成层 (1.8.1): LRU 整页 (词标/下载标照旧)
     assert "function renderRecentPane(" in js
-    assert '"recent", "top", "downloads",' in js     # PANE_VIEWS 收录 (1.8.31 +top)
+    assert '"top", "downloads", "search",' in js  # PANE_VIEWS 收录 (1.8.31 +top)
     assert 'else if (view === "recent") renderRecentPane(target);' in js
     assert '"/music/api/plays/recent?limit=100"' in js    # 全量页 100 首
     assert "pageState.recentPane" in js                   # 点行开播的队列语境
@@ -113,7 +127,7 @@ def test_music_top_plays_page_wiring():
     assert "css/music-top.css?v=" in html
     assert "js/music-top-pane.js?v=" in html
     # 路由收录 + 推入层分发
-    assert '"recent", "top", "downloads",' in js
+    assert '"top", "downloads", "search",' in js
     assert 'else if (view === "top") renderTopPane(target);' in js
     assert "pageState.topPanes" in js                     # 三榜各记队列语境
     # 三榜页签 (数组序即页序) + 左右滑 snap 容器 (页签点击/手滑互切)

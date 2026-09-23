@@ -28,6 +28,7 @@ async function fetchListPage(segment, list) {
   try {
     const parameters = new URLSearchParams({ limit: "60" });
     if (segment === "albums") parameters.set("sort", "title");
+    else if (segment === "albums-recent") parameters.set("sort", "added");
     parameters.set("offset", String(list.offset));
     const endpoint = segment === "artists" ? "/music/api/artists"
       : "/music/api/albums";

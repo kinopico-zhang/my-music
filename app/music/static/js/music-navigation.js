@@ -43,9 +43,10 @@ const pushStack = [];   // [{view, id, pane}]
 
 // 无参推入层 (菜单「播放列表/专辑/艺人/最近播放/播放排行/已下载」+ 搜索键
 // + 设置页里的统计/更新日志): 布局与详情层 (专辑/艺人/播放列表) 一模一样,
-// 从右滑入。
-const PANE_VIEWS = ["playlists", "albums", "artists", "recent", "top", "downloads",
-                    "search", "settings", "stats", "changelog"];
+// 从右滑入。1.8.81 加 albums-recent: 主页「最近添加专辑」段头专用 (按
+// 添加时间倒排), 与菜单「所有专辑」(标题序) 同款两种进法。
+const PANE_VIEWS = ["playlists", "albums", "albums-recent", "artists", "recent",
+                    "top", "downloads", "search", "settings", "stats", "changelog"];
 
 function parseRoute(target) {
   const [name, argument] = String(target).split("/");
