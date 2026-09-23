@@ -61,6 +61,26 @@ def test_extract_album_artwork(tmp_path):
     assert extract_album_artwork(tmp_path / "no-such.flac") is None
 
 
+def test_extract_album_artwork_strips_name_prefix(tmp_path):
+    """写歪的封面块 (1.8.82, EVA HR Remaster 四张实报): 标签器把描述
+    长度声明成 0, "Cover Art (Front).jpg\\0" 文件名混进图数据 (APE 式
+    写法灌进 flac PICTURE)。抽取出口要剥掉前缀只留图, 否则文字开头的
+    "图"落进缓存, 浏览器解不开, 专辑位一片占位块。"""
+    dirty = b"Cover Art (Front).jpg\x00" + PICTURE_BYTES
+    path = _write_audio(tmp_path, "A/01 擬態人格.flac", picture=dirty)
+    assert extract_album_artwork(path) == PICTURE_BYTES
+
+
+def test_extract_album_artwork_rejects_non_image(tmp_path):
+    """剥不出图魔数的封面数据按没有封面算 (空串/纯文本/截断块),
+    不再把垃圾字节当图送进缓存。"""
+    path = _write_audio(tmp_path, "A/02 純文本.flac",
+                        picture=b"totally not an image")
+    assert extract_album_artwork(path) is None
+    empty = _write_audio(tmp_path, "A/03 空图.flac", picture=b"")
+    assert extract_album_artwork(empty) is None
+
+
 def test_read_track_metadata_without_any_tags(tmp_path):
     """连 vorbis 块都没有的 FLAC: tags 为 None, 全走文件名/目录兜底。"""
     relative = "散装艺人/01 单曲.flac"

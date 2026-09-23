@@ -49,9 +49,11 @@ function toast(message) {
   }, 2400);
 }
 
-/** 专辑封面 URL (?v= 是 added_at 版本号, 配合 immutable 长缓存)。 */
+/** 专辑封面 URL (?v= 版本号跟文件内容走: 换过文件重扫后地址就变,
+    手机缓存的旧封面才会跟着换; added_at 是入库时刻, 原地换文件不动)。 */
 function albumArtworkURL(album) {
-  return `/music/media/albums/${album.album_id}/artwork?v=${album.added_at || 0}`;
+  const version = album.artwork_version || album.added_at || 0;
+  return `/music/media/albums/${album.album_id}/artwork?v=${version}`;
 }
 
 /** 艺人海报 URL (曲库 poster.* 透传; ?v= 是海报文件 mtime —— 换过海报

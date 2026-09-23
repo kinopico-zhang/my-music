@@ -7,6 +7,16 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.82", date="2026-09-23", items=[
+        ChangelogItem(kind="修复", text="部分新加的专辑不显示封面的问题修好"
+                                       "了 —— 文件标签里的封面数据写歪时"
+                                       "(图前头混着文件名), 现在能自动剥掉"
+                                       "只留图, 剥不出图的按没有封面算"),
+        ChangelogItem(kind="修复", text="换过音乐文件后手机上专辑封面一直是"
+                                       "旧图的问题也修了 —— 封面地址的版本"
+                                       "号改成跟文件内容走, 换完文件扫一遍"
+                                       "库就能看到新封面"),
+    ]),
     ChangelogVersion(version="1.8.81", date="2026-09-23", items=[
         ChangelogItem(kind="改进", text="主页「最近添加专辑」点查看全部进去, "
                                        "专辑按添加时间倒排 (最新在前), 不再按"

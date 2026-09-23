@@ -31,9 +31,7 @@ def test_music_home_page_wiring():
     assert 'id="sync-playlists"' not in html     # Plex 同步入口已撤
     assert "playlist-row" in html                  # 行样式在
     assert "function renderHomeView()" in js
-    # 1.8.24 三段 (用户点名「分成最近播放音乐, 最新添加专辑, 最近播放列表,
-    # 每个都显示 10 个元素, 标题加一个 > 查看全部」); 1.8.30 用户点名调序
-    # (列表段最前, 专辑段垫底) + 「最新添加专辑」改名「最近添加专辑」
+    # 1.8.24 三段 (用户点名, 1.8.30 调序: 列表最前 + 改名「最近添加专辑」)
     assert "const HOME_SECTION_COUNT = 10;" in home_js
     heads = [f'sectionHeadHTML("{title}", "{target}")'
              for title, target in [("最近播放列表", "playlists"),
@@ -41,9 +39,7 @@ def test_music_home_page_wiring():
                                    ("最近添加专辑", "albums-recent")]]
     for head in heads:
         assert head in home_js
-    # 1.8.81 用户点名「从最新添加专辑进去, 应该按照添加的时间倒排, 而不是
-    # 按照字母顺序」: 段头改走 albums-recent 层 (标题「最近添加」, 按添加
-    # 时间倒排), 菜单「所有专辑」照旧字母序 —— 两种进法两个段名, 缓存分开住
+    # 1.8.81 用户点名「按添加时间倒排」: 段头走 albums-recent 层, 菜单「所有专辑」照旧
     views_js = (MUSIC_STATIC / "js" / "music-library-views.js").read_text(
         encoding="utf-8")
     pagination = (MUSIC_STATIC / "js" / "music-library-pagination.js").read_text(
@@ -51,10 +47,8 @@ def test_music_home_page_wiring():
     assert 'recent ? "最近添加" : "所有专辑"' in views_js
     assert 'recent ? "albums-recent" : "albums"' in views_js
     assert 'renderAlbumsPane(target, "recent")' in js
-    assert 'if (segment === "albums") parameters.set("sort", "title");' \
-        in pagination
-    assert 'else if (segment === "albums-recent") parameters.set("sort", "added");' \
-        in pagination
+    assert 'if (segment === "albums") parameters.set("sort", "title");' in pagination
+    assert 'else if (segment === "albums-recent") parameters.set("sort", "added");' in pagination
     # 三段在 renderHomeView 里按 用户点的顺序铺 (列表 → 音乐 → 专辑)
     assert home_js.index(heads[0]) < home_js.index(heads[1]) \
         < home_js.index(heads[2])
@@ -68,20 +62,16 @@ def test_music_home_page_wiring():
     assert "button.section-head" in html             # 按钮化的兜底重置
     # 各段数据: 曲目 10 首 / 专辑最新入库 10 张 / 列表最近播过优先 10 个
     assert "plays/recent?limit=${HOME_SECTION_COUNT}" in home_js
-    assert "/music/api/albums?sort=added&limit=${HOME_SECTION_COUNT}" \
-        in home_js
-    assert "/music/api/playlists/recent?limit=${HOME_SECTION_COUNT}" \
-        in home_js
+    assert "/music/api/albums?sort=added&limit=${HOME_SECTION_COUNT}" in home_js
+    assert "/music/api/playlists/recent?limit=${HOME_SECTION_COUNT}" in home_js
     assert 'id="home-albums" class="album-grid"' in home_js  # 专辑段网格
     assert "albumCardHTML" in home_js                     # 专辑卡渲染
     # 1.8.28 播放列表段改专辑同款网格卡 (用户点名「排版和最近专辑一样」):
-    # 复用 .album-card 排版 + .pl-icon 渐变兜底; 卡片不挂壳, 删整列走
-    # 播放列表页 (列表行照旧带左滑删除)
+    # 复用 .album-card 排版, 卡片不挂壳 (删整列走播放列表页)
     assert 'id="home-playlists" class="album-grid"' in home_js
     assert "playlistCardHTML" in home_js
     assert 'bindSwipeDelete($("#home-playlists")' not in home_js
-    # 1.8.30 专辑卡跳转补上 (你报的「点专辑进不去」): 与列表段/艺人页同款,
-    # 绑容器 (内容异步重铺不累加), data-album-id 卡片 → album/<id>
+    # 1.8.30 专辑卡跳转补上 (你报的「点专辑进不去」): 绑容器, data-album-id → album/<id>
     assert '$("#home-albums").addEventListener' in home_js
     assert 'navigate(`album/${card.dataset.albumId}`)' in home_js
     rendering = (MUSIC_STATIC / "js" / "music-list-rendering.js").read_text(

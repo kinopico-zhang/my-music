@@ -103,7 +103,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v71" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v72" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
@@ -181,3 +181,12 @@ def test_music_track_context_menu_wiring():
     assert "选一个列表" not in html and "选一个列表" not in picker_js
     # 1.8.19: 行间分割线撤了 (用户点名) —— 规则收尾在 text-align, 没挂 border-bottom
     assert "padding: 11px 6px; text-align: left;\n}" in html
+
+
+def test_album_artwork_url_versioning():
+    """专辑封面 URL 的 ?v= 跟文件内容走 (1.8.82, EVA 四张换完文件手机
+    一直占位块的根): artwork_version 优先, added_at 只作旧数据兜底 ——
+    手机端长缓存/SW 封面档都按 URL 存, 版本号不变旧图永远换不掉。"""
+    common = (MUSIC_STATIC / "js" / "music-common.js").read_text(encoding="utf-8")
+    assert "album.artwork_version || album.added_at" in common
+    assert "v=${version}" in common

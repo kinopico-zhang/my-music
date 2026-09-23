@@ -1,5 +1,5 @@
 """浏览域查询: 专辑/艺人/曲目的列表与详情 + 行模型组装 + 库统计。"""
-from sqlalchemy import func, select
+from sqlalchemy import ColumnElement, func, select
 from sqlalchemy.orm import Session
 
 from ..library_database import (BROWSER_PLAYABLE_FORMATS, Album, Artist,
@@ -30,13 +30,26 @@ def track_brief(track: Track, album_title: str,
         language=language_for_script(track.script))
 
 
-def album_card(album: Album, artist_name: str) -> AlbumCard:
+def _artwork_version() -> ColumnElement[float]:
+    """专辑封面版本: 曲目 file_mtime 的最大值 (?v= 版本号跟着文件内容走)。
+
+    不能用 added_at —— 它是入库时刻, 重扫刻意不改 (原地换文件只动
+    file_mtime), 版本号不变的话手机缓存的旧封面永远换不掉 (1.8.82
+    EVA 四张换完文件还是占位块的根); 与单曲封面 (mtime) / 艺人海报
+    (poster_version) 同一套语义。"""
+    return (select(func.coalesce(func.max(Track.file_mtime), 0.0))
+            .where(Track.album_id == Album.id).scalar_subquery())
+
+
+def album_card(album: Album, artist_name: str,
+               artwork_version: float = 0.0) -> AlbumCard:
     """专辑行 → API 模型。"""
     return AlbumCard(
         album_id=album.id, title=album.title, artist_id=album.artist_id,
         artist_name=artist_name,
         year=album.year, track_count=album.track_count,
         duration_seconds=album.duration_seconds, added_at=album.added_at,
+        artwork_version=artwork_version,
         has_artwork=album.has_artwork)
 
 
@@ -47,7 +60,8 @@ def list_albums(session: Session, language: str = "全部", sort: str = "added",
     order = ((Album.title, Album.id) if sort == "title"
              else (Album.added_at.desc(), Album.id))
     statement = (
-        select(Album, _artist_name_expression().label("artist_name"))
+        select(Album, _artist_name_expression().label("artist_name"),
+               _artwork_version().label("artwork_version"))
         .join(Artist, Album.artist_id == Artist.id)
         .order_by(*order).offset(offset).limit(limit))
     total_statement = select(func.count()).select_from(Album)
@@ -57,24 +71,25 @@ def list_albums(session: Session, language: str = "全部", sort: str = "added",
     albums = list(session.execute(statement))
     total = session.scalar(total_statement) or 0
     return AlbumPageList(
-        albums=[album_card(album, artist_name)
-                for album, artist_name in albums],
+        albums=[album_card(album, artist_name, artwork_version)
+                for album, artist_name, artwork_version in albums],
         total_count=total, offset=offset, limit=limit)
 
 
 def album_page(session: Session, album_id: int) -> AlbumPage | None:
     """专辑详情: 卡片 + 全部曲目 (碟号/音轨号排序)。"""
     row = session.execute(
-        select(Album, _artist_name_expression().label("artist_name"))
+        select(Album, _artist_name_expression().label("artist_name"),
+               _artwork_version().label("artwork_version"))
         .join(Artist, Album.artist_id == Artist.id)
         .where(Album.id == album_id)).first()
     if row is None:
         return None
-    album, artist_name = row
+    album, artist_name, artwork_version = row
     tracks = session.execute(
         select(Track).where(Track.album_id == album_id)
         .order_by(Track.disc_number, Track.track_number, Track.id)).scalars()
-    return AlbumPage(album=album_card(album, artist_name),
+    return AlbumPage(album=album_card(album, artist_name, artwork_version),
                      tracks=[track_brief(track, album.title, album.artist_id)
                              for track in tracks])
 
@@ -124,9 +139,11 @@ def artist_page(session: Session, artist_id: int) -> ArtistPage | None:
         album_count=0, track_count=0, has_poster=bool(artist.poster_file),
         poster_version=_poster_version(artist))
     albums = session.execute(
-        select(Album).where(Album.artist_id == artist_id)
-        .order_by(Album.year.desc(), Album.title, Album.id)).scalars()
-    cards = [album_card(album, brief.name) for album in albums]
+        select(Album, _artwork_version().label("artwork_version"))
+        .where(Album.artist_id == artist_id)
+        .order_by(Album.year.desc(), Album.title, Album.id))
+    cards = [album_card(album, brief.name, artwork_version)
+             for album, artwork_version in albums]
     brief.album_count = len(cards)
     brief.track_count = sum(card.track_count for card in cards)
     return ArtistPage(artist=brief, albums=cards)
