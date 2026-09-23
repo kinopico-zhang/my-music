@@ -1,9 +1,12 @@
 // music-player-prefetch — My Music 下一曲预取: 后台拉下一曲的完整音频进 blob, 切歌秒换源。
 // 拆自 music-player-queue (1.8.59); 预取同一条源解析路 (已下载的缓存直读,
 // 流媒体直连) —— 预取也不再经 SW (iOS 锁屏冻结 SW 会掐断音频)。
+// 1.8.77 流媒体预取的字节顺手落自动缓存 (autoCacheStash): 同一份字节
+// 不再走第二次网络, 下回切这首歌直接缓存直读。
 "use strict";
-/* global playQueue, playerCurrentTrackId, prefetched: writable,
-          prefetchSequence: writable, queueUpcoming, resolveTrackSource */
+/* global autoCacheStash, playQueue, playerCurrentTrackId,
+          prefetched: writable, prefetchSequence: writable, queueUpcoming,
+          resolveTrackSource */
 /* exported discardPrefetch, prefetchNextTrack */
 
 /** 后台拉下一曲的完整音频进 blob; 单槽: 只留即将播的那首, 旧的 revoke。
@@ -43,6 +46,9 @@ function prefetchNextTrack() {
           if (playerCurrentTrackId() === trackId) return;     // 已经切到这首了
           if (nextUpcomingTrack() !== next) return;           // 不再是下一曲
           prefetched = { trackId, objectURL: URL.createObjectURL(blob) };
+          // 1.8.77 同一份字节顺手落自动缓存 (fire-and-forget, 失败不挡
+          // 预取): 这首歌之后无论怎么切, 都不用再走网络
+          autoCacheStash(trackId, blob);
         });
     })
     .catch(() => { /* 预取失败: 到时候正常走网络 */ });

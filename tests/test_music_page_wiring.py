@@ -76,10 +76,18 @@ def test_music_downloads_wiring():
     # +hero-collapse; 1.8.35: +client; 1.8.39: +desktop-keys; 1.8.45:
     # +hero-bar-actions 收缩顶栏动作条; 1.8.46: +hero-bar-tap 被吞点按
     # 补发; 1.8.47: +share-links; 1.8.57: +settings-account; 1.8.59:
-    # +player-prefetch 预取拆分; 1.8.60: +player-art-stage 3D 封面舞台),
+    # +player-prefetch 预取拆分; 1.8.60: +player-art-stage 3D 封面舞台;
+    # 1.8.76: +player-sources 源解析/失败兜底拆分, +player-slider 滑杆
+    # 拆分, +downloads-pane 已下载面板拆分; 1.8.77: +autocache 自动缓存
+    # 状态机, +autocache-integration 接线),
     # 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 59 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 64 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
+    assert "js/autocache.js?v=" in html                  # 1.8.77 自动缓存状态机
+    assert "js/music-autocache-integration.js?v=" in html  # 1.8.77 自动缓存接线
+    assert "js/music-player-sources.js?v=" in html       # 1.8.76 源解析/失败兜底
+    assert "js/music-player-slider.js?v=" in html        # 1.8.76 滑杆命中区拆分
+    assert "js/music-downloads-pane.js?v=" in html       # 1.8.76 已下载面板拆分
     assert "js/music-player-prefetch.js?v=" in html   # 1.8.59 下一曲预取拆分
     assert "js/music-player-art-stage.js?v=" in html  # 1.8.60 3D 封面舞台
     assert "js/music-downloads-select.js?v=" in html   # 1.8.6 已下载多选删除
@@ -95,7 +103,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v66" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v67" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 

@@ -7,6 +7,23 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.77", date="2026-09-23", items=[
+        ChangelogItem(kind="新增", text="播放时自动把下一曲缓存到手机 "
+                                       "(上限 2GB, 满了自动清最久没听的), "
+                                       "切歌几乎不等加载"),
+        ChangelogItem(kind="改进", text="已下载页统计行能看到自动缓存占用"
+                                       "了多少, 和手动下载分栏算"),
+    ]),
+    ChangelogVersion(version="1.8.76", date="2026-09-23", items=[
+        ChangelogItem(kind="修复", text="锁屏和后台连播更稳: 切歌不再多等"
+                                       "一步读缓存, 音频源当场落定"),
+        ChangelogItem(kind="修复", text="歌单里夹着手机播不了的格式 "
+                                       "(如 tak/dsf/ape) 时自动跳过接着播, "
+                                       "不再连播到那就停住"),
+        ChangelogItem(kind="修复", text="在线流播挂了不再停在半路: 先试本地"
+                                       "缓存救回原位置接着放, 不行自动续下"
+                                       "一首, 连挂三首才停"),
+    ]),
     ChangelogVersion(version="1.8.75", date="2026-09-23", items=[
         ChangelogItem(kind="新增", text="艺人主页加了「刷新元数据」按钮, "
                                        "点一下按盘上现在的标签和海报重读这位"

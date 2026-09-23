@@ -96,19 +96,21 @@ def test_music_lockscreen_sw_bypass_wiring():
     源/代取网络), iOS 锁屏会冻结 SW —— 管线要不到数据断粮自停, 开屏解冻
     挂起请求补上又自动续播。修法 = 播放全程绕开 SW: 流媒体带 ?direct 标记
     (SW 放行直连, 同步赋址保住手势内起播); 已下载的直读 Cache API 成 blob;
-    预取同一条路; 下载模块加载晚于恢复现场, 就位后补刀换源。"""
-    queue_js = (MUSIC_STATIC / "js" / "music-player-queue.js").read_text(
+    预取同一条路; 下载模块加载晚于恢复现场, 就位后补刀换源。
+    1.8.76 源解析整块拆去 music-player-sources (queue 顶到 200 行帽),
+    断言跟着搬家。"""
+    sources_js = (MUSIC_STATIC / "js" / "music-player-sources.js").read_text(
         encoding="utf-8")
     prefetch_js = (MUSIC_STATIC / "js" / "music-player-prefetch.js").read_text(
         encoding="utf-8")
     boot_js = (MUSIC_STATIC / "js" / "music-app-boot.js").read_text(
         encoding="utf-8")
-    assert 'const blob = await downloads.cachedBlob(trackId);' in queue_js
-    assert "`/music/media/stream/${trackId}?direct=1`" in queue_js
-    assert "async function resolveTrackSource" in queue_js
-    assert "typeof downloadsEnabled" in queue_js   # 恢复现场早于下载模块加载
-    assert "playerUpgradeDownloadedSource" in queue_js   # 补刀换源 (blob 源)
-    assert "let loadSequence = 0;" in queue_js     # 连切时旧的换源解析作废
+    assert 'const blob = await downloads.cachedBlob(trackId);' in sources_js
+    assert "`/music/media/stream/${trackId}?direct=1`" in sources_js
+    assert "async function resolveTrackSource" in sources_js
+    assert "typeof downloadsEnabled" in sources_js  # 恢复现场早于下载模块加载
+    assert "playerUpgradeDownloadedSource" in sources_js   # 补刀换源 (blob 源)
+    assert "let loadSequence = 0;" in sources_js     # 连切时旧的换源解析作废
     assert "resolveTrackSource(trackId)" in prefetch_js  # 预取同一条源解析路
     assert "function discardPrefetch" in prefetch_js
     assert "playerUpgradeDownloadedSource();" in boot_js  # 全模块就位后补刀
