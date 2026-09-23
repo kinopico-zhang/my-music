@@ -7,6 +7,16 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.79", date="2026-09-23", items=[
+        ChangelogItem(kind="修复", text="新建播放列表连点几下不再连环报"
+                                       "「没建起来」—— 之前第一下其实已建成, "
+                                       "后面几下全是撞名报错把成功的盖成失败"),
+    ]),
+    ChangelogVersion(version="1.8.78", date="2026-09-23", items=[
+        ChangelogItem(kind="修复", text="来电或微信语音打断播放后, 音乐会在"
+                                       "打断结束后自动接着播, 锁屏控制也跟着"
+                                       "回来, 不用再打开应用点播放"),
+    ]),
     ChangelogVersion(version="1.8.77", date="2026-09-23", items=[
         ChangelogItem(kind="新增", text="播放时自动把下一曲缓存到手机 "
                                        "(上限 2GB, 满了自动清最久没听的), "

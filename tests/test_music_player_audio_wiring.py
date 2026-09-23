@@ -1,6 +1,6 @@
 """My Music 播放器 audio 接线测试: 起播/暂停统一入口与打断解锁, 切歌不改
-播放状态, 进度显示基准 (1.8.74), 锁屏/后台连播三刀 (1.8.76)。拆自
-test_music_player_wiring.py (超 200 行按域分家)。"""
+播放状态, 进度显示基准 (1.8.74), 锁屏/后台连播三刀 (1.8.76), 打断后自动
+续播 (1.8.78)。拆自 test_music_player_wiring.py (超 200 行按域分家)。"""
 
 from tests.music_static_files import MUSIC_STATIC
 
@@ -30,7 +30,7 @@ def test_music_switch_keeps_playback_state():
     # 进「拒播」态, 直接 play() 不走 —— 非自发 pause 记成打断, 下次起播同源
     # load() 重挂解锁、进度放回; 自发暂停统一走 pauseAudio (好销旗)
     assert "let playInterrupted = false;" in audio_js
-    assert "function startAudio()" in audio_js          # 起播入口搬来 audio-events
+    assert "function startAudio(preferredAt)" in audio_js   # 起播入口搬来 audio-events (1.8.78 带存档位置参数)
     assert "audio.load();" in audio_js                  # 打断解锁: 同源重挂
     assert "function pauseAudio()" in audio_js
     assert "noteAudioPaused();" in audio_js             # pause 事件里认打断
@@ -118,3 +118,38 @@ def test_music_autoplay_recovery_wiring():
     # 连切作废闸: 补刀换源/失败救回各自带过站号, 切走的曲目解析回来直接丢
     assert sources_js.count("const token = ++loadSequence;") == 2
     assert "currentTrack !== track" in sources_js
+
+
+def test_music_interrupt_auto_resume_wiring():
+    """1.8.78 修「后台播放被打断, 锁屏控制不了, 甚至不出现在锁屏」(用户
+    实报): iOS 打断 (来电/微信语音) 会把 Safari 的音频会话整个收走 ——
+    锁屏媒体控件跟着没影, 而页面不出声就拿不回控件 (网页没法凭空重挂),
+    只能开 app 点播放。对策照原生音乐 App 的惯例: 打断一结束就接着播。
+    pause 认出打断时排一串小步重试 (play 被拒 = 还在被打断, 一放行就续
+    上, 出声那一刻 rearmMediaSession 把锁屏控件带回来); 手动暂停/换曲/
+    已出声都作废排程。重挂多次后元素时长可能一直 NaN, 1.8.73 的 seek 闸
+    会误拦 —— 起播带排程时记下的存档位置 (startAudio 的 preferredAt),
+    打断旗也改成出声才销 (被拒的尝试下次仍走同源重挂解锁)。"""
+    audio_js = (MUSIC_STATIC / "js" / "music-player-audio-events.js"
+                ).read_text(encoding="utf-8")
+    sources_js = (MUSIC_STATIC / "js" / "music-player-sources.js"
+                  ).read_text(encoding="utf-8")
+    queue_js = (MUSIC_STATIC / "js" / "music-player-queue.js").read_text(
+        encoding="utf-8")
+    # 排程本体在 sources (跟失败兜底作伴): 代际号作废 + 小步延时表
+    assert "function scheduleInterruptResume" in sources_js
+    assert "function cancelInterruptResume" in sources_js
+    assert "const INTERRUPT_RESUME_DELAYS" in sources_js
+    assert "generation !== interruptResumeGeneration" in sources_js
+    assert "startAudio(at).catch" in sources_js   # 被拒 = 还在被打断, 再试
+    # 接线三处: 认出打断就排程; 手动暂停作废 (要停就停); 出声作废 (续上了)
+    assert "playInterrupted = true;\n  scheduleInterruptResume();" in audio_js
+    assert "cancelInterruptResume();\n  pauseByApp = true;" in audio_js
+    assert audio_js.count("cancelInterruptResume();") == 2   # pauseAudio + playing
+    # 换曲作废: 在途重试别把暂停切的歌自己放出来 (重试带的是旧曲位置)
+    assert "cancelInterruptResume();" in queue_js
+    # 打断旗出声才销 (被拒不销, 下次重试仍走重挂解锁); 存档位置信得过
+    assert "playInterrupted = false;   // 出声在望, 打断态正式销" in audio_js
+    assert "const at = preferredAt != null ? preferredAt : audio.currentTime;" \
+        in audio_js
+    assert "(preferredAt != null\n      || (isFinite(audio.duration)" in audio_js
