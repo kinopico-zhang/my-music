@@ -7,6 +7,14 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.85", date="2026-09-24", items=[
+        ChangelogItem(kind="修复", text="被别的 app 的视频打断后, 控制中"
+                                       "心点暂停再点播放, 进度条走了却没"
+                                       "声音的问题也修了 —— 那种情况下播"
+                                       "放器内部其实还卡在「幽灵播放」状"
+                                       "态, 现在能识别出来, 再点一次播放"
+                                       "就能真正出声"),
+    ]),
     ChangelogVersion(version="1.8.84", date="2026-09-24", items=[
         ChangelogItem(kind="修复", text="看完别的 app 的视频后, 锁屏点播"
                                        "放没反应的问题修了 —— 被夺走声音"

@@ -168,3 +168,23 @@ def test_music_rejected_play_retry_wiring():
     # 认出打断即重申锁屏键位/元数据
     assert "playInterrupted = true;\n  // 打断一落地就重申锁屏键位" in audio_js
     assert "updateMediaSession();" in audio_js
+
+
+def test_music_ghost_playback_detection_wiring():
+    """1.8.85 修「控制中心点暂停再点播放, 进度走却没声」(用户实报第二轮):
+    会话被夺时元素可能根本没收 pause —— paused 一直 false、声音没了、
+    timeupdate 停更 (控制中心还显示正在播放, 进度还是外推的假走)。用户
+    第一次点「暂停键」其实是纠正幽灵态, 但旧代码记成自发暂停 → 第二次
+    点播放只是一次裸 play(), 元素照旧幽灵播放 (服务日志实锤: 两次点击
+    连重挂会发的重新拉流请求都没有)。对策: timeupdate 打时刻戳, 暂停键
+    来时停更超 5 秒 (页面冻结/时钟停走都算) 即判幽灵 —— 直接记打断, 下
+    次点播放走重挂解锁 (1.8.71 验证过的路子)。"""
+    audio_js = (MUSIC_STATIC / "js" / "music-player-audio-events.js"
+                ).read_text(encoding="utf-8")
+    # 探针: timeupdate 里打时刻戳
+    assert "let lastTimeupdateAt = 0;" in audio_js
+    assert "lastTimeupdateAt = Date.now();" in audio_js
+    # 暂停分流: 停更超 5 秒 = 幽灵 (记打断, 不记自发); 正常暂停照旧
+    assert "if (Date.now() - lastTimeupdateAt > 5000) playInterrupted = true;" \
+        in audio_js
+    assert "else pauseByApp = true;" in audio_js
