@@ -39,7 +39,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     else:
         print("AUTH_PASS 未设置: 首启不种管理员 —— 在 .env 里设 AUTH_PASS 后重启",
               file=sys.stderr)
-    music_service.start_service()      # 曲库索引 + 后台首扫
+    music_service.start_service()      # 曲库索引装配 (扫描全手动, 1.8.83)
     yield
     database.dispose_users_engine()
     music_service.stop_service()

@@ -2,12 +2,16 @@
 
 曲库目录 / 封面缓存目录跟着引擎走 (测试注入临时目录, 不碰真曲库);
 封面缓存 = 库文件同目录下的 music-art/。默认路径可用环境变量覆盖。
+1.8.83 起引擎三道加固 (用户听歌会话实报接口成片 503 的根治):
+sqlite 临时文件挪到大硬盘 (/tmp 是 64MB 内存盘, 大扫描的排序临时
+文件一撑就 ENOSPC)、WAL (扫描线程写库时读请求不再被挡成 503)、
+锁等待 30 秒 (默认 5 秒, 扫描写事务一长读请求就炸)。
 """
 import os
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -18,6 +22,10 @@ DEFAULT_DATABASE_URL = (os.environ.get("MYTESLA_MUSIC_DB")
                         or f"sqlite:///{PROJECT_DIR / 'data' / 'music.db'}")
 DEFAULT_MUSIC_DIRECTORY = (os.environ.get("MYTESLA_MUSIC_DIR")
                            or "/share/Media/Music")
+# sqlite 临时文件的家 (排序/索引重建的溢写盘): 默认会去 /tmp —— NAS 上
+# 那是 64MB 内存盘, 手动扫一圈大库就把接口成片打成 503; 挪到 data/ 旁
+# 的大硬盘。环境变量已设就尊重 (想指到别处的自由保留)。
+SQLITE_TMP_DIRECTORY = str(PROJECT_DIR / "data" / "sqlite-tmp")
 
 
 class _EngineState:
@@ -48,10 +56,24 @@ def init_engine(url: str | None = None,
     if url.startswith("sqlite:///"):
         Path(url.removeprefix("sqlite:///")).parent.mkdir(
             parents=True, exist_ok=True)
+        # 临时文件挪家在大盘上备好 (sqlite 每次开临时文件都会查这变量)
+        Path(SQLITE_TMP_DIRECTORY).mkdir(parents=True, exist_ok=True)
+        os.environ.setdefault("SQLITE_TMPDIR", SQLITE_TMP_DIRECTORY)
     _engine.artwork_cache_directory = artwork_cache_directory_for(url)
     _engine.database_url = url
     _engine.music_directory = library_directory or Path(DEFAULT_MUSIC_DIRECTORY)
-    _engine.engine = create_engine(url, connect_args={"check_same_thread": False})
+    _engine.engine = create_engine(url, connect_args={
+        "check_same_thread": False,
+        "timeout": 30,   # 锁等待上限 (秒): 扫描写库时读请求排队, 别 5 秒就炸
+    })
+    # WAL: 读不再挡写、写不再挡读 (扫描线程收尾大事务时, 听歌的流/歌词
+    # 接口照常答)。journal_mode 是库级持久属性, 幂等。
+    if url.startswith("sqlite:///"):
+        @event.listens_for(_engine.engine, "connect")
+        def _sqlite_wal(dbapi_connection: Any, _record: Any) -> None:   # noqa: W0612 闭包随引擎
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.close()
     _engine.session_factory = sessionmaker(_engine.engine,
                                            expire_on_commit=False)
 

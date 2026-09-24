@@ -1,12 +1,11 @@
-"""My Music 重扫测试: 手动全量流程, 并发冲突, 自动增量重扫,
-前端轮询签名。"""
+"""My Music 重扫测试: 手动全量流程, 并发冲突, 前端轮询签名。
+自动增量重扫 1.8.83 撤了 (用户点名曲库扫描全手动)。"""
 import time
-
+from pathlib import Path
 
 from app.music import service
 from tests.music_static_files import music_browser_js
-from tests.music_audio_seed import (PICTURE_BYTES, _write_audio,
-                                    _write_plain_track)
+from tests.music_audio_seed import (PICTURE_BYTES, _write_audio)
 from tests.music_library_helpers import _make_library, _wait_scan_done
 
 
@@ -118,29 +117,21 @@ def test_music_scan_polling_wiring():
     assert "lastScanSignature" in js          # finished_at+changed 签名去重
     assert "document.hidden" in js            # 后台页签不空转
     assert "userRescanPending" in js          # 手动扫完才有提示
-    assert "!manual && !scan.changed" in js   # 后台扫没变化: 不打扰
+    assert "!manual && !scan.changed" in js   # 别的设备触发且没变化: 不打扰
 
 
-# ------------------------------------------------------------ 自动重扫
-# (设置/歌词 API/蜂窝流量/自定义封面的用例在 test_music_settings.py
-#  和 test_music_covers.py; 这里留共享的曲库小助手)
-# 封面用 PNG 魔数够了 (服务端只认魔数不解码), 字节即所传即所得
-
-
-def test_auto_rescan_picks_up_new_albums(auth, tmp_path, monkeypatch):
-    """自动增量重扫: 到点起一轮, 新放进曲库的专辑不用手动按扫描。"""
-    root = tmp_path / "music-library"
-    _write_plain_track(root, "A乐队/2001 甲 [aaaa1111]/01 曲A.flac", "曲A")
-    assert auth.post("/music/api/rescan").json() == {"started": True}
-    _wait_scan_done(auth)
-    assert auth.get("/music/api/status").json()["track_count"] == 1
-
-    monkeypatch.setattr(service, "_AUTO_RESCAN_SECONDS", 0.2)
-    service._start_auto_rescan()                # noqa: SLF001 短间隔看门线程
-    _write_plain_track(root, "B乐队/2002 乙 [bbbb2222]/01 曲B.flac", "曲B")
-    deadline = time.monotonic() + 15
-    while time.monotonic() < deadline:
-        if auth.get("/music/api/status").json()["track_count"] == 2:
-            break
-        time.sleep(0.1)
-    assert auth.get("/music/api/status").json()["track_count"] == 2
+def test_music_no_auto_rescan_wiring():
+    """1.8.83 撤后台自动扫描 (用户点名「立即停掉」+「优先级最高」): 每 5
+    分钟一轮的增量重扫曾把 sqlite 临时文件堆爆 64MB 的 /tmp、写锁挡住读
+    请求, 听歌会话接口成片 503 = 播放列表连播停住的根因。启动只装配不扫
+    (scan_immediately 默认 False), 全量扫描只从设置页按钮 /
+    music/api/rescan 进。"""
+    app_music = Path(service.__file__).parent
+    service_py = (app_music / "service.py").read_text(encoding="utf-8")
+    assert "scan_immediately: bool = False" in service_py  # 启动默认不扫
+    for gone in ("_AUTO_RESCAN_SECONDS", "_start_auto_rescan",
+                 "_auto_rescan_loop", "watch_generation"):
+        assert gone not in service_py           # 定时重扫机器全撤
+    # 前端探针的定性也换了: 注释不许再说服务器会自己扫
+    scan_js = music_browser_js()
+    assert "自动增量重扫一轮" not in scan_js

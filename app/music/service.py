@@ -1,14 +1,14 @@
-"""扫描器的进程内单例: 启动首扫 / 接口重扫 / 自动增量重扫 / 状态轮询共用一个实例。
+"""扫描器的进程内单例: 接口重扫 / 状态轮询共用一个实例。
 
 引擎 (data/music.db) 与扫描器都在这里装配; lifespan 启动时调
 start_service(), 路由层经 scanner() / trigger_scan() 触达。
-启动链路 = 老库补数 → 首扫 (同一后台线程, 免得补数和扫描两个写者
-抢 SQLite 锁); 曲库路径可被设置页改过, 注入目录优先 (测试), 否则读
-设置行 (空 = env 默认)。另有后台线程每隔几分钟自动增量重扫一轮
-(walk + stat 秒级), 新放进曲库的专辑不用等人按「重新扫描」。
+曲库路径可被设置页改过, 注入目录优先 (测试), 否则读设置行
+(空 = env 默认)。扫描全手动 (1.8.83 用户点名「不要自动扫描」):
+启动只装配不扫, 设置页「重新扫描曲库」按钮触发全量, 艺人页
+「刷新元数据」触发单艺人 —— 老库补数挂在手动首扫前 (补数和
+扫描同一个后台线程, 免得两个写者抢 SQLite 锁)。
 """
 import threading
-import time
 from pathlib import Path
 
 from . import library_settings
@@ -19,10 +19,6 @@ from .library_database import (create_all, dispose_engine, ensure_columns,
                                session_factory)
 from .library_scanner import LibraryScanner, backfill_legacy_rows
 
-# 自动增量重扫间隔 (秒): 没变的文件只 stat 不读标签, 一轮秒级;
-# 新专辑最迟这几分钟内自动出现, 不用任何人手动触发
-_AUTO_RESCAN_SECONDS = 300
-
 
 class _ServiceState:
     """进程级服务持有者 (避免 global 语句)。"""
@@ -32,8 +28,6 @@ class _ServiceState:
     # 那条扫描线程是给哪个实例起的: 重装配换实例后, 旧线程还在收尾,
     # 不能拿它的存活挡住新实例的首扫 (否则新扫描器永远停在 idle)
     scan_thread_owner: LibraryScanner | None = None
-    # 自动重扫线程的代数: 每次重装配换代, 旧线程睡醒发现代数不对就退
-    watch_generation: int = 0
 
 
 _service = _ServiceState()
@@ -42,10 +36,12 @@ _trigger_lock = threading.Lock()
 
 def start_service(database_url: str | None = None,
                   music_directory: Path | None = None,
-                  scan_immediately: bool = True) -> None:
-    """建引擎建表 (缺省 data/music.db + 设置行/env 里的曲库路径), 起后台首扫。
+                  scan_immediately: bool = False) -> None:
+    """建引擎建表 (缺省 data/music.db + 设置行/env 里的曲库路径)。
 
-    测试用参数注入临时库 (scan_immediately=False 只装配不扫);
+    测试用参数注入临时库; scan_immediately=True 连带起一轮首扫
+    (老库补数 → 扫描同线程), 生产 lifespan 不传 —— 启动只装配,
+    扫不扫由人按 (设置页按钮 / 艺人页刷新);
     重复调用重装配 (换实例, 正在跑的扫描自然收尾)。"""
     init_engine(database_url, music_directory)
     create_all()
@@ -63,7 +59,6 @@ def start_service(database_url: str | None = None,
                                       session_factory())
     if scan_immediately:
         trigger_scan(after_backfill=True)
-    _start_auto_rescan()
 
 
 def stop_service() -> None:
@@ -125,25 +120,3 @@ def _run_scan(current: LibraryScanner, after_backfill: bool) -> None:
         current.scan()
     except RuntimeError:
         pass            # 两个触发挤进同一窗口, 输的那个直接退
-
-
-# ---------------------------------------------------------------- 自动重扫
-
-def _start_auto_rescan() -> None:
-    """起 (或换代) 自动增量重扫线程: 隔几分钟扫一遍, 新专辑很快出现。
-
-    每次 start_service 换一代 —— 旧线程睡醒发现代数不对就退,
-    不会摸到新装配的实例 (与扫描线程同一条换代纪律)。"""
-    _service.watch_generation += 1
-    threading.Thread(target=_auto_rescan_loop,
-                     args=(_service.watch_generation,), daemon=True,
-                     name="music-auto-rescan").start()
-
-
-def _auto_rescan_loop(generation: int) -> None:
-    """线程体: 睡 → 查代数 → 触发一轮; 代数不对或服务停了就退。"""
-    while True:
-        time.sleep(_AUTO_RESCAN_SECONDS)
-        if generation != _service.watch_generation or _service.scanner is None:
-            return
-        trigger_scan()     # 已在扫会被拒 (返回 False), 下一轮再说
