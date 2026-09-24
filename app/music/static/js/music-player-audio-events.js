@@ -18,12 +18,16 @@
 // 1.8.78 加过「打断后自动续播」(小步重试抢回音频会话), 1.8.83 撤了 —
 // 用户实报: 切去别的 app 看视频, 这边自动恢复的音乐会把视频打断。打断
 // 后想接着播自己点 (锁屏键/回 app 点播放, 1.8.71 的同源重挂解锁还在)。
+// 1.8.84 起播被拒的兜底 (用户实报: 看完别的 app 的视频, 锁屏点播放没反
+// 应): 会话被夺时掐我们的 pause 可能没跑到 JS (页面冻结/键位被丢), 旗
+// 没立上元素却已进拒播态, 裸 play() 一拒就再没下文 —— 起播被拒 (Abort-
+// Error 除外) 就当被打断重挂再试一把; 打断一落地就重申锁屏键位。
 "use strict";
 /* global $, audioElement, currentTrack,
           enhanceSliderTouch, formatPlaybackTime, highlightActiveLyric,
           notePlaybackFailed, notePlaybackSucceeded, playbackDuration,
           playQueue, playRecorded: writable, playerIsPlaying, playerNext,
-          rearmMediaSession, savePlayerState,
+          rearmMediaSession, savePlayerState, updateMediaSession,
           scrubbing: writable, syncPositionState, updatePlayButtons */
 /* exported bindPlayerAudioEvents, noteAudioSourceChanged, pauseAudio,
             startAudio */
@@ -33,28 +37,35 @@
 let pauseByApp = false;       // 我们自己掐的 pause (按钮/锁屏/换源) —— pause 事件好认出系统打断
 let playInterrupted = false;  // 系统掐的暂停 (别的 App 抢声音): 下次起播先同源重挂解锁
 
-/** 起播统一入口 (原住 music-player-queue, 1.8.71 搬来跟 audio 事件作伴)。
-    被别的 App 打断后 iOS 会把 audio 掐进「拒播」态, 直接 play() 要么被拒
-    要么挂着不出声 —— 同源 load() 重挂一遍才肯走; 进度先记下再放回
-    (换源后写 currentTime = 待生效进度, 1.8.59 验证过的机制)。
-    解锁后 play() 被拒 = 还在被打断, 旗留着 (playInterrupted 出声才销),
-    下次再点 (用户手动) 仍走重挂解锁。 */
 function startAudio() {
+  if (playInterrupted) return unlockPlay();
+  // 1.8.84 裸 play() 被拒 (AbortError 除外 —— 那是换源/暂停的正常接力):
+  // 元素多半被系统掐进了拒播态, 而掐我们的 pause 事件没跑到 JS、旗没立
+  // 上 —— 当被打断处理, 重挂再试一把; 再拒就照实抛给调用方。只在明确
+  // 起播请求后兜, 绝不自己开声 (1.8.83 撤自动续播的规矩不破)。
+  return audioElement().play().catch((error) => {
+    if (error && error.name === "AbortError") throw error;
+    playInterrupted = true;
+    return unlockPlay();
+  });
+}
+
+/** 打断解锁 (1.8.71 机制本体): 被别的 App 打断后 iOS 把 audio 掐进
+    「拒播」态, 直接 play() 要么被拒要么挂着不出声 —— 同源 load() 重挂
+    一遍才肯走。进度放回要过闸: 位置得在当前源时长内 (换过源的元素时长
+    还是 NaN, 旧曲的陈值进度自然过不了闸, 从头播); 时长要在 load() 前
+    读 —— load 一跑就归零了。解锁后 play() 被拒 = 还在被打断, 旗留着
+    (playInterrupted 出声才销), 下次再点 (用户手动) 仍走重挂解锁。 */
+function unlockPlay() {
   const audio = audioElement();
-  if (playInterrupted) {
-    // 进度放回要过闸: 位置得在当前源的时长内 (换过源的元素时长还是
-    // NaN, 旧曲的陈值进度自然过不了闸, 从头播)。时长要在 load() 前读
-    // —— load 一跑就归零了
-    const at = audio.currentTime;
-    const resumable = at > 0 && isFinite(audio.duration) && at < audio.duration - 1;
-    audio.load();
-    if (resumable) audio.currentTime = at;
-    return audio.play().then((result) => {
-      playInterrupted = false;   // 出声在望, 打断态正式销
-      return result;
-    });
-  }
-  return audio.play();
+  const at = audio.currentTime;
+  const resumable = at > 0 && isFinite(audio.duration) && at < audio.duration - 1;
+  audio.load();
+  if (resumable) audio.currentTime = at;
+  return audio.play().then((result) => {
+    playInterrupted = false;   // 出声在望, 打断态正式销
+    return result;
+  });
 }
 
 /** 自己发起的暂停 (按钮/锁屏暂停键): 记一笔, pause 事件来时
@@ -78,6 +89,10 @@ function noteAudioPaused() {
   }
   if (audioElement().readyState < 2) return;   // 新源未装载的 pause = 换源补刀
   playInterrupted = true;
+  // 打断一落地就重申锁屏键位/元数据: iOS 把音频会话交给别的 app 后可能
+  // 顺手丢掉挂过的 action handlers (1.8.70 同款丢法), 不重挂的话打断结束
+  // 后锁屏点播放根本送不进页面 (1.8.84 用户实报场景)。
+  updateMediaSession();
 }
 
 /** 换了音频源 (loadTrack 换曲/缓存直读升级): 打断解锁态作废, 不然
