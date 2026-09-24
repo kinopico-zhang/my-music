@@ -190,8 +190,8 @@ function bindPlayerAudioEvents(audio) {
     playerNext(true);   // 1.8.66 自然播完强续播 (其余切歌都保持原播放状态)
   });
   audio.addEventListener("error", () => {
-    // 1.8.76 兜底在 music-player-sources (notePlaybackFailed): 先试本地
-    // 缓存救回当前曲, 不行跳下一首强续, 连挂 3 首封顶 (断网不无限跳歌)
+    // 1.8.76 兜底在 music-player-sources (notePlaybackFailed), 1.8.87 起
+    // 网络/解码分家: 断网挂起回前台自动接着放, 歌本身播不了才连跳 3 首封顶
     if (currentTrack) notePlaybackFailed();
   });
 
