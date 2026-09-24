@@ -6,9 +6,9 @@
 // (锁屏/后台连播主刀: ended 到下一曲 play() 之间不再隔着异步读缓存)。
 "use strict";
 /* global audioElement, createPlayQueue,
-          currentTrack: writable, directStreamURL, discardPrefetch,
-          loadLyrics, lyricsActiveIndex: writable, lyricsCache,
-          lyricsViewOpen, noteAudioSourceChanged, pauseAudio,
+          currentTrack: writable, directStreamURL, discardNetworkRetry,
+          discardPrefetch, loadLyrics, lyricsActiveIndex: writable,
+          lyricsCache, lyricsViewOpen, noteAudioSourceChanged, pauseAudio,
           playQueue: writable, playRecorded: writable,
           playerUpgradeDownloadedSource, playingObjectURL: writable,
           prefetchLyrics, prefetchNextTrack, prefetched: writable,
@@ -107,6 +107,7 @@ async function loadTrack(track, autoplay, startTime = 0) {
   playingObjectURL = "";
   if (prefetchedURL) prefetched = null;    // 占位交给 audio, 别再 revoke
   else discardPrefetch();                  // 其余情况旧预取作废
+  discardNetworkRetry();                   // 断网挂起的重试跟旧曲作废 (1.8.87)
   renderPlayerChrome();
   // 队列没开着就不整页重铺 (翻开时会现铺) —— innerHTML 大重建在主线程,
   // 切歌那一拍挤上去, 封面 3D 落定的动画跟着掉帧 (1.8.61 修「切歌很卡」)
@@ -120,11 +121,15 @@ async function loadTrack(track, autoplay, startTime = 0) {
   // 已下载/已自动缓存的先按流占位 (手势内同步赋址), 缓存直读一就位就
   // 补刀换 blob (还没出声才换 —— music-player-sources, 过站号/换曲闸都在
   // 那边, 连切由 currentTrack 对照作废)。
+  // 1.8.87 ① 补刀带上起播意图: 流占位上挂着的 play() 会被换 src 掐成
+  // AbortError 吞掉, 且那一刻 audio.paused 读到的还是假 true (play 挂起
+  // ≠在播), 没人再把播放下达回来 = 歌对了却永远停在暂停态 (开车断网
+  // 连播断的根) —— 换完源由补刀自己重启。
   const source = prefetchedURL || directStreamURL(track.track_id);
   playingObjectURL = prefetchedURL;   // blob 源记账 (换曲时 revoke)
   audio.src = source;
   if (!prefetchedURL && trackLocalCached(track.track_id)) {
-    playerUpgradeDownloadedSource(true);   // 补刀换缓存源, 不挡起播
+    playerUpgradeDownloadedSource(true, autoplay);   // 补刀换缓存源; 起播意图带回
   }
   noteAudioSourceChanged();   // 换了新源, 打断解锁态作废 (1.8.71)
   // 点播一律从头。冷启动恢复写过一次"待生效进度" (preload=none 时它一直

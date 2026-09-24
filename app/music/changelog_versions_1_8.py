@@ -7,6 +7,17 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.87", date="2026-09-24", items=[
+        ChangelogItem(kind="修复", text="开车路上信号断续时连播不再停摆 —— "
+                                       "断网挂起的歌就地等信号, 一回到应用"
+                                       "就自动接着放, 不跳歌"),
+        ChangelogItem(kind="修复", text="缓存到本地的歌也偶发卡在暂停态 —— "
+                                       "换用本地缓存源的一瞬把正在起播的请"
+                                       "求掐断了, 换完没人再把播放下达回来, "
+                                       "现在换完源自己接着放"),
+        ChangelogItem(kind="改进", text="连跳 3 首停住只对歌本身坏 (解码不"
+                                       "了) 生效 —— 网络断的问题不再跳歌计数"),
+    ]),
     ChangelogVersion(version="1.8.86", date="2026-09-24", items=[
         ChangelogItem(kind="修复", text="看长视频回来后, 播放器卡在「看着"
                                        "在播其实没声」的假播放状态 —— 现在"
