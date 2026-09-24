@@ -9,19 +9,19 @@
 // 的 pause 不算打断; 解锁 seek 前验位置在当前源时长内, 陈值 seek 进不
 // 存在的位置会把流媒体卡成无声 (blob 怎么 seek 都行, 流不行 —— 症状对上)。
 // 1.8.74 进度显示不再信 audio.duration (用户实报「拖完进度条剩余时间是
-// 0, 还在继续播放」): iOS 流上 seek 后元素时长会翻脸 (NaN 一阵 / 估出个
-// 偏短的), 显示基准换成 playbackDuration() 库时长; 拖动垫子的释放补一道
-// 窗口级兜底, 指针捕获失灵不再把 scrubbing 卡在 true 冻住进度。
+// 0, 还在继续播放」): iOS 流上 seek 后元素时长会翻脸, 显示基准换成
+// playbackDuration() 库时长; 拖动垫子的释放补一道窗口级兜底。
 // 1.8.76 播放挂了不再只弹一句就停: error 兜底交给 notePlaybackFailed
 // (music-player-sources —— 先试本地缓存救回, 不行跳下一首, 连挂 3 首封
 // 顶); 出声 (playing) 即清零连挂计数。滑杆命中区增强拆去 music-player-slider。
 // 1.8.78 加过「打断后自动续播」(小步重试抢回音频会话), 1.8.83 撤了 —
 // 用户实报: 切去别的 app 看视频, 这边自动恢复的音乐会把视频打断。打断
 // 后想接着播自己点 (锁屏键/回 app 点播放, 1.8.71 的同源重挂解锁还在)。
-// 1.8.84 起播被拒的兜底 (用户实报: 看完别的 app 的视频, 锁屏点播放没反
-// 应): 会话被夺时掐我们的 pause 可能没跑到 JS (页面冻结/键位被丢), 旗
-// 没立上元素却已进拒播态, 裸 play() 一拒就再没下文 —— 起播被拒 (Abort-
-// Error 除外) 就当被打断重挂再试一把; 打断一落地就重申锁屏键位。
+// 1.8.84/85 会话被别的 app 夺走后的两副面孔, 都修: ① 元素被掐进拒播
+// 态, 裸 play() 一拒就再没下文 (锁屏点播放没反应) —— 起播被拒 (Abort-
+// Error 除外) 就当被打断重挂再试; ② 元素根本没收 pause —— paused 一直
+// false、声音没了、timeupdate 停更 (控制中心还显示正在播放): 暂停键来
+// 时 timeupdate 停更超 5 秒即判幽灵播放记成打断, 下次点播放走重挂。
 "use strict";
 /* global $, audioElement, currentTrack,
           enhanceSliderTouch, formatPlaybackTime, highlightActiveLyric,
@@ -36,13 +36,13 @@
 
 let pauseByApp = false;       // 我们自己掐的 pause (按钮/锁屏/换源) —— pause 事件好认出系统打断
 let playInterrupted = false;  // 系统掐的暂停 (别的 App 抢声音): 下次起播先同源重挂解锁
+let lastTimeupdateAt = 0;     // 元素最近一次报 timeupdate 的时刻 (幽灵播放探针, 会话被夺后停更)
 
 function startAudio() {
   if (playInterrupted) return unlockPlay();
-  // 1.8.84 裸 play() 被拒 (AbortError 除外 —— 那是换源/暂停的正常接力):
-  // 元素多半被系统掐进了拒播态, 而掐我们的 pause 事件没跑到 JS、旗没立
-  // 上 —— 当被打断处理, 重挂再试一把; 再拒就照实抛给调用方。只在明确
-  // 起播请求后兜, 绝不自己开声 (1.8.83 撤自动续播的规矩不破)。
+  // 1.8.84 裸 play() 被拒 (AbortError 除外 —— 换源/暂停的正常接力): 元素
+  // 被掐进拒播态而打断旗没立上 —— 当被打断重挂再试一把, 再拒照实抛。
+  // 只在明确起播请求后兜, 绝不自己开声 (1.8.83 撤自动续播的规矩不破)。
   return audioElement().play().catch((error) => {
     if (error && error.name === "AbortError") throw error;
     playInterrupted = true;
@@ -52,10 +52,9 @@ function startAudio() {
 
 /** 打断解锁 (1.8.71 机制本体): 被别的 App 打断后 iOS 把 audio 掐进
     「拒播」态, 直接 play() 要么被拒要么挂着不出声 —— 同源 load() 重挂
-    一遍才肯走。进度放回要过闸: 位置得在当前源时长内 (换过源的元素时长
-    还是 NaN, 旧曲的陈值进度自然过不了闸, 从头播); 时长要在 load() 前
-    读 —— load 一跑就归零了。解锁后 play() 被拒 = 还在被打断, 旗留着
-    (playInterrupted 出声才销), 下次再点 (用户手动) 仍走重挂解锁。 */
+    才肯走。进度放回要过闸: 位置得在当前源时长内 (时长要在 load() 前读,
+    load 一跑就归零)。解锁后 play() 被拒 = 还在被打断, 旗留着, 下次再点
+    (用户手动) 仍走重挂解锁。 */
 function unlockPlay() {
   const audio = audioElement();
   const at = audio.currentTime;
@@ -69,11 +68,16 @@ function unlockPlay() {
 }
 
 /** 自己发起的暂停 (按钮/锁屏暂停键): 记一笔, pause 事件来时
-    才能认出「不是我们掐的 = 系统打断」。已在暂停态就不动 (不白立旗)。 */
+    才能认出「不是我们掐的 = 系统打断」。已在暂停态就不动 (不白立旗)。
+    幽灵播放例外 (1.8.85, 用户实报: 看完别的 app 的视频, 控制中心还显
+    示正在播放, 点了暂停再点播放, 进度走却没声): 会话被夺时元素可能根
+    本没收 pause —— paused 一直 false、声音没了、timeupdate 停更, 这时
+    来的暂停键是用户在纠正幽灵态, 记成打断 (下次点播放走重挂解锁)。 */
 function pauseAudio() {
   const audio = audioElement();
   if (audio.paused) return;
-  pauseByApp = true;
+  if (Date.now() - lastTimeupdateAt > 5000) playInterrupted = true;
+  else pauseByApp = true;
   audio.pause();
 }
 
@@ -89,9 +93,8 @@ function noteAudioPaused() {
   }
   if (audioElement().readyState < 2) return;   // 新源未装载的 pause = 换源补刀
   playInterrupted = true;
-  // 打断一落地就重申锁屏键位/元数据: iOS 把音频会话交给别的 app 后可能
-  // 顺手丢掉挂过的 action handlers (1.8.70 同款丢法), 不重挂的话打断结束
-  // 后锁屏点播放根本送不进页面 (1.8.84 用户实报场景)。
+  // 打断一落地就重申锁屏键位/元数据: iOS 交出会话后可能丢 action
+  // handlers (1.8.70 同款丢法), 不重挂打断结束后锁屏点播放送不进页面。
   updateMediaSession();
 }
 
@@ -155,13 +158,13 @@ function bindPlayerAudioEvents(audio) {
     renderTimes(audio.currentTime, playbackDuration());
     syncPositionState();
   });
-  // 锁屏/控制中心的进度是浏览器拿「位置 + 流逝时间 × 速率」估的:
-  // 暂停、跳句、拖动、变速后不重报, iPhone 锁屏进度条就会自顾自走
-  // (暂停了还在爬、跳完对不上)。凡有动静都重报一次真实位置。
+  // 锁屏/控制中心的进度是浏览器拿「位置 + 流逝时间 × 速率」估的: 暂停、
+  // 跳句、拖动、变速后不重报, iPhone 锁屏进度条就会自顾自走。有动静都重报。
   for (const eventName of ["play", "pause", "seeked", "ratechange"]) {
     audio.addEventListener(eventName, syncPositionState);
   }
   audio.addEventListener("timeupdate", () => {
+    lastTimeupdateAt = Date.now();   // 幽灵播放探针 (1.8.85): 还在出声推进
     // 显示基准走 playbackDuration (库时长): 元素时长在 iOS 流上 seek 后
     // 会翻脸 (NaN / 偏短), 信它就是「剩余 -0:00 歌照播」; 进度钳在 [0,1],
     // 库里时长万一比实际音频长也不撑破进度条
@@ -187,9 +190,8 @@ function bindPlayerAudioEvents(audio) {
     playerNext(true);   // 1.8.66 自然播完强续播 (其余切歌都保持原播放状态)
   });
   audio.addEventListener("error", () => {
-    // 1.8.76 播放挂了不再只弹一句就死: 兜底在 music-player-sources
-    // (notePlaybackFailed —— 先试本地缓存救回当前曲, 不行跳下一首强续,
-    // 连挂 3 首封顶停住, 断网时不会无限跳歌)
+    // 1.8.76 兜底在 music-player-sources (notePlaybackFailed): 先试本地
+    // 缓存救回当前曲, 不行跳下一首强续, 连挂 3 首封顶 (断网不无限跳歌)
     if (currentTrack) notePlaybackFailed();
   });
 
