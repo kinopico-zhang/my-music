@@ -147,3 +147,24 @@ def test_music_interrupt_auto_resume_removed():
     # startAudio 无参 (存档位置参数是给排程重试用的, 一起退场)
     assert "startAudio(at)" not in audio_js
     assert "startAudio(preferredAt)" not in audio_js
+
+
+def test_music_rejected_play_retry_wiring():
+    """1.8.84 修「看完别的 app 的视频, 锁屏点播放没反应」(用户实报): 会话
+    被夺时掐我们的 pause 事件可能没跑到 JS (页面冻结/键位被丢), 打断旗没
+    立上、元素却进了拒播态 —— 锁屏 play 落进来只是一次裸 play(), 被拒后
+    被媒体的 catch(() => {}) 静默吞掉, 再没下文 (服务日志实锤: 锁屏点播放
+    后连重挂会发的重新拉流请求都没有)。对策: startAudio 被拒 (AbortError
+    除外 —— 换源/暂停的正常接力) 就当被打断, 重挂 (unlockPlay, 1.8.71
+    机制抽成本体) 再试一把; 打断一落地就重申锁屏键位/元数据 (iOS 交出
+    会话后可能丢 action handlers, 不重挂点不进来)。只兜明确起播请求,
+    不自己开声 —— 1.8.83 撤自动续播的规矩不破。"""
+    audio_js = (MUSIC_STATIC / "js" / "music-player-audio-events.js"
+                ).read_text(encoding="utf-8")
+    # 起播被拒 → 当打断 → 重挂再试; 旗在 (pause 认出打断 / 上次被拒) 直走重挂
+    assert "function unlockPlay()" in audio_js
+    assert 'if (error && error.name === "AbortError") throw error;' in audio_js
+    assert audio_js.count("return unlockPlay();") == 2
+    # 认出打断即重申锁屏键位/元数据
+    assert "playInterrupted = true;\n  // 打断一落地就重申锁屏键位" in audio_js
+    assert "updateMediaSession();" in audio_js
