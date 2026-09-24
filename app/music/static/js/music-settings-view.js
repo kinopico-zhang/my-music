@@ -69,7 +69,7 @@ async function renderSettingsView(target) {
         <small>服务器上存放音乐的目录 (留空用默认); 改了会立刻重新扫描整个曲库</small>
       </div>
       <button class="settings-row" id="set-rescan"
-              title="增量重扫曲库 (没变的文件只 stat 不读标签)">重新扫描曲库</button>
+              title="扫描整个曲库目录 (没变的文件只 stat 不读标签)。1.8.83 起曲库不再自动扫描 —— 新加的音乐文件从这儿进来">重新扫描曲库</button>
     </div>
     ${saveRow}` : "";                     // 普通账号: 通用页只剩账号块
   renderSettingsAccount(page("general"), me);   // 账号块插最前 (1.8.57)
@@ -108,7 +108,7 @@ async function renderSettingsView(target) {
   target.querySelector("#set-rescan").addEventListener("click", async () => {
     try {
       await fetchJSON("/music/api/rescan", { method: "POST" });
-      userRescanPending = true;      // 这轮收尾要出提示 (后台自动扫的不出)
+      userRescanPending = true;      // 这轮收尾要出提示 (别的设备触发的扫描不出)
       toast("开始扫描曲库");
       checkScanStatus();
     } catch (error) {

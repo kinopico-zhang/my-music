@@ -66,7 +66,7 @@ function bindGlobalEvents() {
   $("#cover-file").addEventListener("change", () => {
     if (coverUploadPlaylistId) uploadPlaylistCover(coverUploadPlaylistId);
   });
-  // 后台自动增量重扫的探针: 页面可见时每 30 秒问一次状态
+  // 扫描状态探针 (1.8.83 起扫描全手动): 别的设备发起的扫描这页也要看得见
   setInterval(() => {
     if (!document.hidden) checkScanStatus();
   }, SCAN_POLL_INTERVAL_MS);

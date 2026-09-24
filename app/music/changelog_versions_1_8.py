@@ -7,6 +7,23 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.83", date="2026-09-24", items=[
+        ChangelogItem(kind="修复", text="播放列表放着放着就停 (放完一"
+                                       "首不续) 的问题修好了 —— 后台每 5"
+                                       "分钟自动扫描曲库会把数据库压出"
+                                       "成片故障, 下一首加载失败连跳到"
+                                       "头; 自动扫描撤了, 数据库也加固"
+                                       "了 (临时文件挪去大硬盘、读写不再"
+                                       "互相挡、锁等待加到 30 秒)"),
+        ChangelogItem(kind="修复", text="切到别的 app 看视频会被这边自"
+                                       "动恢复的音乐打断的问题也修了 —"
+                                       "— 歌曲被打断后不再自动续播, 想"
+                                       "接着播自己点一下 (锁屏键或回 "
+                                       "app 点播放)"),
+        ChangelogItem(kind="改进", text="曲库不再自动扫描, 全部手动 —"
+                                       "— 新加的音乐文件在设置里点「重"
+                                       "新扫描曲库」扫进来"),
+    ]),
     ChangelogVersion(version="1.8.82", date="2026-09-23", items=[
         ChangelogItem(kind="修复", text="部分新加的专辑不显示封面的问题修好"
                                        "了 —— 文件标签里的封面数据写歪时"
