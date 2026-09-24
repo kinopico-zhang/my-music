@@ -7,6 +7,16 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.86", date="2026-09-24", items=[
+        ChangelogItem(kind="修复", text="看长视频回来后, 播放器卡在「看着"
+                                       "在播其实没声」的假播放状态 —— 现在"
+                                       "一回到应用就会自动纠正, 点一下播放"
+                                       "键就从原位置接着听"),
+        ChangelogItem(kind="改进", text="看过长视频后控制中心的按钮可能叫"
+                                       "不动播放器 —— 那时应用已被系统冻"
+                                       "结 (网页应用的限制), 先回到应用点一"
+                                       "下就好; 短暂打断不受影响"),
+    ]),
     ChangelogVersion(version="1.8.85", date="2026-09-24", items=[
         ChangelogItem(kind="修复", text="被别的 app 的视频打断后, 控制中"
                                        "心点暂停再点播放, 进度条走了却没"
