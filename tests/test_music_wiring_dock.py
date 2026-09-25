@@ -47,6 +47,12 @@ def test_music_dock_wiring():
     assert 'id="mini-play"' in html and 'id="mini-prev"' in html \
         and 'id="mini-next"' in html
     assert '#mini-player > button svg { display: block; }' in html  # 三键图标同款
+    # 1.8.93 (用户点名「三个按钮再紧凑一点」): 三键左右垫 9→5、舱距 8→5;
+    # 上下曲双三角裁半成单三角 (viewBox 偏移回光心, 光心断言在 icons 测试)
+    assert "align-items: center; gap: 5px;" in mini_css \
+        and "#mini-prev, #mini-play, #mini-next { padding: 9px 5px; }" in html
+    assert 'id="mini-prev" aria-label="上一首"><svg viewBox="6.25 0 24 24"' in html \
+        and 'id="mini-next" aria-label="下一首"><svg viewBox="6.25 0 24 24"' in html
     assert '$("#mini-prev").addEventListener("click", (event) => ' \
         '{ event.stopPropagation(); playerPrevious(); });' in player
     assert '$("#mini-next").addEventListener("click", (event) => ' \
