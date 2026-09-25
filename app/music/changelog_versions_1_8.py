@@ -8,6 +8,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.97", date="2026-09-25", items=[
+        ChangelogItem(kind="改进", text="播放页封面轻轻一划也能切歌了 —— 之前"
+                                       "要划过小半张封面或甩得够快才切, 滑得短"
+                                       "了会被当成没划够放回原位"),
+    ]),
     ChangelogVersion(version="1.8.96", date="2026-09-25", items=[
         ChangelogItem(kind="修复", text="修了播放气泡还没滑动就露出下一首封面"
                                        "窄条的问题"),

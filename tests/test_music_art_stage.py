@@ -36,7 +36,10 @@ def test_music_art_stage_wiring():
     的封面会消失一下再出现」): 1.8.66 首版给 |d|<0.5 的松手也挂了溶解
     —— 可扇形把两卡分开了, 溶解不再是交叠处的互相显影, 旧卡在缝里
     孤零零淡出又淡回。撤掉拖动路径的交班, 溶解只留程序切歌; 半路抓
-    落定中的封面, 横移≠sway (扇形展开过) 由定点迭代反解。"""
+    落定中的封面, 横移≠sway (扇形展开过) 由定点迭代反解。
+    1.8.97 修「滑一点点松手被取消」(用户点名「很短的滑行轨迹也要完成
+    切歌」): 认领的横滑松手一律切歌, 方向按舞台倒向 (含半路抓取的
+    swayBase), 只有倒向不足 4px 且没甩劲才放回; pointercancel 弹回不切。"""
     html = music_page_shell()
     css = (MUSIC_STATIC / "css" / "music-player.css").read_text(encoding="utf-8")
     stage_js = (MUSIC_STATIC / "js" / "music-player-art-stage.js").read_text(
@@ -99,9 +102,14 @@ def test_music_art_stage_wiring():
     # 扇形展开后横移≠sway, 定点迭代反解 (真解∈[px/2, px])
     assert "new DOMMatrixReadOnly(matrix).m41" in stage_js
     assert "for (let i = 0; i < 3; i++) s = px / fanOf(s);" in stage_js
-    # 拖动阈值: 过四分之一或带甩劲切歌, 竖向让给下拉收起
-    assert "d <= -0.28 || (flick && hVelocity < 0)" in stage_js
-    assert "d >= 0.28 || (flick && hVelocity > 0)" in stage_js
+    # 1.8.97 松手一律切歌 (用户点名「很短的滑行轨迹也要完成切歌」): 方向按
+    # 舞台倒向 (px 口径, 不再卡 28% 份额), 倒向不足 4px 且没甩劲才放回;
+    # 系统掐掉 (pointercancel) 弹回不切; 竖向让给下拉收起
+    assert "const dir = Math.abs(d) * width >= 4 ? Math.sign(d)" in stage_js \
+        and ": (Math.abs(hVelocity) > 0.1 ? Math.sign(hVelocity) : 0);" in stage_js
+    assert 'if (dir < 0) commitStage(d, "next");' in stage_js
+    assert 'else if (dir > 0) commitStage(d, "prev");' in stage_js
+    assert 'if (event.type === "pointercancel") { poseStage(0); return; }' in stage_js
     assert "dragging = false;        // 竖向: 归下拉收起" in stage_js
     # 1.8.66 遮盖交接: 过场扇形张开后交会处两卡分开, 拖过半翻层 (rise)
     # 藏在缝最大处翻 (z4, 肉眼看不见); 非拖动路径 (renderArtStage/弹回/
