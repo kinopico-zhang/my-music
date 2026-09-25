@@ -260,8 +260,8 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
   centered("fp-queue-btn (队列)", pick("fp-queue-btn"));
   // 1.8.89 循环模式键 (接管加列表键的位): 默认形内联在页里, 与 ICON_REPEAT
   // 逐字节同款 (首拍 updatePlayModeButton 不跳位); 单曲/随机两态住
-  // music-common.js 换 innerHTML —— iconfont 素材用 viewBox 偏移居中
-  // (循环标 1024 画布字形偏上), 随机交叉箭头 24 格天然居中
+  // music-common.js 换 innerHTML —— 1.8.90 三态重画为粗描边 (用户点名
+  // 「线条要粗一点」), 多路径拼一枚, 并集包围盒中心 == 视框中心
   const repeatSvg = iconSvg("ICON_REPEAT");
   assert.ok(page.includes(repeatSvg), "页面默认形与 ICON_REPEAT 不同款");
   svgCentered("ICON_REPEAT (列表循环态)", repeatSvg);
