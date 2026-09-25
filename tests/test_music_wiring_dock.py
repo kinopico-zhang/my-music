@@ -11,7 +11,8 @@ from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
 def test_music_dock_wiring():
     """底部船坞 (用户点名「整个底栏从左到右: 菜单按钮, 气泡, 搜索」): 原四页签
     栏整个撤掉, 换一行三件 —— 左右两颗圆键 (磨砂, 与气泡同配方) 夹着中间
-    变窄的气泡。气泡上只有封面/歌名/播放暂停 (上下曲撤了, 全屏页里都有);
+    变窄的气泡。气泡上封面/歌名/播放暂停加上下曲 (上下曲 1.8.0 撤过、
+    1.8.87 用户点名加回 —— 路上切歌不进全屏页);
     歌名/作者放不下改跑马灯来回滚。菜单键点开从键上方弹出一列纵向菜单
     (播放列表/专辑/艺人/最近播放/已下载/设置), 带缩放上弹动画; 搜索键直进
     搜索页顺手聚焦输入框。船坞本体透明: 只管定位, 点击穿到内容上。"""
@@ -39,11 +40,17 @@ def test_music_dock_wiring():
     assert "rgba(44,44,46,.7);" in keys_css               # 磨砂配方与气泡同款 (1.8.5 调回半透明)
     assert "backdrop-filter: blur(20px) saturate(180%);" in keys_css
     assert "transform: translateZ(0);" in keys_css         # 自家合成层防复印
-    # 气泡变窄: flex:1 占中间, 圆角胶囊; 上下曲没了, 只留播放/暂停
+    # 气泡变窄: flex:1 占中间, 圆角胶囊; 上下曲 1.8.0 撤过、1.8.87 用户点名
+    # 加回 (路上切歌不进全屏页), 三键各接各的, 点击不冒泡
     mini_css = html[html.index("#mini-player {"):html.index("#mini-progress")]
     assert "flex: 1; min-width: 0;" in mini_css and "border-radius: 23px;" in mini_css
-    assert 'id="mini-play"' in html
-    assert 'id="mini-prev"' not in html and 'id="mini-next"' not in html
+    assert 'id="mini-play"' in html and 'id="mini-prev"' in html \
+        and 'id="mini-next"' in html
+    assert '#mini-player > button svg { display: block; }' in html  # 三键图标同款
+    assert '$("#mini-prev").addEventListener("click", (event) => ' \
+        '{ event.stopPropagation(); playerPrevious(); });' in player
+    assert '$("#mini-next").addEventListener("click", (event) => ' \
+        '{ event.stopPropagation(); playerNext(); });' in player
     # 跑马灯: 文字比行宽长才滚 (JS 量过), 两端各停一拍再往回走
     assert 'class="mq-line"' in html and 'class="mq-run"' in html
     assert ".mq-run.marquee {" in html and "@keyframes mq-scroll" in html

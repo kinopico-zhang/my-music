@@ -7,6 +7,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.88", date="2026-09-25", items=[
+        ChangelogItem(kind="改进", text="播放气泡加回上一首/下一首键 —— "
+                                       "路上想切歌不用进全屏页, 点封面文字"
+                                       "照旧进全屏页"),
+    ]),
     ChangelogVersion(version="1.8.87", date="2026-09-24", items=[
         ChangelogItem(kind="修复", text="开车路上信号断续时连播不再停摆 —— "
                                        "断网挂起的歌就地等信号, 一回到应用"

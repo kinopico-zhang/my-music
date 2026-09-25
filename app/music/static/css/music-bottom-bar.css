@@ -62,8 +62,9 @@
 @keyframes pulse { 50% { opacity: .25; } }
 
 /* ---------- 迷你播放条 (船坞行中间的胶囊) ----------
-   1.8.0 变窄 (用户点名): 上一首/下一首撤掉 (全屏页里都有), 只剩封面 +
-   文字 + 播放/暂停; 歌名/作者太长改跑马灯来回滚 (不再截断省略号)。 */
+   1.8.0 变窄时撤过上一首/下一首 (全屏页里都有), 1.8.87 用户点名加回 ——
+   路上想切歌不用进全屏页; 上下曲图标比播放键小一号 (24/28) 不抢主次。
+   歌名/作者太长改跑马灯来回滚 (不再截断省略号)。 */
 #mini-player {
   pointer-events: auto;
   position: relative; flex: 1; min-width: 0;
@@ -93,7 +94,7 @@
 .mini-txt small { display: block; font-size: 11px; color: var(--ink-2); }
 #mini-player > button { padding: 9px; color: var(--ink-1); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; }
-#mini-play svg { display: block; }
+#mini-player > button svg { display: block; }
 
 /* ---------- 跑马灯 (气泡上的歌名/作者) ----------
    文字比行宽长 (JS 量过) 才挂 .marquee: 内层 span 来回平移, 两端各停

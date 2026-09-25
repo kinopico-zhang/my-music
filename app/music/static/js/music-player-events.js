@@ -18,9 +18,11 @@
 function bindPlayerEvents() {
   const audio = audioElement();
 
-  // 按钮点击不冒泡到 #mini-open (点了暂停不该弹全屏页);
-  // 上一首/下一首 1.8.0 撤掉 (气泡变窄, 用户点名 —— 全屏页里都有)
+  // 气泡三键: 播放/暂停 + 上下曲 (1.8.0 撤掉过, 1.8.87 用户点名加回 ——
+  // 路上切歌不进全屏页; 切歌保持原播放状态); 点击不冒泡, 各键各干各的
   $("#mini-play").addEventListener("click", (event) => { event.stopPropagation(); playerToggle(); });
+  $("#mini-prev").addEventListener("click", (event) => { event.stopPropagation(); playerPrevious(); });
+  $("#mini-next").addEventListener("click", (event) => { event.stopPropagation(); playerNext(); });
   $("#mini-open").addEventListener("click", openFullPlayer);
   $("#fp-grab").addEventListener("click", () => {
     if (fpDismissDragged) {            // 刚拖过: 抬手补发的 click 不算
