@@ -62,12 +62,11 @@
 @keyframes pulse { 50% { opacity: .25; } }
 
 /* ---------- 迷你播放条 (船坞行中间的胶囊) ----------
-   1.8.0 变窄时撤过上一首/下一首 (全屏页里都有), 1.8.87 用户点名加回 ——
-   路上想切歌不用进全屏页; 上下曲图标比播放键小一号 (24/28) 不抢主次。
    歌名/作者太长改跑马灯来回滚 (不再截断省略号)。
-   1.8.93 (用户点名「三个按钮再紧凑一点」+「上下曲留一个三角形」): 三键
-   左右垫 9→5、舱距 8→5 (图标间白 26→15px); 双三角裁半成单三角
-   (viewBox 偏移回光心, icons 测试把着)。 */
+   1.8.87 加回过上一首/下一首键, 1.8.94 用户点名「左右滑动切歌」再撤掉 ——
+   封面文字整块 #mini-drag 跟手平移, 出界在 #mini-open 裁掉 (不爬到播放键
+   底下); 松手拖过两成八或带甩劲就换曲 (music-bubble-swipe, 3D 舞台同款
+   口径)。 */
 #mini-player {
   pointer-events: auto;
   position: relative; flex: 1; min-width: 0;
@@ -88,8 +87,10 @@
   position: absolute; top: 0; left: 0; height: 2px;
   background: var(--accent); width: 0; transition: width .3s linear;
 }
-#mini-open { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
-             height: 100%; text-align: left; padding-left: 5px; }
+#mini-open { display: flex; align-items: center; flex: 1; min-width: 0;
+             height: 100%; text-align: left; overflow: hidden; }
+#mini-drag { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
+             height: 100%; will-change: transform; }  /* 1.8.94 跟手平移整块 */
 #mini-art { width: 34px; height: 34px; border-radius: 6px; object-fit: cover;
             background: var(--surface-3); flex-shrink: 0; }
 .mini-txt { flex: 1; min-width: 0; }
@@ -97,7 +98,6 @@
 .mini-txt small { display: block; font-size: 11px; color: var(--ink-2); }
 #mini-player > button { padding: 9px; color: var(--ink-1); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; }
-#mini-prev, #mini-play, #mini-next { padding: 9px 5px; }  /* 1.8.93 三键收拢 */
 #mini-player > button svg { display: block; }
 
 /* ---------- 跑马灯 (气泡上的歌名/作者) ----------

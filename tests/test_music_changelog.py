@@ -8,7 +8,8 @@ from app.music import changelog
 def test_versions_wellformed():
     """独立版本线从 1.0.0 起; 每版字段齐全, 文案是用户视角的一句话。"""
     vs = changelog.entries()
-    assert [v.version for v in vs] == ["1.8.93", "1.8.92", "1.8.91", "1.8.90",
+    assert [v.version for v in vs] == ["1.8.94", "1.8.93", "1.8.92", "1.8.91",
+                                       "1.8.90",
                                        "1.8.89", "1.8.88", "1.8.87", "1.8.86",
                                        "1.8.85",
                                        "1.8.84", "1.8.83", "1.8.82", "1.8.81",

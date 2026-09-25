@@ -19,7 +19,7 @@
 <!-- 样式按逻辑拆成独立文件 (结构化重构): 加载顺序 = 底座 → 内容列表
      → 一级视图 → 底部常驻件 → 推入层 → 播放页 → 浮层菜单 -->
 <link rel="stylesheet" href="/music/static/css/music-base.css?v=9">
-<link rel="stylesheet" href="/music/static/css/music-bottom-bar.css?v=7">
+<link rel="stylesheet" href="/music/static/css/music-bottom-bar.css?v=8">
 <link rel="stylesheet" href="/music/static/css/music-push-panes.css?v=12">
 <link rel="stylesheet" href="/music/static/css/music-hero-bar.css?v=8">
 <link rel="stylesheet" href="/music/static/css/music-lists.css?v=10">
@@ -60,15 +60,15 @@
     <div id="mini-player" hidden>
       <div id="mini-progress"></div>
       <button type="button" id="mini-open">
-        <img id="mini-art" alt="">
-        <span class="mini-txt">
-          <b id="mini-title" class="mq-line"><span class="mq-run"></span></b>
-          <small id="mini-artist" class="mq-line"><span class="mq-run"></span></small>
+        <span id="mini-drag">
+          <img id="mini-art" alt="">
+          <span class="mini-txt">
+            <b id="mini-title" class="mq-line"><span class="mq-run"></span></b>
+            <small id="mini-artist" class="mq-line"><span class="mq-run"></span></small>
+          </span>
         </span>
       </button>
-      <button type="button" id="mini-prev" aria-label="上一首"><svg viewBox="6.25 0 24 24" width="24" height="24" aria-hidden="true"><path d="M21.981 6.098L14.6 10.949Q13 12 14.6 13.051L21.981 17.902Q23.5 18.9 23.5 17.082L23.5 6.918Q23.5 5.1 21.981 6.098" fill="currentColor"/></svg></button>
       <button type="button" id="mini-play" aria-label="播放/暂停"></button>
-      <button type="button" id="mini-next" aria-label="下一首"><svg viewBox="6.25 0 24 24" width="24" height="24" aria-hidden="true"><path d="M14.519 6.098L21.9 10.949Q23.5 12 21.9 13.051L14.519 17.902Q13 18.9 13 17.082L13 6.918Q13 5.1 14.519 6.098" fill="currentColor"/></svg></button>
     </div>
     <button type="button" id="dock-search" aria-label="搜索"><svg viewBox="0 0 1024 1024" width="22" height="22" aria-hidden="true"><path d="M426.666667 42.666667q77.994667 0 149.162667 30.506667t122.496 81.834667 81.834667 122.496 30.506667 149.162667q0 66.986667-21.845333 128.341333t-62.165333 111.317333l242.346667 242.005333q12.330667 12.330667 12.330667 30.336 0 18.346667-12.16 30.506667t-30.506667 12.16q-18.005333 0-30.336-12.330667l-242.005333-242.346667q-50.005333 40.32-111.317333 62.165333t-128.341333 21.845333q-77.994667 0-149.162667-30.506667t-122.496-81.834667-81.834667-122.496-30.506667-149.162667 30.506667-149.162667 81.834667-122.496 122.496-81.834667 149.162667-30.506667zM426.666667 128q-60.672 0-116.010667 23.68t-95.317333 63.658667-63.658667 95.317333-23.68 116.010667 23.68 116.010667 63.658667 95.317333 95.317333 63.658667 116.010667 23.68 116.010667-23.68 95.317333-63.658667 63.658667-95.317333 23.68-116.010667-23.68-116.010667-63.658667-95.317333-95.317333-63.658667-116.010667-23.68z" fill="currentColor"/></svg></button>
   </div>
@@ -183,12 +183,12 @@
 <script src="/music/static/js/music-player-media-session.js?v=7"></script>
 <script src="/music/static/js/music-player-slider.js?v=1"></script>
 <script src="/music/static/js/music-player-audio-events.js?v=13"></script>
-<script src="/music/static/js/music-player-events.js?v=11"></script>
+<script src="/music/static/js/music-player-events.js?v=12"></script>
 <script src="/music/static/js/music-player-boot.js?v=2"></script>
 <script src="/music/static/js/music-navigation.js?v=8"></script>
 <script src="/music/static/js/music-push-panes.js?v=14"></script>
 <script src="/music/static/js/music-pane-swipe.js?v=6"></script>
-<script src="/music/static/js/music-bubble-swipe.js?v=1"></script>
+<script src="/music/static/js/music-bubble-swipe.js?v=2"></script>
 <script src="/music/static/js/music-root-rubber.js?v=1"></script>
 <script src="/music/static/js/music-downloads-integration.js?v=8"></script>
 <script src="/music/static/js/music-autocache-integration.js?v=1"></script>

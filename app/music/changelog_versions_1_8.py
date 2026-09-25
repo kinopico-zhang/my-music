@@ -7,6 +7,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.94", date="2026-09-25", items=[
+        ChangelogItem(kind="改进", text="播放气泡的上一首/下一首键撤了, 换成左右"
+                                       "滑动气泡切歌 —— 封面和歌名跟着手指走, "
+                                       "松手顺势滑出、新歌从另一侧滑进来"),
+    ]),
     ChangelogVersion(version="1.8.93", date="2026-09-25", items=[
         ChangelogItem(kind="改进", text="播放气泡的上一首/下一首图标裁成单个"
                                        "三角形, 三颗按键也收得更紧凑"),
