@@ -56,8 +56,8 @@ def test_music_dock_wiring():
     assert 'id="mini-card-prev"' in html and 'id="mini-card-cur"' in html \
         and 'id="mini-card-next"' in html and '<span id="mini-drag">' in html
     # 跑马灯: 文字比行宽长才滚 (JS 量过), 两端各停一拍再往回走
-    assert 'class="mq-line"' in html and 'class="mq-run"' in html
-    assert ".mq-run.marquee {" in html and "@keyframes mq-scroll" in html
+    assert 'class="mq-line"' in html and 'class="mq-run"' in html \
+        and ".mq-run.marquee {" in html and "@keyframes mq-scroll" in html
     assert "animation: mq-scroll var(--mq-dur, 12s) linear infinite alternate;" in html
     for frag in ["function setMarqueeLine", "run.scrollWidth - line.clientWidth",
                  "if (overflow <= 2) return;",              # 放得下不滚

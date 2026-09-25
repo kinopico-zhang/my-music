@@ -1,5 +1,5 @@
 // music-player-art-stage — My Music 播放页 3D 封面舞台 (1.8.60, 用户点名):
-// 上一首/下一首斜插两侧 (CoverFlow 同款), 左右拖跟手转面, 松手 3D 落定切歌。
+// 上一首/下一首斜插两侧 (CoverFlow 同款), 左右拖跟手转面, 松手 3D 落定切歌 (1.8.97 起很短的滑行也切)。
 // 姿态 = 各卡槽位 (自身位 -1/0/1 + 拖拽进度) 的横移/纵深/转角/压暗, JS 直落
 // 行内, 松手走原生过渡 (1.8.61)。1.8.66 过场中段扇形张开 (过卡那拍两侧
 // 分最开不叠不穿), 来卡过半浮上旧卡沉底 (翻层藏进最大缝); 交班只留程序切歌。
@@ -104,8 +104,7 @@ function renderArtStage(start) {
       stageHandoff = from > 0 ? "prev" : "next";   // 旧曲卡退去的那一侧
     }
   }
-  stagePrimed = true; stageLastTrackId = trackId;
-  stageLastPos = playQueue ? playQueue.position : -1;
+  stagePrimed = true; stageLastTrackId = trackId; stageLastPos = playQueue ? playQueue.position : -1;
   const wrap = $("#fp-art-wrap");
   wrap.classList.add("dragging");
   poseStage(from !== null ? from : 0);   // 起跳位 / 静止位 (掐过渡摆; 顺带撤 rise)
@@ -128,7 +127,8 @@ function stageTrackChanged() {
   renderArtStage(start);
 }
 
-/** 左右拖跟手 + 松手落定 (竖向让给下拉收起): 拖过四分之一或带甩劲切歌; 半路抓住落定中的封面也接得住。 */
+/** 左右拖跟手 + 松手落定 (竖向让给下拉收起): 认领的横滑松手一律切歌 (1.8.97
+    用户点名「很短的滑行轨迹也要完成切歌」), 方向按舞台倒向; 系统掐掉弹回不切。 */
 function bindArtStageDrag(wrap) {
   let dragging = false, pointerId = -1;
   let startX = 0, startY = 0, lastX = 0, lastTime = 0;
@@ -145,11 +145,8 @@ function bindArtStageDrag(wrap) {
   wrap.addEventListener("pointermove", (event) => {
     if (!dragging || event.pointerId !== pointerId) return;
     const now = performance.now();
-    if (now > lastTime) {
-      hVelocity = (event.clientX - lastX) / (now - lastTime);
-      lastTime = now;
-    }
-    lastX = event.clientX;
+    if (now > lastTime) hVelocity = (event.clientX - lastX) / (now - lastTime);
+    lastTime = now; lastX = event.clientX;
     const dx = lastX - startX;
     if (!mode) {
       if (Math.abs(dx) < 10 && Math.abs(event.clientY - startY) < 10) return;
@@ -172,12 +169,15 @@ function bindArtStageDrag(wrap) {
     dragging = false;
     if (mode !== "sway") return;
     wrap.classList.remove("dragging");  // 过渡回来, 松手交给动画
+    if (event.type === "pointercancel") { poseStage(0); return; }   // 系统掐了: 弹回不切歌
     const width = wrap.offsetWidth || 1;
     const d = Math.max(-1, Math.min(1, swayBase + (lastX - startX) / width));
-    const flick = Math.abs(hVelocity) > 0.5 && Math.abs(lastX - startX) > 30;
-    if (d <= -0.28 || (flick && hVelocity < 0)) commitStage(d, "next");
-    else if (d >= 0.28 || (flick && hVelocity > 0)) commitStage(d, "prev");
-    else poseStage(0);                  // 没拖够: 弹回 (rise 顺带撤了)
+    // 1.8.97 认领的横滑松手一律切歌: 方向按舞台倒向, 倒向不足 4px 且没甩劲才放回
+    const dir = Math.abs(d) * width >= 4 ? Math.sign(d)
+      : (Math.abs(hVelocity) > 0.1 ? Math.sign(hVelocity) : 0);
+    if (dir < 0) commitStage(d, "next");
+    else if (dir > 0) commitStage(d, "prev");
+    else poseStage(0);                  // 放回中位: 弹回 (rise 顺带撤了)
   };
   for (const ev of ["pointerup", "pointercancel"]) wrap.addEventListener(ev, finish);
 }
