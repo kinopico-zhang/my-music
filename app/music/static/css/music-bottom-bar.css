@@ -64,12 +64,15 @@
 /* ---------- 迷你播放条 (船坞行中间的胶囊) ----------
    1.8.0 变窄时撤过上一首/下一首 (全屏页里都有), 1.8.87 用户点名加回 ——
    路上想切歌不用进全屏页; 上下曲图标比播放键小一号 (24/28) 不抢主次。
-   歌名/作者太长改跑马灯来回滚 (不再截断省略号)。 */
+   歌名/作者太长改跑马灯来回滚 (不再截断省略号)。
+   1.8.93 (用户点名「三个按钮再紧凑一点」+「上下曲留一个三角形」): 三键
+   左右垫 9→5、舱距 8→5 (图标间白 26→15px); 双三角裁半成单三角
+   (viewBox 偏移回光心, icons 测试把着)。 */
 #mini-player {
   pointer-events: auto;
   position: relative; flex: 1; min-width: 0;
   height: var(--dock-h);
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 5px;
   overflow: hidden;
   background: rgba(44,44,46,.7);    /* 磨砂玻璃 (用户点名): 七成底色,
     blur(20) 把底下划过的内容糊成影子透上来 —— 和圆键一个质感
@@ -94,6 +97,7 @@
 .mini-txt small { display: block; font-size: 11px; color: var(--ink-2); }
 #mini-player > button { padding: 9px; color: var(--ink-1); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; }
+#mini-prev, #mini-play, #mini-next { padding: 9px 5px; }  /* 1.8.93 三键收拢 */
 #mini-player > button svg { display: block; }
 
 /* ---------- 跑马灯 (气泡上的歌名/作者) ----------
