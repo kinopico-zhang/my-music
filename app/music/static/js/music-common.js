@@ -36,15 +36,22 @@ async function fetchJSON(url, options) {
 }
 
 let toastTimer = 0;
-/** 浮层提示 (2.4s 自动消失; 连续调用只保最后一条)。1.8.91 (用户点名
-    「放在标题上, 整体居中」): 播放页开着时气泡上标题行 —— 老位置在底部,
-    正压着播放控制键; 这里现量 .fp-now 行位, top 钉在标题竖直中心。 */
+/** 浮层提示 (2.4s 自动消失; 连续调用只保最后一条)。1.8.92 (用户点名
+    「放在标题和封面之间」): 播放页开着时气泡吊在封面底边与标题行顶边的
+    接缝上 —— 1.8.91 钉在标题行正中会盖住歌名; 这里现量两边取中点,
+    播放页没开照旧沉底 (底部船坞上方)。 */
 function toast(message) {
   const element = $("#toast");
-  const title = $("#full-player.open .fp-now");
-  element.classList.toggle("on-title", Boolean(title));
-  element.style.top = title
-    ? `${title.getBoundingClientRect().top + title.offsetHeight / 2}px` : "";
+  const player = $("#full-player.open");
+  let seam = null;
+  if (player) {
+    const art = player.querySelector("#fp-art-wrap");
+    const meta = player.querySelector(".fp-meta");
+    seam = (art.getBoundingClientRect().bottom
+            + meta.getBoundingClientRect().top) / 2;
+  }
+  element.classList.toggle("in-player", seam !== null);
+  element.style.top = seam === null ? "" : `${seam}px`;
   element.textContent = message;
   element.hidden = false;
   element.classList.add("show");
@@ -133,7 +140,9 @@ const ICON_ACTION_SHARE = '<svg viewBox="0 0 1024 1024" width="15" height="15" a
 // 拉平, 1.8.90 的大画布用户看着偏大。粗描边画风 (2.4 描边, 圆角接头, 与
 // 刷新环/下载标同一家法); 三态由 chrome.js 换 innerHTML
 const ICON_REPEAT = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2L21 6L17 10M3 12V10a4 4 0 0 1 4-4H21M7 14L3 18L7 22M21 12V14a4 4 0 0 1-4 4H3"/></svg>';
-const ICON_REPEAT_ONE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2L21 6L17 10M3 12V10a4 4 0 0 1 4-4H21M7 14L3 18L7 22M21 12V14a4 4 0 0 1-4 4H3M11.2 10.7L13 9.2V14.8"/></svg>';
+// 1.8.92 (用户点名「那个 1 搞小一点」): 竖笔 5.6→3.8、旗角收短 —— 环心
+// 留白上下各 1.7, 和列表循环态放一起不再满得发胀
+const ICON_REPEAT_ONE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2L21 6L17 10M3 12V10a4 4 0 0 1 4-4H21M7 14L3 18L7 22M21 12V14a4 4 0 0 1-4 4H3M11.4 10.9L12.7 10.1V13.9"/></svg>';
 // 随机循环 (1.8.89 三态键的第三态; 1.8.91 同批并 path 去叠深 + 缩到 24):
 // 交叉双箭头, 坐标收在对称盒里, 并集光心天然 (12,12) (icons 测试把着)
 const ICON_SHUFFLE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3H21V8M3 20L21 3M21 16V21H16M15 15L21 21M3 4L9 9"/></svg>';

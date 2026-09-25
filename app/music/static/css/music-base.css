@@ -103,12 +103,12 @@ main {
   pointer-events: none;
 }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-/* 1.8.91 (用户点名「放在标题上, 整体居中」): 播放页开着时气泡上标题行
-   —— 底部老位置正压着播放控制键; toast() 现量 .fp-now 行位把 top 钉在
-   标题竖直中心, bottom 让位, 水平照旧整屏居中 */
-#toast.on-title { bottom: auto;
+/* 1.8.92 (用户点名「放在标题和封面之间」): 播放页开着时气泡吊在封面
+   底边与标题行顶边的接缝上 (1.8.91 钉标题行正中会盖住歌名);
+   toast() 现量两边取中点钉 top, bottom 让位, 水平照旧整屏居中 */
+#toast.in-player { bottom: auto;
   transform: translateX(-50%) translateY(calc(-50% - 6px)); }
-#toast.on-title.show { transform: translateX(-50%) translateY(-50%); }
+#toast.in-player.show { transform: translateX(-50%) translateY(-50%); }
 
 @media (min-width: 700px) {
   #root-view { padding-left: 28px; padding-right: 28px; }
