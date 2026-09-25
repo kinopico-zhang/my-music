@@ -1,12 +1,12 @@
 // music-player-sources — My Music 曲目音频源解析与失败兜底: 本地字节
 // (手动下载 > 自动缓存) 优先, 流媒体直连兜底; 播放挂了先试缓存救回,
-// 不行跳下一首。
+// 不行就地挂起等信号重试 —— 跳不跳下一首用户定 (1.8.96)。
 // 拆自 music-player-queue (1.8.76: 换源/兜底与队列驱动分家, queue 顶到
 // 200 行帽按逻辑再切一刀 —— loadTrack 管"播什么", 这儿管"声音从哪来")。
 // 1.8.76 锁屏/后台连播三刀的源侧两刀: 已下载/已自动缓存的歌在 loadTrack
 // 里先按流占位 (同步赋址不断流), 这儿补刀换 blob (还没出声才换); 流挂了
-// localBlobFor 救回原位置接着放, 没有就 playerNext 强续 —— 连挂 3 首封顶
-// 停住 (playFailStreak), 边界流一挂不再死在半路。
+// localBlobFor 救回原位置接着放 —— 那时救不回还强续跳歌, 1.8.96 撤了
+// (跳过是用户才能定的), 救不回一律转挂起重试。
 // 1.8.78 的打断后自动续播 1.8.83 撤了 (用户实报: 切去别的 app 看视频,
 // 视频会被这边自动恢复的音乐打断) —— 打断后想接着播自己点 (锁屏键/
 // 回 app 点播放, 1.8.71 的解锁还在)。
@@ -14,11 +14,13 @@
 // 缓存歌在播、服务日志零请求): ① 补刀换源掐了流占位上挂起的 play() 且
 // wasPaused 读到假 true 不再重启 —— 起播意图带进换源, 换完自己下达;
 // ② error 分家: 网络 (code 2/0) 不跳歌不计数, 就地挂起回前台/计时到点
-// 自动重试 (不在前台绝不自己开声, 1.8.83 规矩不破); 解码 (3/4) 才连跳封顶。
+// 自动重试 (不在前台绝不自己开声, 1.8.83 规矩不破); 解码 (3/4) 才连跳
+// 封顶 —— 1.8.96 (用户点名「网络不好也别直接跳过, 跳过是用户才能定的」)
+// 分家收摊: WebKit 网络失败常报 code 4, 信号差与文件烂本就分不清 ——
+// 出错一律不跳歌, 缓存救不回就地挂起重试, 强续与连挂封顶退役。
 "use strict";
 /* global audioElement, autoCache, autoCacheEnabled, currentTrack, downloads,
-          downloadsEnabled, noteAudioSourceChanged, playerNext, startAudio,
-          toast */
+          downloadsEnabled, noteAudioSourceChanged, startAudio, toast */
 /* exported discardNetworkRetry, directStreamURL, loadSequence,
             notePlaybackFailed, notePlaybackSucceeded,
             playerUpgradeDownloadedSource, playingObjectURL,
@@ -26,10 +28,10 @@
 
 let playingObjectURL = "";   // audio 正在用的 blob 源; 换曲时 revoke (一首几十 MB, 攒着会撑爆手机内存)
 let loadSequence = 0;        // 换源解析的过站号: 快速连切, 旧的解析回来直接作废
-let playFailStreak = 0;      // 连挂计数: 出声即清零, 连挂 3 首停 (无限跳歌封顶)
 let pendingNetworkRetry = false;  // 断网挂起 (1.8.87 ②): 歌/位置原地不动, 等信号自动接着放
 let networkRetryTimer = 0;        // 挂起期间的一次性重试计时 (iOS 冻结没声的页面, 多半靠回前台兜)
 let networkRetryToasted = false;  // 一次断网只提一声 (出声/换曲重置)
+let lastRecoverAt = 0;            // 上次缓存救回出手打点: 刚救回又挂 (缓存字节烂) 转挂起, 不原地转圈
 
 /** 下载能力在线且这首歌已手动下载? (调用可能早于下载模块加载 —— boot
     顺序, typeof 兜住还没影子的全局, 不至于 ReferenceError。) */
@@ -97,39 +99,31 @@ async function playerUpgradeDownloadedSource(onlyIfNotAudible, resumeAfterSwap) 
   if (!wasPaused || resumeAfterSwap) startAudio().catch(() => {});
 }
 
-/** 出声了: 连挂计数清零, 断网挂起重试也不需要了 (playing 事件里调)。 */
+/** 出声了: 断网挂起重试不需要了 (playing 事件里调)。 */
 function notePlaybackSucceeded() {
-  playFailStreak = 0;
   networkRetryToasted = false;   // 下次断网重新提一声
   discardNetworkRetry();
 }
 
-/** 播放挂了 (audio error 事件)。1.8.87 ② 分家 (用户点名「服务不稳定也
-    要有恢复措施」): 网络 (2/0) 是信号问题 —— 本地有整曲立刻换过去接着
-    放, 没有就地挂起等信号, 不跳歌不计数; 解码不了 (3/4) 才是歌本身的
-    问题, 照旧救回/跳下一首, 连挂 3 首封顶 (烂文件串不无限跳)。 */
+/** 播放挂了 (audio error 事件) —— 1.8.96 只剩一条路: 本地有整曲立刻
+    换过去原位置接着放, 没有就地挂起等信号; 绝不自动跳歌 (用户点名
+    「网络不好也要试着加载这首, 跳过是用户才能定的」)。1.8.87 的网络/
+    解码分家一并收摊 —— WebKit 网络失败常报 code 4, 信号差与文件烂
+    本就分不清, 按错码跳歌等于替用户拍板。 */
 function notePlaybackFailed() {
   if (!currentTrack) return;
-  const code = audioElement().error ? audioElement().error.code : 0;
-  if (code !== 3 && code !== 4) {
-    if (trackLocalCached(currentTrack.track_id)) recoverFailedPlayback(true);
-    else armNetworkRetry();   // 缓存有立刻救回; 没有: 不跳歌, 原地等信号
+  if (Date.now() - lastRecoverAt < 3000) {   // 刚救回又挂: 不转圈, 计时节流
+    armNetworkRetry();
     return;
   }
-  playFailStreak += 1;
-  if (playFailStreak >= 3) {
-    playFailStreak = 0;    // 停下报一次; 下次点播放重新计
-    toast("连着几首都播不了, 先停了");
-    return;
-  }
-  recoverFailedPlayback();
+  if (trackLocalCached(currentTrack.track_id)) recoverFailedPlayback();
+  else armNetworkRetry();
 }
 
 /** 失败兜底 (1.8.76 第三刀): 当前曲先问本地字节 (流挂了, 缓存里可能有
-    整曲), 有就原位置接着放; 没有就 playerNext(true) 强续 —— 这之前
-    error 只弹一句「这首播放失败了」就地停住, 锁屏连播死在半路的帮凶。
-    stayOnTrack (1.8.87 ② 断网路径): 救不回也不跳歌, 转挂起等信号。 */
-async function recoverFailedPlayback(stayOnTrack) {
+    整曲), 有就原位置接着放; 没有就转挂起等信号 —— 1.8.76~1.8.95 救不回
+    强续跳歌那套 1.8.96 撤了, 跳过是用户才能定的。 */
+async function recoverFailedPlayback() {
   const track = currentTrack;
   if (!track) return;
   const at = audioElement().currentTime;   // 挂掉时的位置, 缓存救回接着放
@@ -137,11 +131,10 @@ async function recoverFailedPlayback(stayOnTrack) {
   const blob = await localBlobFor(track.track_id);
   if (token !== loadSequence || currentTrack !== track) return;   // 已经切走了
   if (!blob) {
-    // 索引说有缓存, 字节却读不出: 当断网挂起 (计时节流, 不跟 error 转圈)
-    if (stayOnTrack) { armNetworkRetry(); return; }
-    playerNext(true);
+    armNetworkRetry();   // 索引说有缓存, 字节却读不出: 当断网挂起 (计时节流)
     return;
   }
+  lastRecoverAt = Date.now();   // 出手打点: 挂了又立刻挂, notePlaybackFailed 转挂起
   const audio = audioElement();
   const source = URL.createObjectURL(blob);
   if (playingObjectURL) URL.revokeObjectURL(playingObjectURL);
@@ -160,7 +153,7 @@ function retryAfterNetworkDrop() {
   discardNetworkRetry();
   if (!currentTrack) return;
   if (trackLocalCached(currentTrack.track_id)) {
-    recoverFailedPlayback(true);
+    recoverFailedPlayback();
     return;
   }
   startAudio().catch(() => {});

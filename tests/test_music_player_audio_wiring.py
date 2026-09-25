@@ -86,8 +86,8 @@ def test_music_autoplay_recovery_wiring():
     """1.8.76 修锁屏/后台不自动连播 (用户实报) 三刀接线:
     ① playerNext 跳过播不了的格式 —— tak/dsf/ape 夹在歌单里, 连播到那
     首就 error 就地停住 (预取早就跳, 队列推进一直没跳);
-    ② error 不再只弹一句就停: 先试本地缓存救回原位置接着放, 不行跳下
-    一首强续, 连挂 3 首封顶 (断网不会无限跳歌烧流量);
+    ② error 不再只弹一句就停: 先试本地缓存救回原位置接着放, 不行就地
+    挂起等信号重试 —— 跳不跳下一首用户定 (1.8.96 撤强续与连挂封顶);
     ③ loadTrack 源同步落定 —— ended 到下一曲 play() 之间原本隔着一步
     Cache API 异步读, iOS 恰在「没有出声的音频」那一瞬能把整页挂起,
     微任务从此不回来 = 连播死在半路 (锁屏/后台尤甚); 已下载/已自动缓存
@@ -101,13 +101,12 @@ def test_music_autoplay_recovery_wiring():
     # ① 连播跳过播不了的 (与 playerStart 的 advanceToPlayable 同款循环)
     assert "while (track && !track.playable) track = queueAdvance(playQueue);" \
         in queue_js
-    # ② error 兜底: 计数与救回都在 sources, 出声 (playing) 清零
+    # ② error 兜底: 救回/挂起都在 sources, 出声 (playing) 销挂起
     assert "if (currentTrack) notePlaybackFailed();" in audio_js
     assert "notePlaybackSucceeded();" in audio_js
-    assert "let playFailStreak = 0;" in sources_js
-    assert 'toast("连着几首都播不了, 先停了")' in sources_js
     assert "recoverFailedPlayback();" in sources_js
-    assert "playerNext(true);" in sources_js        # 救不回: 强续下一首
+    assert "playerNext(" not in sources_js          # 1.8.96 救不回不跳歌: 挂起重试
+    assert "playFailStreak" not in sources_js       # 连挂计数/强续封顶退役
     assert "Math.min(at, track.duration_seconds - 1)" in sources_js  # 原位置接上
     # ③ 源同步落定: loadTrack 不再 await, 本地有货补刀换 blob
     # (1.8.87 ① 补刀带上起播意图 —— 见 test_music_offline_transition_wiring)
@@ -130,11 +129,11 @@ def test_music_offline_transition_wiring():
     后补刀换 blob 会把挂起的 play() 掐成 AbortError 吞掉, 而 wasPaused 读
     到的还是假 true (play 挂起≠在播) 不再重启 —— 歌对了源对了却永远暂
     停, 连 error 都没有 (元素好好的, 只是没人再喊播)。起播意图带进补刀,
-    换完源自己重启。② error 按网络/解码分家 (用户点名「就算是服务不稳
-    定, 也要有恢复措施」): 网络 (code 2/0) 不再连跳 3 首死停 —— 本地有
+    换完源自己重启。② error 恢复 (用户点名「服务不稳定也要有恢复措施」,
+    1.8.96 再点名「网络不好也别直接跳过, 跳过是用户才能定的」): 本地有
     整曲立刻救回, 没有就地挂起等信号 (计时一次 + 回前台即刻重试; 页面
-    不在前台绝不自己开声, 1.8.83 撤自动续播的规矩不破), 只有解码不了
-    (code 3/4) 才照旧跳歌计数封顶。"""
+    不在前台绝不自己开声, 1.8.83 撤自动续播的规矩不破) —— 出错一律不
+    自动跳歌 (WebKit 网络失败常报 code 4, 信号差与文件烂分不清, 分家收摊)。"""
     queue_js = (MUSIC_STATIC / "js" / "music-player-queue.js").read_text(
         encoding="utf-8")
     sources_js = (MUSIC_STATIC / "js" / "music-player-sources.js"
@@ -143,21 +142,20 @@ def test_music_offline_transition_wiring():
     assert "playerUpgradeDownloadedSource(true, autoplay);" in queue_js
     assert "if (!wasPaused || resumeAfterSwap) startAudio().catch(() => {});" \
         in sources_js
-    # ② 网络类 (非 3/4) 不计数不跳歌: 缓存有立刻救回, 没有挂起等信号
-    assert "if (code !== 3 && code !== 4) {" in sources_js
-    assert "recoverFailedPlayback(true);" in sources_js
+    # ② 出错不跳歌 (1.8.96): 缓存有立刻救回, 没有挂起等信号; 错码分家撤了
+    assert "audioElement().error" not in sources_js
+    assert "recoverFailedPlayback();" in sources_js
     assert "armNetworkRetry();" in sources_js
     assert 'toast("信号断了, 回来会自动接着放")' in sources_js
     # 挂起重试: 计时一次 + 回前台即刻; 隐着不开声; 重试先缓存后流, 绝不跳歌
     assert "function retryAfterNetworkDrop" in sources_js
     assert "if (!pendingNetworkRetry || document.hidden) return;" in sources_js
     assert 'document.addEventListener("visibilitychange"' in sources_js
-    # 重试先问缓存 (有就换缓存源), 没有同一首再拉流 —— 全文件只剩解码类
-    # 救不回那一处跳歌
-    assert sources_js.count("playerNext(true);") == 1
+    # 重试先问缓存 (有就换缓存源), 没有同一首再拉流 —— 全文件不跳歌
+    assert "playerNext(" not in sources_js
     # 出声/换曲: 挂起作废 (playing 事件与 loadTrack 两头销)
     assert "networkRetryToasted = false;" in sources_js
     assert "discardNetworkRetry();" in queue_js
-    # 解码路径照旧: 跳歌/连挂 3 首封顶都在
-    assert "let playFailStreak = 0;" in sources_js
-    assert 'toast("连着几首都播不了, 先停了")' in sources_js
+    # 1.8.96 连挂封顶退役后的防转圈: 缓存救回出手打点, 刚救回又挂转挂起
+    assert "let lastRecoverAt = 0;" in sources_js
+    assert "Date.now() - lastRecoverAt < 3000" in sources_js
