@@ -29,10 +29,9 @@ def test_music_controls_apple_style_wiring():
     assert ".fp-times" not in html                                # 旧三行布局撤了
     assert ".fp-controls > button:active { transform: scale(.86)" in html  # 按压反馈
     assert "#fp-grab" in html                                 # 收起抓手
-    # 迷你气泡: 播放/暂停 + 上下曲 (1.8.0 撤过, 1.8.87 用户点名加回);
-    # 歌名/作者改跑马灯
-    assert 'id="mini-play"' in html and 'id="mini-prev"' in html \
-        and 'id="mini-next"' in html
+    # 迷你气泡: 播放/暂停键 + 跑马灯 (上下曲键 1.8.94 用户点名「左右滑动
+    # 切歌」撤掉, 切歌走气泡横滑 —— 见 test_music_wiring_dock 的 185 条)
+    assert 'id="mini-play"' in html and 'id="mini-open"' in html
     assert 'class="mq-line"' in html and 'class="mq-run"' in html
     # 音量条整个撤了 (1.5.1, 用户点名): 音量交给设备音量键/系统音量
     assert "#fp-volume" not in html and ".fp-volume" not in html

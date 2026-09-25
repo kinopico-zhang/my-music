@@ -18,11 +18,9 @@
 function bindPlayerEvents() {
   const audio = audioElement();
 
-  // 气泡三键: 播放/暂停 + 上下曲 (1.8.0 撤掉过, 1.8.87 用户点名加回 ——
-  // 路上切歌不进全屏页; 切歌保持原播放状态); 点击不冒泡, 各键各干各的
+  // 气泡: 播放/暂停键 + 点开全屏页 (上下曲键 1.8.94 用户点名「左右滑动
+  // 切歌」撤掉 —— 切歌走气泡横滑, 绑定在 music-bubble-swipe)
   $("#mini-play").addEventListener("click", (event) => { event.stopPropagation(); playerToggle(); });
-  $("#mini-prev").addEventListener("click", (event) => { event.stopPropagation(); playerPrevious(); });
-  $("#mini-next").addEventListener("click", (event) => { event.stopPropagation(); playerNext(); });
   $("#mini-open").addEventListener("click", openFullPlayer);
   $("#fp-grab").addEventListener("click", () => {
     if (fpDismissDragged) {            // 刚拖过: 抬手补发的 click 不算

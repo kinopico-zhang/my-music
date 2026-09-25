@@ -40,23 +40,20 @@ def test_music_dock_wiring():
     assert "rgba(44,44,46,.7);" in keys_css               # 磨砂配方与气泡同款 (1.8.5 调回半透明)
     assert "backdrop-filter: blur(20px) saturate(180%);" in keys_css
     assert "transform: translateZ(0);" in keys_css         # 自家合成层防复印
-    # 气泡变窄: flex:1 占中间, 圆角胶囊; 上下曲 1.8.0 撤过、1.8.87 用户点名
-    # 加回 (路上切歌不进全屏页), 三键各接各的, 点击不冒泡
+    # 气泡变窄: flex:1 占中间, 圆角胶囊; 上下曲键 1.8.87 加回过、1.8.94
+    # 用户点名「左右滑动切歌」再撤掉 —— 键和接线一起撤干净 (留接线会开局崩)
     mini_css = html[html.index("#mini-player {"):html.index("#mini-progress")]
     assert "flex: 1; min-width: 0;" in mini_css and "border-radius: 23px;" in mini_css
-    assert 'id="mini-play"' in html and 'id="mini-prev"' in html \
-        and 'id="mini-next"' in html
-    assert '#mini-player > button svg { display: block; }' in html  # 三键图标同款
-    # 1.8.93 (用户点名「三个按钮再紧凑一点」): 三键左右垫 9→5、舱距 8→5;
-    # 上下曲双三角裁半成单三角 (viewBox 偏移回光心, 光心断言在 icons 测试)
-    assert "align-items: center; gap: 5px;" in mini_css \
-        and "#mini-prev, #mini-play, #mini-next { padding: 9px 5px; }" in html
-    assert 'id="mini-prev" aria-label="上一首"><svg viewBox="6.25 0 24 24"' in html \
-        and 'id="mini-next" aria-label="下一首"><svg viewBox="6.25 0 24 24"' in html
-    assert '$("#mini-prev").addEventListener("click", (event) => ' \
-        '{ event.stopPropagation(); playerPrevious(); });' in player
-    assert '$("#mini-next").addEventListener("click", (event) => ' \
-        '{ event.stopPropagation(); playerNext(); });' in player
+    assert 'id="mini-play"' in html \
+        and 'id="mini-prev"' not in html and 'id="mini-next"' not in html
+    assert '$("#mini-prev")' not in js and '$("#mini-next")' not in js \
+        and '$("#mini-prev")' not in player and '$("#mini-next")' not in player
+    assert '#mini-player > button svg { display: block; }' in html  # 播放键图标同款
+    # 1.8.94 (用户点名「左右滑动切歌」): 封面文字整块 #mini-drag 跟手平移,
+    # 出界在 #mini-open 裁掉 (不爬到播放键底下)
+    open_css = html[html.index("#mini-open {"):html.index("#mini-art {")]
+    assert "overflow: hidden;" in open_css and "will-change: transform;" in open_css
+    assert '<span id="mini-drag">' in html
     # 跑马灯: 文字比行宽长才滚 (JS 量过), 两端各停一拍再往回走
     assert 'class="mq-line"' in html and 'class="mq-run"' in html
     assert ".mq-run.marquee {" in html and "@keyframes mq-scroll" in html
@@ -180,19 +177,24 @@ def test_music_top_fallback_removed():
 
 
 def test_music_185_bubble_swipe_back():
-    """1.8.5 修「气泡右划返回不好用」: 1.8.0 推入层铺满全高后, 气泡
-    (z50) 底下的内容全是层 (z44), 层上的右划手势收不到气泡那片 ——
-    气泡成了手势死角。给气泡单绑一份: 拖栈顶层跟手位移, 松手够远或
-    带甩劲就收层; 竖向/左划立刻放掉, 不碍气泡自己的点击。"""
+    """气泡手势一条管线两用 (1.8.5 右划返回 + 1.8.94 横滑切歌): 气泡
+    (z50) 盖在推入层 (z44) 上, 层上的右划收不到它 —— 有层在, 右划拖栈顶层
+    松手收层; 其余横滑切歌 (上下曲键撤了): 跟手平移, 拖过 28% 或带甩劲换曲,
+    新歌对侧滑进, 没换成原侧弹回; 竖向放掉不碍点击。"""
     html = music_page_shell()
     js = music_browser_js()
-    assert 'src="/music/static/js/music-bubble-swipe.js?v=' in html
-    assert "bindBubbleSwipe" in js
-    bubble = (MUSIC_STATIC / "js" / "music-bubble-swipe.js").read_text(
-        encoding="utf-8")
-    assert 'const bubble = $("#mini-player");' in bubble
-    assert "if (!pushStack.length) return;" in bubble   # 没层可收: 原样
-    assert "horizontal = dx > 0 && Math.abs(dx) > Math.abs(dy);" in bubble
-    assert "closePushStack(pushStack.length - 1);" in bubble  # 只收顶层
-    # 层运动期磨砂暂撤照旧罩着 (拖动中每下续期)
-    assert "paneMotion();" in bubble
+    assert 'src="/music/static/js/music-bubble-swipe.js?v=' in html \
+        and "bindBubbleSwipe" in js
+    bubble = (MUSIC_STATIC / "js" / "music-bubble-swipe.js").read_text(encoding="utf-8")
+    assert 'const bubble = $("#mini-player");' in bubble \
+        and 'const drag = $("#mini-drag");' in bubble
+    # 有层右划收层 (1.8.5 老用法原样, 只收顶层); 层运动期磨砂暂撤罩着
+    assert 'mode = dx > 0 && pane ? "layer" : "track";' in bubble \
+        and "closePushStack(pushStack.length - 1);" in bubble \
+        and "paneMotion();" in bubble
+    # 切歌 (3D 舞台同款口径): 28% 门槛 + 甩劲, 滑出换曲后对侧滑进
+    assert "const SWITCH_SHARE = 0.28;" in bubble \
+        and "function poseBubble" in bubble and "function commitBubble" in bubble
+    assert 'if (direction === "next") playerNext();' in bubble \
+        and "else playerPrevious();" in bubble \
+        and "poseBubble(0);" in bubble   # 弹回 / 滑进收场都归零

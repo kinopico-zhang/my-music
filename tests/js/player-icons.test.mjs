@@ -248,28 +248,6 @@ test("船坞键与上弹菜单图标 (1.8.0): 光心对准各自的视框中心"
   }
 });
 
-test("播放气泡上下曲 (1.8.93 裁半): 单三角居中, 光心对准视框中心", () => {
-  const pick = (id) => {
-    const match = page.match(new RegExp(
-      `id="${id}"[^>]*><svg viewBox="([^"]+)"[^>]*><path d="([^"]+)"`, "s"));
-    assert.ok(match, `music.html 里找不到 ${id} 的图标`);
-    return { viewBox: match[1].split(/\s+/).map(Number), d: match[2] };
-  };
-  // 双三角裁一半 (用户点名「留一个三角形」): 每枚只剩一个 M; 留下的三角
-  // 不在画布正中, 用 viewBox 偏移把光心挪回视框中心 (船坞键同款手法)
-  for (const [id, icon] of [["mini-prev", pick("mini-prev")],
-                            ["mini-next", pick("mini-next")]]) {
-    assert.ok((icon.d.match(/M/g) || []).length === 1,
-      `${id} 该只剩一枚三角`);
-    const b = pathBBox(icon.d);
-    const [vx, vy, vw, vh] = icon.viewBox;
-    assert.ok(Math.abs((b.minX + b.maxX) / 2 - (vx + vw / 2)) <= 0.12,
-      `${id} 横向光心 ${(b.minX + b.maxX) / 2} ≠ ${vx + vw / 2}`);
-    assert.ok(Math.abs((b.minY + b.maxY) / 2 - (vy + vh / 2)) <= 0.12,
-      `${id} 纵向光心 ${(b.minY + b.maxY) / 2} ≠ ${vy + vh / 2}`);
-  }
-});
-
 test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居中", () => {
   const pick = (id) => {
     const match = page.match(new RegExp(`id="${id}".*?d="([^"]+)"`, "s"));
