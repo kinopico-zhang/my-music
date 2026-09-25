@@ -157,6 +157,31 @@ function centered(name, d, tolerance = 0.01) {
   return b;
 }
 
+/** svg 整串的光心断言 (船坞键同款): 全部路径包围盒并集中心 == 视框中心,
+    容差按视框边长取比例 —— iconfont 素材 (1024 画布) 字形不一定在正中,
+    产品里用 viewBox 偏移把光心挪回来, 这里认视框中心。 */
+function svgCentered(label, svg) {
+  const viewBox = svg.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number);
+  const boxes = [...svg.matchAll(/ d="([^"]+)"/g)].map((m) => pathBBox(m[1]));
+  const cx = (Math.min(...boxes.map((b) => b.minX))
+    + Math.max(...boxes.map((b) => b.maxX))) / 2;
+  const cy = (Math.min(...boxes.map((b) => b.minY))
+    + Math.max(...boxes.map((b) => b.maxY))) / 2;
+  const [vx, vy, vw, vh] = viewBox;
+  const tolX = Math.max(vw * 0.005, 0.02), tolY = Math.max(vh * 0.005, 0.02);
+  assert.ok(Math.abs(cx - (vx + vw / 2)) <= tolX,
+    `${label} 横向光心 ${cx} ≠ ${vx + vw / 2}`);
+  assert.ok(Math.abs(cy - (vy + vh / 2)) <= tolY,
+    `${label} 纵向光心 ${cy} ≠ ${vy + vh / 2}`);
+}
+
+/** 从 music-common.js 里取整枚图标 (const NAME = '<svg …>')。 */
+function iconSvg(name) {
+  const match = common.match(new RegExp(`const ${name} = '(<svg[\\s\\S]*?</svg>)'`));
+  assert.ok(match, `music-common.js 里找不到 ${name}`);
+  return match[1];
+}
+
 test("播放/暂停图标: 包围盒中心在正中 (切换不跳位)", () => {
   centered("ICON_PLAY (小)", iconPath("ICON_PLAY"));
   centered("ICON_PAUSE (小)", iconPath("ICON_PAUSE"));
@@ -223,15 +248,23 @@ test("船坞键与上弹菜单图标 (1.8.0): 光心对准各自的视框中心"
   }
 });
 
-test("全屏页新底行 (参考图 1:1 批): ⋯ / 加列表 / 词 / 队列都居中", () => {
+test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居中", () => {
   const pick = (id) => {
     const match = page.match(new RegExp(`id="${id}".*?d="([^"]+)"`, "s"));
     assert.ok(match, `music.html 里找不到 ${id} 的图标路径`);
     return match[1];
   };
-  // 取的是每个按钮的第一个 path (复合图标如 ♥盒 的第二路径不算)
+  // 取的是每个按钮的第一个 path (复合图标的第二路径不算)
   centered("fp-menu-btn (⋯)", pick("fp-menu-btn"));
-  centered("fp-like-btn (加列表盒)", pick("fp-like-btn"));
   centered("fp-lyrics-btn (词引号)", pick("fp-lyrics-btn"));
   centered("fp-queue-btn (队列)", pick("fp-queue-btn"));
+  // 1.8.89 循环模式键 (接管加列表键的位): 默认形内联在页里, 与 ICON_REPEAT
+  // 逐字节同款 (首拍 updatePlayModeButton 不跳位); 单曲/随机两态住
+  // music-common.js 换 innerHTML —— iconfont 素材用 viewBox 偏移居中
+  // (循环标 1024 画布字形偏上), 随机交叉箭头 24 格天然居中
+  const repeatSvg = iconSvg("ICON_REPEAT");
+  assert.ok(page.includes(repeatSvg), "页面默认形与 ICON_REPEAT 不同款");
+  svgCentered("ICON_REPEAT (列表循环态)", repeatSvg);
+  svgCentered("ICON_REPEAT_ONE (单曲循环态)", iconSvg("ICON_REPEAT_ONE"));
+  svgCentered("ICON_SHUFFLE (随机循环态)", iconSvg("ICON_SHUFFLE"));
 });

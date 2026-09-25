@@ -7,6 +7,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.89", date="2026-09-25", items=[
+        ChangelogItem(kind="改进", text="播放页底行的加列表键换成循环模式键 —— "
+                                       "点一下在列表循环、单曲循环、随机循环间"
+                                       "轮换并气泡报当前模式, 加列表还在 ⋯ 菜单"
+                                       "里, 待播放列表头的两枚循环键撤了"),
+    ]),
     ChangelogVersion(version="1.8.88", date="2026-09-25", items=[
         ChangelogItem(kind="改进", text="播放气泡加回上一首/下一首键 —— "
                                        "路上想切歌不用进全屏页, 点封面文字"

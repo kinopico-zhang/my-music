@@ -32,10 +32,10 @@
 <link rel="stylesheet" href="/music/static/css/music-downloads-select.css?v=4">
 <link rel="stylesheet" href="/music/static/css/music-player.css?v=19">
 <link rel="stylesheet" href="/music/static/css/music-fluid-morph.css?v=1">
-<link rel="stylesheet" href="/music/static/css/music-queue.css?v=5">
+<link rel="stylesheet" href="/music/static/css/music-queue.css?v=6">
 <link rel="stylesheet" href="/music/static/css/music-menus.css?v=6">
 <!-- 桌面端分叉样式 (1.8.35 客户端识别): 作用域一律 html[data-client="desktop"] -->
-<link rel="stylesheet" href="/music/static/css/music-desktop.css?v=3">
+<link rel="stylesheet" href="/music/static/css/music-desktop.css?v=4">
 </head>
 <body>
 
@@ -100,10 +100,6 @@
       <div id="fp-queue" hidden>
         <div class="fq-head">
           <div class="fq-head-txt"><b>继续播放</b><small id="fq-count"></small></div>
-          <div class="fq-head-btns">
-            <button type="button" id="fp-shuffle" aria-label="随机播放"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M16.5 3q0.31 0 0.533 0.223l3 3q0.217 0.217 0.217 0.527q0 0.316-0.217 0.533l-3 3q-0.217 0.217-0.533 0.217q-0.31 0-0.53-0.22t-0.22-0.53q0-0.299 0.217-0.527l1.723-1.723l-1.19 0q-1.055 0-1.981 0.46t-1.552 1.257q-0.967 1.231-0.967 2.783q0 1.564-0.75 2.906q-0.398 0.721-0.967 1.295q-0.832 0.85-1.94 1.325t-2.344 0.475l-1.5 0q-0.31 0-0.53-0.22t-0.22-0.53t0.22-0.53t0.53-0.22l1.5 0q1.061 0 1.984-0.457t1.55-1.254q0.967-1.231 0.967-2.789q0-1.564 0.75-2.906q0.404-0.727 0.967-1.289q0.832-0.85 1.94-1.327t2.344-0.478l1.19 0l-1.723-1.717q-0.217-0.229-0.217-0.533q0-0.31 0.22-0.53t0.53-0.22zM16.5 13.5q0.31 0 0.533 0.223l3 3q0.217 0.217 0.217 0.533q0 0.31-0.217 0.527l-3 3q-0.217 0.217-0.533 0.217q-0.31 0-0.53-0.217t-0.22-0.527q0-0.305 0.217-0.533l1.723-1.723l-1.19 0q-1.236 0-2.344-0.475t-1.94-1.325q0.451-0.662 0.75-1.412q0.627 0.796 1.55 1.254t1.984 0.457l1.19 0l-1.723-1.717q-0.217-0.229-0.217-0.533q0-0.31 0.22-0.53t0.53-0.22zM4.5 6l1.5 0q1.236 0 2.344 0.478t1.94 1.327q-0.457 0.673-0.75 1.412q-0.627-0.796-1.552-1.257t-1.981-0.46l-1.5 0q-0.31 0-0.53-0.22t-0.22-0.53t0.22-0.53t0.53-0.22z" fill="currentColor"/></svg></button>
-            <button type="button" id="fp-repeat" aria-label="循环模式"><svg viewBox="0 0 1024 1024" width="18" height="18" aria-hidden="true"><path d="M640 810.666667H341.333333C187.733333 810.666667 64 686.933333 64 533.333333s123.733333-277.333333 277.333333-277.333333h597.333334c12.8 0 21.333333 8.533333 21.333333 21.333333s-8.533333 21.333333-21.333333 21.333334H341.333333C211.2 298.666667 106.666667 403.2 106.666667 533.333333s104.533333 234.666667 234.666666 234.666667h298.666667c85.333333 0 164.266667-38.4 217.6-104.533333 19.2-25.6 36.266667-53.333333 44.8-83.2 4.266667-14.933333 8.533333-29.866667 10.666667-42.666667 2.133333-10.666667 12.8-19.2 23.466666-17.066667 10.666667 2.133333 19.2 12.8 17.066667 23.466667-2.133333 17.066667-6.4 34.133333-12.8 51.2-12.8 34.133333-29.866667 68.266667-53.333333 96-57.6 74.666667-149.333333 119.466667-247.466667 119.466667z" fill="currentColor"/><path d="M810.666667 426.666667c-6.4 0-10.666667-2.133333-14.933334-6.4-8.533333-8.533333-8.533333-21.333333 0-29.866667l113.066667-113.066667-113.066667-113.066666c-8.533333-8.533333-8.533333-21.333333 0-29.866667s21.333333-8.533333 29.866667 0l128 128c8.533333 8.533333 8.533333 21.333333 0 29.866667l-128 128c-4.266667 4.266667-8.533333 6.4-14.933333 6.4z" fill="currentColor"/></svg></button>
-          </div>
         </div>
         <div id="queue-list"></div>
       </div>
@@ -124,7 +120,7 @@
       <span class="fp-time" id="fp-time-total">-0:00</span>
     </div>
     <div class="fp-actions">
-      <button type="button" id="fp-like-btn" aria-label="添加到播放列表"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M3.024 4.992H12.961Q13.969 4.992 13.969 6Q13.969 7.008 12.961 7.008H3.024Q2.016 7.008 2.016 6Q2.016 4.992 3.024 4.992zM3.024 8.976H12.961Q13.969 8.976 13.969 9.984Q13.969 10.992 12.961 10.992H3.024Q2.016 10.992 2.016 9.984Q2.016 8.976 3.024 8.976zM3.0005 13.008H8.9995Q9.984 13.008 9.984 13.9925Q9.984 14.977 8.9995 14.977H3.0005Q2.016 14.977 2.016 13.9925Q2.016 13.008 3.0005 13.008zM12.9845 13.008H20.9995Q21.984 13.008 21.984 13.9925Q21.984 14.977 20.9995 14.977H12.9845Q12 14.977 12 13.9925Q12 13.008 12.9845 13.008zM15.984 9.984V18Q15.984 19.008 16.992 19.008Q18 19.008 18 18V9.984Q18 8.976 16.992 8.976Q15.984 8.976 15.984 9.984z" fill="currentColor"/></svg></button>
+      <button type="button" id="fp-mode-btn" aria-label="循环模式"><svg viewBox="64 19 899 899" width="28" height="28" aria-hidden="true"><path d="M640 810.666667H341.333333C187.733333 810.666667 64 686.933333 64 533.333333s123.733333-277.333333 277.333333-277.333333h597.333334c12.8 0 21.333333 8.533333 21.333333 21.333333s-8.533333 21.333333-21.333333 21.333334H341.333333C211.2 298.666667 106.666667 403.2 106.666667 533.333333s104.533333 234.666667 234.666666 234.666667h298.666667c85.333333 0 164.266667-38.4 217.6-104.533333 19.2-25.6 36.266667-53.333333 44.8-83.2 4.266667-14.933333 8.533333-29.866667 10.666667-42.666667 2.133333-10.666667 12.8-19.2 23.466666-17.066667 10.666667 2.133333 19.2 12.8 17.066667 23.466667-2.133333 17.066667-6.4 34.133333-12.8 51.2-12.8 34.133333-29.866667 68.266667-53.333333 96-57.6 74.666667-149.333333 119.466667-247.466667 119.466667z" fill="currentColor"/><path d="M810.666667 426.666667c-6.4 0-10.666667-2.133333-14.933334-6.4-8.533333-8.533333-8.533333-21.333333 0-29.866667l113.066667-113.066667-113.066667-113.066666c-8.533333-8.533333-8.533333-21.333333 0-29.866667s21.333333-8.533333 29.866667 0l128 128c8.533333 8.533333 8.533333 21.333333 0 29.866667l-128 128c-4.266667 4.266667-8.533333 6.4-14.933333 6.4z" fill="currentColor"/></svg></button>
       <button type="button" id="fp-lyrics-btn" aria-label="歌词"><svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path d="M11.049 7.801L11.049 13.662Q11.406 15.378 10.242 16.689Q9.078 18 7.332 17.848Q7.244 17.9 7.146 17.87Q7.049 17.84 7.005 17.748Q6.9 17.71 6.858 17.608Q6.815 17.505 6.863 17.404L6.863 15.73Q6.83 15.576 6.931 15.454Q7.032 15.333 7.189 15.336Q7.857 15.352 8.276 14.832Q8.695 14.311 8.537 13.662L8.537 12.825L6.026 12.825Q5.286 12.952 4.755 12.421Q4.224 11.89 4.351 11.15L4.351 7.801Q4.224 7.062 4.755 6.531Q5.286 6 6.026 6.127L9.375 6.127Q10.114 6 10.645 6.531Q11.176 7.062 11.049 7.801L11.049 7.801M17.747 6.127L14.398 6.127Q13.658 6 13.127 6.531Q12.597 7.062 12.723 7.801L12.723 11.15Q12.597 11.89 13.127 12.421Q13.658 12.952 14.398 12.825L16.91 12.825L16.91 13.662Q17.068 14.311 16.649 14.832Q16.23 15.352 15.562 15.336Q15.399 15.335 15.298 15.462Q15.197 15.589 15.235 15.747L15.235 17.421Q15.194 17.517 15.236 17.611Q15.279 17.706 15.377 17.739Q15.421 17.832 15.518 17.862Q15.616 17.892 15.704 17.84Q17.448 17.992 18.612 16.684Q19.776 15.376 19.421 13.662L19.421 7.801Q19.548 7.062 19.017 6.531Q18.487 6 17.747 6.127L17.747 6.127" fill="currentColor"/></svg></button>
       <button type="button" id="fp-queue-btn" aria-label="播放队列"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M3.0005 5.016H17.9995Q18.984 5.016 18.984 6.0005Q18.984 6.985 17.9995 6.985H3.0005Q2.016 6.985 2.016 6.0005Q2.016 5.016 3.0005 5.016zM3.024 9H17.976Q18.984 9 18.984 10.008Q18.984 11.016 17.976 11.016H3.024Q2.016 11.016 2.016 10.008Q2.016 9 3.024 9zM3.0315 12.969H13.9845Q15 12.969 15 13.9845Q15 15 13.9845 15H3.0315Q2.016 15 2.016 13.9845Q2.016 12.969 3.0315 12.969zM17.801 13.445L21.185 15.499Q21.984 15.984 21.183 16.467L17.802 18.509Q17.016 18.984 17.016 18.065L17.016 13.887Q17.016 12.969 17.801 13.445z" fill="currentColor"/></svg></button>
     </div>
@@ -167,17 +163,17 @@
 <!-- 脚本按逻辑拆分 (结构化重构, 拆自 music.js / music-player.js): 经典脚本,
      必须按此顺序加载 (后加载的可引用先加载的全局; ?v= 换文件即换址) -->
 <script src="/music/static/js/lyrics-parser.js?v=2"></script>
-<script src="/music/static/js/player-queue.js?v=3"></script>
+<script src="/music/static/js/player-queue.js?v=4"></script>
 <script src="/music/static/js/downloads-capability.js?v=2"></script>
 <script src="/music/static/js/downloads.js?v=3"></script>
 <script src="/music/static/js/autocache.js?v=1"></script>
-<script src="/music/static/js/music-common.js?v=11"></script>
+<script src="/music/static/js/music-common.js?v=12"></script>
 <script src="/music/static/js/music-player-state.js?v=3"></script>
 <script src="/music/static/js/music-player-sources.js?v=4"></script>
-<script src="/music/static/js/music-player-queue.js?v=12"></script>
-<script src="/music/static/js/music-player-persistence.js?v=4"></script>
+<script src="/music/static/js/music-player-queue.js?v=13"></script>
+<script src="/music/static/js/music-player-persistence.js?v=5"></script>
 <script src="/music/static/js/music-player-prefetch.js?v=2"></script>
-<script src="/music/static/js/music-player-chrome.js?v=7"></script>
+<script src="/music/static/js/music-player-chrome.js?v=8"></script>
 <script src="/music/static/js/music-player-fluid-morph.js?v=2"></script>
 <script src="/music/static/js/music-player-fullpage.js?v=7"></script>
 <script src="/music/static/js/music-player-art-stage.js?v=6"></script>
@@ -187,7 +183,7 @@
 <script src="/music/static/js/music-player-media-session.js?v=7"></script>
 <script src="/music/static/js/music-player-slider.js?v=1"></script>
 <script src="/music/static/js/music-player-audio-events.js?v=13"></script>
-<script src="/music/static/js/music-player-events.js?v=10"></script>
+<script src="/music/static/js/music-player-events.js?v=11"></script>
 <script src="/music/static/js/music-player-boot.js?v=2"></script>
 <script src="/music/static/js/music-navigation.js?v=8"></script>
 <script src="/music/static/js/music-push-panes.js?v=14"></script>
@@ -201,7 +197,7 @@
 <script src="/music/static/js/music-swipe-delete.js?v=6"></script>
 <script src="/music/static/js/music-track-menus.js?v=9"></script>
   <script src="/music/static/js/music-share-links.js?v=1"></script>
-<script src="/music/static/js/music-menu-gestures.js?v=4"></script>
+<script src="/music/static/js/music-menu-gestures.js?v=5"></script>
 <script src="/music/static/js/music-dock-menu.js?v=3"></script>
 <script src="/music/static/js/music-playlist-picker.js?v=7"></script>
 <script src="/music/static/js/music-home-view.js?v=7"></script>

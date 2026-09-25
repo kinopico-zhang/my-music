@@ -7,10 +7,10 @@
           lyricsAutoScrolling, lyricsFollowPaused: writable, lyricsLastScrollAt: writable,
           lyricsViewOpen, openFullPlayer, playQueue, playerNext, playerOpen,
           playerPrevious, playerToggle,
-          queueCycleRepeat, queueJump, queueSetShuffle, queueViewOpen,
+          queueCyclePlayMode, queueJump, queueViewOpen,
           renderQueueView, resumeLyricsFollow,
           savePlayerState, toast, toggleLyricsView, toggleQueueView,
-          updateShuffleRepeatButtons */
+          updatePlayModeButton */
 /* exported bindPlayerEvents, lyricsFollowPaused, lyricsLastScrollAt */
 
 // ------------------------------------------------------------ 事件绑定
@@ -41,20 +41,15 @@ function bindPlayerEvents() {
   $("#fp-play").addEventListener("click", playerToggle);
   $("#fp-next").addEventListener("click", playerNext);
   $("#fp-prev").addEventListener("click", playerPrevious);
-  $("#fp-shuffle").addEventListener("click", () => {
+  // 1.8.89 三态循环一键 (用户点名): 列表循环 → 单曲循环 → 随机循环,
+  // 切一下气泡报一下当前态; 待播列表头的两枚控制键退役 (列表只看不听令)
+  $("#fp-mode-btn").addEventListener("click", () => {
     if (!playQueue) return;
-    queueSetShuffle(playQueue, !playQueue.shuffle);
-    updateShuffleRepeatButtons();
+    const mode = queueCyclePlayMode(playQueue);
+    updatePlayModeButton();
     if (queueViewOpen) renderQueueView();   // 没开着不重铺 (翻开现铺, 1.8.61)
     savePlayerState();
-    toast(playQueue.shuffle ? "随机播放: 开" : "随机播放: 关");
-  });
-  $("#fp-repeat").addEventListener("click", () => {
-    if (!playQueue) return;
-    const mode = queueCycleRepeat(playQueue);
-    updateShuffleRepeatButtons();
-    savePlayerState();
-    toast(mode === "all" ? "列表循环" : mode === "one" ? "单曲循环" : "循环: 关");
+    toast(mode === "all" ? "列表循环" : mode === "one" ? "单曲循环" : "随机循环");
   });
   $("#fp-lyrics-btn").addEventListener("click", toggleLyricsView);
   $("#fp-queue-btn").addEventListener("click", toggleQueueView);

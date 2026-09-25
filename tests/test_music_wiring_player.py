@@ -55,28 +55,31 @@ def test_music_controls_apple_style_wiring():
 
 def test_music_queue_cover_view_wiring():
     """播放队列 = 封面原地翻开的视图 (用户点名"不要弹队列, 用封面区域显示
-    播放列表"): 头部一行 (继续播放 + N 首歌曲 左, 随机/循环两枚椭圆图标键
-    右 —— 照 Apple Music Playing Next 排版), 下面 upcoming 列表; 与歌词
+    播放列表"): 头部一行 (继续播放 + N 首歌曲), 下面 upcoming 列表; 与歌词
     视图同住封面区互斥; 全屏页收起时跟着收。旧底部弹层全撤。
-    1.8.5 (用户点名): 头部改「继续播放」; 随机/循环去文字改图标钮
-    (循环 = 用户贴的 iconfont, 单曲循环带 1, 列表循环去 1), 激活与否
-    用透明度表意。"""
+    1.8.5 头部改「继续播放」+ 随机/循环两枚图标钮; 1.8.89 (用户点名「待播放
+    列表就不需要播放控制了」) 两枚键撤了 —— 循环控制归播放页底行三态一键,
+    iconfont 循环标 (单曲带 1, 列表去 1) + 交叉箭头随机形照用, JS 按态换。"""
     html = music_page_shell()
     player = music_player_js()
     for frag in ['<div id="fp-queue" hidden>', 'class="fq-head"',
                  'class="fq-head-txt"', 'id="fq-count"',
-                 'class="fq-head-btns"', 'id="fp-shuffle"', 'id="fp-repeat"',
                  'id="queue-list"', "#full-player.queue .fp-bg img"]:
         assert frag in html, f"队列视图缺 {frag}"
-    # 1.8.5: 待播放 → 继续播放; 图标钮透明度两态 (未激活 ~45%)
+    # 1.8.89 (用户点名「待播放列表就不需要播放控制了」): 头部两枚控制键死透
+    for gone in ["fq-head-btns", "fp-shuffle", "fp-repeat"]:
+        assert gone not in html, f"{gone} 该撤没撤"
     assert "<b>继续播放</b>" in html and ">待播放<" not in html
-    assert ".fq-head-btns button.on { opacity: 1; }" in html
-    # 循环键换图标: 列表循环/单曲循环同一枚 (iconfont, 用户贴的), JS 按态换
-    assert 'repeatButton.innerHTML = repeat === "one" ? ICON_REPEAT_ONE : ICON_REPEAT;' \
+    # 1.8.89 循环控制归播放页底行三态一键 (加列表键让位, 加列表仍在 ⋯ 菜单):
+    # 列表/单曲/随机三态各一枚图标, JS 按态换 innerHTML; 切一下气泡报当前态
+    assert 'id="fp-mode-btn" aria-label="循环模式"' in html
+    assert "$(\"#fp-mode-btn\").innerHTML = shuffle ? ICON_SHUFFLE" in player
+    assert "queueCyclePlayMode(playQueue)" in player
+    assert 'toast(mode === "all" ? "列表循环" : mode === "one" ? "单曲循环" : "随机循环")' \
         in player
     common = (MUSIC_STATIC / "js" / "music-common.js").read_text(encoding="utf-8")
-    for icon in ["ICON_REPEAT = ", "ICON_REPEAT_ONE = "]:
-        assert icon in common, f"music-common.js 缺 {icon}"
+    for icon in ["ICON_REPEAT = ", "ICON_REPEAT_ONE = ", "ICON_SHUFFLE = "]:
+        assert icon in common, f"music-common.js 缺少 {icon}"
     assert "#fp-repeat.one" not in html          # 旧「1」角标那套撤了
     assert "fq-modes" not in html                    # 旧顶排胶囊撤了
     assert "queue-sheet" not in html and "queue-mask" not in html \

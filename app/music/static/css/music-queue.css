@@ -23,16 +23,8 @@
 .fq-head-txt b { display: block; font-size: 19px; font-weight: 700;
                  color: #fff; line-height: 1.25; }
 .fq-head-txt small { font-size: 12px; color: rgba(255,255,255,.5); }
-/* 1.8.5 (用户点名): 头部改「继续播放」; 随机/循环去文字, 两枚 iOS 椭圆
-   图标钮 —— 激活与否用透明度表意 (未激活 ~45%, 激活全亮)。 */
-.fq-head-btns { display: flex; gap: 12px; }
-.fq-head-btns button {
-  display: flex; align-items: center; justify-content: center;
-  width: 34px; height: 34px; padding: 0;
-  border-radius: 999px; background: rgba(255,255,255,.14); color: #fff;
-  opacity: .45; transition: opacity .25s ease;
-}
-.fq-head-btns button.on { opacity: 1; }
+/* 1.8.89 (用户点名「待播放列表就不需要播放控制了」): 随机/循环两枚头部键
+   撤了 —— 循环控制归播放页底行的三态一键。 */
 #queue-list {
   flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 2px 0 14px;
   /* 1.8.31 行板改透明 (用户点名「背景颜色跟整个页面一致」): 全屏页的底是
