@@ -40,8 +40,7 @@ def test_music_dock_wiring():
     assert "rgba(44,44,46,.7);" in keys_css               # 磨砂配方与气泡同款 (1.8.5 调回半透明)
     assert "backdrop-filter: blur(20px) saturate(180%);" in keys_css
     assert "transform: translateZ(0);" in keys_css         # 自家合成层防复印
-    # 气泡变窄: flex:1 占中间, 圆角胶囊; 上下曲键 1.8.87 加回过、1.8.94
-    # 用户点名「左右滑动切歌」再撤掉 —— 键和接线一起撤干净 (留接线会开局崩)
+    # 气泡变窄: flex:1 占中间, 圆角胶囊; 上下曲键 1.8.87 加回过、1.8.94 滑切再撤
     mini_css = html[html.index("#mini-player {"):html.index("#mini-progress")]
     assert "flex: 1; min-width: 0;" in mini_css and "border-radius: 23px;" in mini_css
     assert 'id="mini-play"' in html \
@@ -49,9 +48,11 @@ def test_music_dock_wiring():
     assert '$("#mini-prev")' not in js and '$("#mini-next")' not in js \
         and '$("#mini-prev")' not in player and '$("#mini-next")' not in player
     assert '#mini-player > button svg { display: block; }' in html  # 播放键图标同款
-    # 1.8.94 横滑切歌 + 1.8.95 邻曲预览: #mini-drag 三卡横排跟手平移, 出界在 #mini-open 裁掉
+    # 1.8.94 横滑切歌 + 1.8.95 邻曲预览: #mini-drag 三卡横排跟手平移, 出界在
+    # #mini-open 裁掉; 1.8.96 撤衬让裁切贴内容盒 (邻曲卡静止不出血)
     open_css = html[html.index("#mini-open {"):html.index(".mini-card {")]
     assert "overflow: hidden;" in open_css and "will-change: transform;" in open_css
+    assert "padding: 0;" in open_css and "padding: 0 9px;" in html   # 撤衬/卡衬
     assert 'id="mini-card-prev"' in html and 'id="mini-card-cur"' in html \
         and 'id="mini-card-next"' in html and '<span id="mini-drag">' in html
     # 跑马灯: 文字比行宽长才滚 (JS 量过), 两端各停一拍再往回走
@@ -109,8 +110,7 @@ def test_music_dock_wiring():
     assert "bottom: calc(var(--dock-h) + 22px + env(safe-area-inset-bottom));" \
         in html[html.index("#toast {"):]
     # 层动画期的重影对策罩住三件套 (透明船坞不罩, 罩磨砂子件); 实底是
-    # 磨砂等效色 (1.8.1 立的规矩: 动画前后深浅一致; 1.8.5 底色调回半透明
-    # 一档, 等效实底跟着重算; 1.8.17 搜索框搬页顶, 不再同住船坞位)
+    # 磨砂等效色 (动画前后深浅一致, 1.8.5 调回半透明跟着重算; 1.8.17 搬页顶)
     assert "body.pane-anim #mini-player," in html
     assert "body.pane-anim #dock-menu," in html
     assert "body.pane-anim #dock-search {" in html
@@ -175,11 +175,10 @@ def test_music_top_fallback_removed():
     assert "header-probe" not in webapp and "probe.jsonl" not in webapp
 
 
-def test_music_185_bubble_swipe_back():
-    """气泡手势一条管线两用 (1.8.5 右划返回 + 1.8.94 横滑切歌): 气泡
-    (z50) 盖在推入层 (z44) 上, 层上的右划收不到它 —— 有层在, 右划拖栈顶层
-    松手收层; 其余横滑切歌: 三张卡跟手平移, 邻曲从两侧滑进来提前看到
-    (1.8.95), 拖过 28% 或甩劲顺势滑满一整张换曲无缝归位; 竖向放掉不碍点击。"""
+def test_music_196_bubble_swipe_songs_only():
+    """气泡横滑只管切歌 (1.8.96 撤 1.8.5 的右划收层联动, 用户点名「第一首
+    右划该橡皮筋, 别让底部页面把事件收走退页」): 三卡跟手平移邻曲从两侧滑
+    进来 (1.8.95), 拖过 28% 或甩劲滑满换曲; 没邻曲那侧橡皮筋松手弹回。"""
     html = music_page_shell()
     js = music_browser_js()
     assert 'src="/music/static/js/music-bubble-swipe.js?v=' in html \
@@ -187,10 +186,9 @@ def test_music_185_bubble_swipe_back():
     bubble = (MUSIC_STATIC / "js" / "music-bubble-swipe.js").read_text(encoding="utf-8")
     assert 'const bubble = $("#mini-player");' in bubble \
         and 'const drag = $("#mini-drag");' in bubble
-    # 有层右划收层 (1.8.5 老用法原样, 只收顶层); 层运动期磨砂暂撤罩着
-    assert 'mode = dx > 0 && pane ? "layer" : "track";' in bubble \
-        and "closePushStack(pushStack.length - 1);" in bubble \
-        and "paneMotion();" in bubble
+    # 收层联动撤净 (1.8.96): 横滑认领后只切歌, 不再把底下的页面收了
+    assert "closePushStack" not in bubble and "paneMotion" not in bubble \
+        and "pushStack" not in bubble
     # 切歌 (3D 舞台同款口径): 28% 门槛 + 甩劲; 邻曲预览 (1.8.95) 用舞台取数
     assert "const SWITCH_SHARE = 0.28;" in bubble \
         and "function poseBubble" in bubble and "function commitBubble" in bubble
@@ -198,3 +196,5 @@ def test_music_185_bubble_swipe_back():
     assert 'if (direction === "next") playerNext();' in bubble \
         and "else playerPrevious();" in bubble \
         and "poseBubble(0);" in bubble   # 弹回 / 滑满没换成都归零
+    # 没邻曲那侧橡皮筋: 三成阻力封顶 44px, 松手弹回不换歌
+    assert "Math.sign(dx) * Math.min(44, Math.abs(dx) * 0.3)" in bubble
