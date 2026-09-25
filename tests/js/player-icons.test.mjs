@@ -261,10 +261,18 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
   // 1.8.89 循环模式键 (接管加列表键的位): 默认形内联在页里, 与 ICON_REPEAT
   // 逐字节同款 (首拍 updatePlayModeButton 不跳位); 单曲/随机两态住
   // music-common.js 换 innerHTML —— 1.8.90 三态重画为粗描边 (用户点名
-  // 「线条要粗一点」), 多路径拼一枚, 并集包围盒中心 == 视框中心
+  // 「线条要粗一点」), 1.8.91 再并进同一枚 path (半透明描边下一枚 path 只
+  // 上一次色, 交叉/接头不叠深) 并 28→24 缩到与邻键同量 (用户点名「偏大」)
   const repeatSvg = iconSvg("ICON_REPEAT");
   assert.ok(page.includes(repeatSvg), "页面默认形与 ICON_REPEAT 不同款");
   svgCentered("ICON_REPEAT (列表循环态)", repeatSvg);
   svgCentered("ICON_REPEAT_ONE (单曲循环态)", iconSvg("ICON_REPEAT_ONE"));
   svgCentered("ICON_SHUFFLE (随机循环态)", iconSvg("ICON_SHUFFLE"));
+  for (const name of ["ICON_REPEAT", "ICON_REPEAT_ONE", "ICON_SHUFFLE"]) {
+    const svg = iconSvg(name);
+    assert.ok((svg.match(/<path /g) || []).length === 1,
+      `${name} 该只有一枚 path (拆多枚半透明下交叉处会叠深)`);
+    assert.ok(svg.includes('width="24" height="24"'),
+      `${name} 该是 24 号 (28 号比邻键偏大)`);
+  }
 });

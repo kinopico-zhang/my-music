@@ -7,6 +7,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.91", date="2026-09-25", items=[
+        ChangelogItem(kind="改进", text="循环模式键的图标缩小一号跟旁边的按键"
+                                       "看齐, 线条交叉处不再叠出深色斑点"),
+        ChangelogItem(kind="改进", text="循环模式的气泡提示挪到标题行上, "
+                                       "整屏居中, 不再压着底部的播放按键"),
+    ]),
     ChangelogVersion(version="1.8.90", date="2026-09-25", items=[
         ChangelogItem(kind="改进", text="循环模式键的三态图标线条加粗 —— "
                                        "列表/单曲/随机都换成粗描边画法, "

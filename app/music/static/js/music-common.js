@@ -36,9 +36,15 @@ async function fetchJSON(url, options) {
 }
 
 let toastTimer = 0;
-/** 底部浮层提示 (2.4s 自动消失; 连续调用只保最后一条)。 */
+/** 浮层提示 (2.4s 自动消失; 连续调用只保最后一条)。1.8.91 (用户点名
+    「放在标题上, 整体居中」): 播放页开着时气泡上标题行 —— 老位置在底部,
+    正压着播放控制键; 这里现量 .fp-now 行位, top 钉在标题竖直中心。 */
 function toast(message) {
   const element = $("#toast");
+  const title = $("#full-player.open .fp-now");
+  element.classList.toggle("on-title", Boolean(title));
+  element.style.top = title
+    ? `${title.getBoundingClientRect().top + title.offsetHeight / 2}px` : "";
   element.textContent = message;
   element.hidden = false;
   element.classList.add("show");
@@ -121,11 +127,13 @@ const ICON_ACTION_REFRESH = '<svg viewBox="0 0 24 24" width="15" height="15" ari
 // 共享网络画法 (iconfont id 809967, fill 填充), 曲目菜单那颗同款
 // (music.html 内联 18px)。1.8.23 的 iOS 共享样式 (方框 + 顶边缺口箭头) 随之退役
 const ICON_ACTION_SHARE = '<svg viewBox="0 0 1024 1024" width="15" height="15" aria-hidden="true"><path d="M769.714 589.547c-51.754 0-97.702 24.851-126.571 63.269L394.479 528.059c3.93-13.798 6.034-28.364 6.034-43.424 0-16.496-2.527-32.399-7.211-47.35l247.724-124.288c28.71 40.052 75.647 66.151 128.687 66.151 87.388 0 158.229-70.84 158.229-158.229 0-87.388-70.841-158.229-158.229-158.229-87.389 0-158.229 70.841-158.229 158.229 0 6.046 0.352 12.009 1.011 17.88L351.22 369.884c-28.371-26.943-66.723-43.479-108.938-43.479-87.388 0-158.229 70.84-158.229 158.229s70.84 158.229 158.229 158.229c43.752 0 83.354-17.758 111.997-46.459l258.676 129.779c-0.964 7.062-1.474 14.266-1.474 21.592 0 87.389 70.84 158.229 158.229 158.229s158.229-70.84 158.229-158.229C927.938 660.388 857.103 589.547 769.714 589.547L769.714 589.547z" fill="currentColor"/></svg>';
-// 循环图标 (1.8.90 用户点名「线条要粗一点」重画): 粗描边画风 (2.4 描边,
-// 圆角接头, 与刷新环/下载标同一家法) —— 列表循环 = 圆角环+双箭头, 单曲
-// 循环加一竖 "1"; 1.8.5 的 iconfont 细线字形退役。三态由 chrome.js 换 innerHTML
-const ICON_REPEAT = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 1L21 5L17 9"/><path d="M3 11V9a4 4 0 0 1 4-4H21"/><path d="M7 23L3 19L7 15"/><path d="M21 13V15a4 4 0 0 1-4 4H3"/></svg>';
-const ICON_REPEAT_ONE = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 1L21 5L17 9"/><path d="M3 11V9a4 4 0 0 1 4-4H21"/><path d="M7 23L3 19L7 15"/><path d="M21 13V15a4 4 0 0 1-4 4H3"/><path d="M11 11.2L13 9.6V15.6"/></svg>';
-// 随机循环 (1.8.89 三态键的第三态; 1.8.90 同批粗描边重画): 交叉双箭头,
-// 路径坐标收在 3..21 对称盒里, 并集光心天然 (12,12) (icons 测试把着)
-const ICON_SHUFFLE = '<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3H21V8"/><path d="M3 20L21 3"/><path d="M21 16V21H16"/><path d="M15 15L21 21"/><path d="M3 4L9 9"/></svg>';
+// 循环图标 (1.8.90 用户点名「线条要粗一点」重画; 1.8.91 再修两笔: ① 三态
+// 各自并进同一枚 path —— 半透明描边下一枚 path 只上一次色, 交叉/接头处
+// 不再叠出深点 (拆成多枚会各上各的色); ② 28→24 号, 墨量与 ⋯/队列/歌词键
+// 拉平, 1.8.90 的大画布用户看着偏大。粗描边画风 (2.4 描边, 圆角接头, 与
+// 刷新环/下载标同一家法); 三态由 chrome.js 换 innerHTML
+const ICON_REPEAT = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2L21 6L17 10M3 12V10a4 4 0 0 1 4-4H21M7 14L3 18L7 22M21 12V14a4 4 0 0 1-4 4H3"/></svg>';
+const ICON_REPEAT_ONE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2L21 6L17 10M3 12V10a4 4 0 0 1 4-4H21M7 14L3 18L7 22M21 12V14a4 4 0 0 1-4 4H3M11.2 10.7L13 9.2V14.8"/></svg>';
+// 随机循环 (1.8.89 三态键的第三态; 1.8.91 同批并 path 去叠深 + 缩到 24):
+// 交叉双箭头, 坐标收在对称盒里, 并集光心天然 (12,12) (icons 测试把着)
+const ICON_SHUFFLE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3H21V8M3 20L21 3M21 16V21H16M15 15L21 21M3 4L9 9"/></svg>';
