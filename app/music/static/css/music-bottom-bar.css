@@ -64,9 +64,11 @@
 /* ---------- 迷你播放条 (船坞行中间的胶囊) ----------
    歌名/作者太长改跑马灯来回滚 (不再截断省略号)。
    1.8.87 加回过上一首/下一首键, 1.8.94 用户点名「左右滑动切歌」再撤掉 ——
-   封面文字整块 #mini-drag 跟手平移, 出界在 #mini-open 裁掉 (不爬到播放键
-   底下); 松手拖过两成八或带甩劲就换曲 (music-bubble-swipe, 3D 舞台同款
-   口径)。 */
+   1.8.95 (用户点名「滑动过程中提前看到下一首」) 手势升级: #mini-drag 摆
+   三张卡 (上一首/当前/下一首) 横排, 拖动整条跟手平移, 邻曲封面歌名从两侧
+   滑进来提前看到, 出界在 #mini-open 裁掉 (不爬到播放键底下); 松手拖过
+   两成八或带甩劲顺势滑满一整张换曲 (music-bubble-swipe, 3D 舞台同款
+   口径)。邻曲卡文字是静止省略号, 只有当前曲跑马灯。 */
 #mini-player {
   pointer-events: auto;
   position: relative; flex: 1; min-width: 0;
@@ -89,13 +91,21 @@
 }
 #mini-open { display: flex; align-items: center; flex: 1; min-width: 0;
              height: 100%; text-align: left; overflow: hidden; }
-#mini-drag { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;
-             height: 100%; will-change: transform; }  /* 1.8.94 跟手平移整块 */
-#mini-art { width: 34px; height: 34px; border-radius: 6px; object-fit: cover;
-            background: var(--surface-3); flex-shrink: 0; }
+#mini-drag { position: relative; flex: 1; min-width: 0; height: 100%;
+             will-change: transform; }  /* 1.8.94 跟手平移; 1.8.95 三卡横排 */
+.mini-card { position: absolute; top: 0; bottom: 0; left: 0; width: 100%;
+             display: flex; align-items: center; gap: 8px; }
+.mini-card.off { display: none; }   /* 那一侧没邻曲: 藏卡 (拖过去露底) */
+#mini-card-prev { transform: translateX(-100%); }   /* 邻曲站当前卡两侧 */
+#mini-card-next { transform: translateX(100%); }
+.mini-card img { width: 34px; height: 34px; border-radius: 6px;
+                 object-fit: cover; background: var(--surface-3); flex-shrink: 0; }
 .mini-txt { flex: 1; min-width: 0; }
 .mini-txt b { display: block; font-size: 13px; }
 .mini-txt small { display: block; font-size: 11px; color: var(--ink-2); }
+#mini-card-prev .mini-txt b, #mini-card-prev .mini-txt small,
+#mini-card-next .mini-txt b, #mini-card-next .mini-txt small {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #mini-player > button { padding: 9px; color: var(--ink-1); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; }
 #mini-player > button svg { display: block; }

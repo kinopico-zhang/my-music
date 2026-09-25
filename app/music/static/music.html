@@ -19,7 +19,7 @@
 <!-- 样式按逻辑拆成独立文件 (结构化重构): 加载顺序 = 底座 → 内容列表
      → 一级视图 → 底部常驻件 → 推入层 → 播放页 → 浮层菜单 -->
 <link rel="stylesheet" href="/music/static/css/music-base.css?v=9">
-<link rel="stylesheet" href="/music/static/css/music-bottom-bar.css?v=8">
+<link rel="stylesheet" href="/music/static/css/music-bottom-bar.css?v=9">
 <link rel="stylesheet" href="/music/static/css/music-push-panes.css?v=12">
 <link rel="stylesheet" href="/music/static/css/music-hero-bar.css?v=8">
 <link rel="stylesheet" href="/music/static/css/music-lists.css?v=10">
@@ -61,11 +61,9 @@
       <div id="mini-progress"></div>
       <button type="button" id="mini-open">
         <span id="mini-drag">
-          <img id="mini-art" alt="">
-          <span class="mini-txt">
-            <b id="mini-title" class="mq-line"><span class="mq-run"></span></b>
-            <small id="mini-artist" class="mq-line"><span class="mq-run"></span></small>
-          </span>
+          <span class="mini-card off" id="mini-card-prev"><img alt=""><span class="mini-txt"><b></b><small></small></span></span>
+          <span class="mini-card" id="mini-card-cur"><img id="mini-art" alt=""><span class="mini-txt"><b id="mini-title" class="mq-line"><span class="mq-run"></span></b><small id="mini-artist" class="mq-line"><span class="mq-run"></span></small></span></span>
+          <span class="mini-card off" id="mini-card-next"><img alt=""><span class="mini-txt"><b></b><small></small></span></span>
         </span>
       </button>
       <button type="button" id="mini-play" aria-label="播放/暂停"></button>
@@ -176,7 +174,7 @@
 <script src="/music/static/js/music-player-chrome.js?v=8"></script>
 <script src="/music/static/js/music-player-fluid-morph.js?v=2"></script>
 <script src="/music/static/js/music-player-fullpage.js?v=7"></script>
-<script src="/music/static/js/music-player-art-stage.js?v=6"></script>
+<script src="/music/static/js/music-player-art-stage.js?v=7"></script>
 <script src="/music/static/js/music-player-lyrics-toggle.js?v=5"></script>
 <script src="/music/static/js/music-player-lyrics.js?v=4"></script>
 <script src="/music/static/js/music-player-queue-view.js?v=7"></script>
@@ -188,7 +186,7 @@
 <script src="/music/static/js/music-navigation.js?v=8"></script>
 <script src="/music/static/js/music-push-panes.js?v=14"></script>
 <script src="/music/static/js/music-pane-swipe.js?v=6"></script>
-<script src="/music/static/js/music-bubble-swipe.js?v=2"></script>
+<script src="/music/static/js/music-bubble-swipe.js?v=3"></script>
 <script src="/music/static/js/music-root-rubber.js?v=1"></script>
 <script src="/music/static/js/music-downloads-integration.js?v=8"></script>
 <script src="/music/static/js/music-autocache-integration.js?v=1"></script>
