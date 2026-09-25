@@ -6,7 +6,7 @@
 "use strict";
 /* global $, PLACEHOLDER_ARTWORK, currentTrack, onTrackChange, playQueue,
           playerNext, playerPrevious */
-/* exported initArtStage */
+/* exported initArtStage, stageNeighbors */
 
 const STAGE_SPACING = 0.55;   // 侧卡横移 (自身卡宽的占比)
 const STAGE_ANGLE = 40;       // 侧卡转角 (度)

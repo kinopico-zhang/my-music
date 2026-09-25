@@ -49,11 +49,11 @@ def test_music_dock_wiring():
     assert '$("#mini-prev")' not in js and '$("#mini-next")' not in js \
         and '$("#mini-prev")' not in player and '$("#mini-next")' not in player
     assert '#mini-player > button svg { display: block; }' in html  # 播放键图标同款
-    # 1.8.94 (用户点名「左右滑动切歌」): 封面文字整块 #mini-drag 跟手平移,
-    # 出界在 #mini-open 裁掉 (不爬到播放键底下)
-    open_css = html[html.index("#mini-open {"):html.index("#mini-art {")]
+    # 1.8.94 横滑切歌 + 1.8.95 邻曲预览: #mini-drag 三卡横排跟手平移, 出界在 #mini-open 裁掉
+    open_css = html[html.index("#mini-open {"):html.index(".mini-card {")]
     assert "overflow: hidden;" in open_css and "will-change: transform;" in open_css
-    assert '<span id="mini-drag">' in html
+    assert 'id="mini-card-prev"' in html and 'id="mini-card-cur"' in html \
+        and 'id="mini-card-next"' in html and '<span id="mini-drag">' in html
     # 跑马灯: 文字比行宽长才滚 (JS 量过), 两端各停一拍再往回走
     assert 'class="mq-line"' in html and 'class="mq-run"' in html
     assert ".mq-run.marquee {" in html and "@keyframes mq-scroll" in html
@@ -70,8 +70,7 @@ def test_music_dock_wiring():
     assert "setMarqueeLine($(\"#mini-title\")" in chrome
     assert "addEventListener(\"resize\"" in player[player.index("let marqueeResizeTimer"):]
     # 上弹菜单: 七项带图标, 从键上方弹出 (缩放+上移入场动画); 1.8.20 用户
-    # 点名改口: 专辑/艺人/已下载/设置 → 所有专辑/所有艺人/下载管理/软件设置;
-    # 1.8.31 新增「播放排行」(排在最近播放后面)
+    # 点名改口: 专辑/艺人/已下载/设置 → 所有专辑/艺人/下载管理/软件设置; 1.8.31 +播放排行
     for entry, label in [("playlists", "播放列表"), ("albums", "所有专辑"),
                          ("artists", "所有艺人"), ("recent", "最近播放"),
                          ("top", "播放排行"),
@@ -179,8 +178,8 @@ def test_music_top_fallback_removed():
 def test_music_185_bubble_swipe_back():
     """气泡手势一条管线两用 (1.8.5 右划返回 + 1.8.94 横滑切歌): 气泡
     (z50) 盖在推入层 (z44) 上, 层上的右划收不到它 —— 有层在, 右划拖栈顶层
-    松手收层; 其余横滑切歌 (上下曲键撤了): 跟手平移, 拖过 28% 或带甩劲换曲,
-    新歌对侧滑进, 没换成原侧弹回; 竖向放掉不碍点击。"""
+    松手收层; 其余横滑切歌: 三张卡跟手平移, 邻曲从两侧滑进来提前看到
+    (1.8.95), 拖过 28% 或甩劲顺势滑满一整张换曲无缝归位; 竖向放掉不碍点击。"""
     html = music_page_shell()
     js = music_browser_js()
     assert 'src="/music/static/js/music-bubble-swipe.js?v=' in html \
@@ -192,9 +191,10 @@ def test_music_185_bubble_swipe_back():
     assert 'mode = dx > 0 && pane ? "layer" : "track";' in bubble \
         and "closePushStack(pushStack.length - 1);" in bubble \
         and "paneMotion();" in bubble
-    # 切歌 (3D 舞台同款口径): 28% 门槛 + 甩劲, 滑出换曲后对侧滑进
+    # 切歌 (3D 舞台同款口径): 28% 门槛 + 甩劲; 邻曲预览 (1.8.95) 用舞台取数
     assert "const SWITCH_SHARE = 0.28;" in bubble \
         and "function poseBubble" in bubble and "function commitBubble" in bubble
+    assert "function fillNeighborCards" in bubble and "stageNeighbors" in bubble
     assert 'if (direction === "next") playerNext();' in bubble \
         and "else playerPrevious();" in bubble \
-        and "poseBubble(0);" in bubble   # 弹回 / 滑进收场都归零
+        and "poseBubble(0);" in bubble   # 弹回 / 滑满没换成都归零

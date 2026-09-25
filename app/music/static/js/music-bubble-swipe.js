@@ -3,50 +3,85 @@
 // 收不到它, 1.8.0 层铺满全高后气泡底下的内容全是层, 气泡自己就成了手势
 // 死角。一条管线两用: 有层在, 右划拖栈顶层跟手位移 (1.8.5 旧用法, 松手
 // 够远或带甩劲就收层); 其余横滑切歌 (1.8.94 用户点名「气泡左右滑动切歌」,
-// 上下曲键撤了) —— 封面文字整块跟手平移, 松手拖过内容区 28% 或带甩劲
-// 就顺势滑出换曲、新歌从对侧滑进 (3D 舞台同款口径); 没换成 (队尾顶住/
-// 回本曲开头) 原侧弹回; 竖向立刻放掉, 不碍气泡自己的点击与滚动。
+// 上下曲键撤了) —— 1.8.95 (用户点名「滑动的过程中要提前看到下一首」)
+// #mini-drag 改摆三张卡 (上一首/当前/下一首) 横排: 拖动整条跟手平移, 邻曲
+// 的封面歌名从两侧滑进来提前看到; 松手拖过内容区 28% 或带甩劲就顺势滑满
+// 一整张换曲, 此时当前卡已被 renderPlayerChrome 换成邻曲内容 (邻曲卡刚放
+// 的同一张图, 早解码好) 瞬移归位, 画面无缝 —— 换没换成用 currentTrack
+// 对照, 没换成 (队尾顶住/回本曲开头) 邻曲卡滑走弹回; 那一侧没有邻曲就不
+// 滑满原地弹回; 竖向立刻放掉, 不碍气泡自己的点击与滚动。
 "use strict";
-/* global $, closePushStack, currentTrack, paneMotion, playerNext,
-          playerPrevious, pushStack */
+/* global $, PLACEHOLDER_ARTWORK, closePushStack, currentTrack, onTrackChange,
+          paneMotion, playerNext, playerPrevious, pushStack, stageNeighbors */
 
 (function bindBubbleSwipe() {
   const bubble = $("#mini-player");
   const drag = $("#mini-drag");
   const SWITCH_SHARE = 0.28;   // 拖过内容区几成换曲 (3D 舞台同款)
-  const IN_CURVE = "transform .28s cubic-bezier(.25,1,.4,1), opacity .2s ease";
-  let switching = false;       // 换曲滑出/滑进动画期: 新手势不接
+  const SETTLE = "transform .26s cubic-bezier(.25,1,.4,1)";   // 滑满/弹回
+  let switching = false;       // 换曲滑满动画期: 新手势不接
 
-  /** 内容平移 offset 像素, 随出屏程度变淡 (满程剩 0.65, 给滑出垫底)。 */
+  /** 两侧邻曲卡先备货 (封面歌名填好, 没曲的那侧藏掉): onTrackChange 平时
+      刷, 拖开再补一次 —— 邻曲封面早解码, 滑进来就见, 归位也不闪旧图。 */
+  function fillNeighborCards() {
+    const neighbors = stageNeighbors();
+    for (const [id, track] of [["mini-card-prev", neighbors.prev],
+                               ["mini-card-next", neighbors.next]]) {
+      const card = $("#" + id);
+      card.classList.toggle("off", !track);
+      if (!track) continue;
+      const img = card.querySelector("img");
+      img.src = track.album_id
+        ? `/music/media/albums/${track.album_id}/artwork` : PLACEHOLDER_ARTWORK;
+      card.querySelector("b").textContent = track.title;
+      card.querySelector("small").textContent = track.artist;
+    }
+  }
+  onTrackChange(fillNeighborCards);
+
+  /** 整条平移 offset 像素: 三张卡一起走, 邻曲卡从对侧跟进视野。 */
   function poseBubble(offset) {
     drag.style.transform = `translateX(${offset}px)`;
-    const width = drag.offsetWidth || 1;
-    drag.style.opacity = String(1 - Math.min(1, Math.abs(offset) / width) * 0.35);
   }
 
-  /** 松手换曲: 顺势滑出 → 换曲 (跟 3D 舞台同款, 用换没换来接力动画:
-      队尾顶住/回本曲开头 = 没换) → 换成了新歌从对侧滑进, 没换成原侧弹回。 */
+  /** 松手换曲: 顺势滑满一整张 (邻曲卡全进) → 换曲 (跟 3D 舞台同款, 用换没
+      换成接力: 队尾顶住/回本曲开头 = 没换) → 换成了当前卡已是邻曲内容,
+      瞬移归位画面无缝; 没换成从满位滑回中位。那一侧没邻曲就不滑满, 原地
+      弹回 (playerNext 的队尾提示照给)。 */
   function commitBubble(direction) {
     switching = true;
-    const out = (drag.offsetWidth || 1) * 1.05;   // 出屏距离 (略过界防露边)
-    drag.style.transition = "transform .17s ease-in, opacity .15s ease-in";
-    poseBubble(direction === "next" ? -out : out);
+    const width = drag.offsetWidth || 1;
+    const side = $(direction === "next" ? "#mini-card-next" : "#mini-card-prev");
+    if (side.classList.contains("off")) {      // 没邻曲: 不滑向空卡
+      if (direction === "next") playerNext();
+      else playerPrevious();
+      drag.style.transition = SETTLE;
+      poseBubble(0);
+      setTimeout(() => {
+        drag.style.transition = drag.style.transform = "";
+        switching = false;
+      }, 300);
+      return;
+    }
+    drag.style.transition = SETTLE;
+    poseBubble(direction === "next" ? -width : width);
     setTimeout(() => {
       const before = currentTrack;
       if (direction === "next") playerNext();
       else playerPrevious();
-      const changed = currentTrack !== before;
-      drag.style.transition = "none";
-      poseBubble(changed ? (direction === "next" ? out * 0.45 : -out * 0.45)
-                         : (direction === "next" ? -out : out));
-      void drag.offsetWidth;               // 起跳位先落地, 再放过渡
-      drag.style.transition = IN_CURVE;
-      poseBubble(0);
-      setTimeout(() => {                   // 收尾: 内联清干净, 不压后场过渡
-        drag.style.transition = drag.style.transform = drag.style.opacity = "";
-        switching = false;
-      }, 300);
-    }, 170);
+      if (currentTrack === before) {           // 没换成: 邻曲卡滑走, 弹回中位
+        poseBubble(0);
+        setTimeout(() => {
+          drag.style.transition = drag.style.transform = "";
+          switching = false;
+        }, 300);
+        return;
+      }
+      drag.style.transition = "none";          // 换成: 当前卡已是邻曲内容,
+      poseBubble(0);                           // 瞬移归位无缝, 不放过渡
+      drag.style.transition = drag.style.transform = "";
+      switching = false;
+    }, 260);
   }
 
   bubble.addEventListener("pointerdown", (event) => {
@@ -77,14 +112,17 @@
         mode = dx > 0 && pane ? "layer" : "track";   // 有层右划收层, 其余切歌
         bubble.setPointerCapture(ev.pointerId);
         if (mode === "layer") pane.style.transition = "none";
-        else drag.style.transition = "none";
+        else {
+          fillNeighborCards();       // 拖开先备邻曲卡 (onTrackChange 平时刷)
+          drag.style.transition = "none";
+        }
       }
       if (mode === "layer") {
         paneMotion();                 // 拖动中: 磨砂持续暂撤 (每下续期)
         pane.style.transform = `translateX(${Math.max(0, dx)}px)`;
       } else {
-        const out = (drag.offsetWidth || 1) * 1.05;
-        poseBubble(Math.max(-out, Math.min(out, dx)));   // 跟手 1:1, 出屏封顶
+        const width = drag.offsetWidth || 1;
+        poseBubble(Math.max(-width, Math.min(width, dx)));  // 跟手 1:1, 一卡封顶
       }
     };
     const end = (ev) => {
@@ -109,10 +147,10 @@
       if (d <= -SWITCH_SHARE || (flick && velocity < 0)) commitBubble("next");
       else if (d >= SWITCH_SHARE || (flick && velocity > 0)) commitBubble("prev");
       else {                          // 没拖够: 弹回
-        drag.style.transition = IN_CURVE;
+        drag.style.transition = SETTLE;
         poseBubble(0);
         setTimeout(() => {
-          drag.style.transition = drag.style.transform = drag.style.opacity = "";
+          drag.style.transition = drag.style.transform = "";
         }, 300);
       }
     };
@@ -125,7 +163,7 @@
       } else if (mode === "track") {
         drag.style.transition = "none";
         poseBubble(0);
-        drag.style.transition = drag.style.transform = drag.style.opacity = "";
+        drag.style.transition = drag.style.transform = "";
       }
     };
     bubble.addEventListener("pointermove", move, { signal: signals.signal });

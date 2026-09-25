@@ -7,6 +7,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.95", date="2026-09-25", items=[
+        ChangelogItem(kind="修复", text="修了滑动气泡切歌时封面不跟着换的问题 —— "
+                                       "现在手指拖到哪, 相邻那首的封面歌名就跟着"
+                                       "从两侧滑进来提前看到, 松手顺势滑满一整张"
+                                       "换曲, 新封面无缝接上"),
+    ]),
     ChangelogVersion(version="1.8.94", date="2026-09-25", items=[
         ChangelogItem(kind="改进", text="播放气泡的上一首/下一首键撤了, 换成左右"
                                        "滑动气泡切歌 —— 封面和歌名跟着手指走, "
