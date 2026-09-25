@@ -168,5 +168,5 @@ def test_music_artist_refresh_wiring():
                   ).read_text(encoding="utf-8")
     assert queries_py.count("poster_version=_poster_version(artist)") == 2
     html = music_page_shell()
-    assert "js/music-common.js?v=11" in html
+    assert "js/music-common.js?v=12" in html
     assert "js/music-album-artist-views.js?v=10" in html

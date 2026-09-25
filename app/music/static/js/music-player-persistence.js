@@ -31,7 +31,7 @@ function playerRestore() {
   } catch (_error) { saved = null; }
   if (!saved || !Array.isArray(saved.tracks) || !saved.tracks.length) return;
   playQueue = createPlayQueue(saved.tracks, saved.index || 0);
-  playQueue.repeat = saved.repeat || "off";
+  playQueue.repeat = saved.repeat === "one" ? "one" : "all";   // 1.8.89 三态: off 退役, 老档落列表循环
   // 存过顺序 (拖拽换位/随机洗牌后的 order) 就原样恢复: 队列视图所见即所存。
   // 校验是完整排列才认 (老存档/被截断的都不认, 回落原始顺序); 没恢复成
   // 顺序就不认 shuffle 旗标 —— 顺序是重建的, 旗标亮着却按原序走会骗人。

@@ -25,7 +25,8 @@
 /** 浏览页入口: 给一批曲目 (及起始下标) 开播; shuffleOn = 随机播这批。 */
 function playerStart(tracks, startIndex, shuffleOn) {
   playQueue = createPlayQueue(tracks, startIndex);
-  if (shuffleOn) queueShuffleAll(playQueue);   // 整队洗牌, 不是"当前曲钉队首"
+  playQueue.repeat = "all";   // 1.8.89 三态循环: 新队列默认列表循环 (关态退役)
+  if (shuffleOn) queueShuffleAll(playQueue);   // 整队洗牌 = 随机循环态
   const track = queueCurrent(playQueue);
   if (!track) return;
   if (!track.playable) {

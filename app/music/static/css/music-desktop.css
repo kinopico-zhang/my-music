@@ -35,7 +35,6 @@ html[data-client="desktop"] .action.primary:hover { background: #d6d6d8; }
 html[data-client="desktop"] .bar-btn:hover { background: var(--surface-3); }
 html[data-client="desktop"] .bar-btn.primary:hover { background: #d6d6d8; }
 html[data-client="desktop"] .search-tabs button:hover { color: var(--ink-1); }
-html[data-client="desktop"] .fq-head-btns button:hover { opacity: .85; }
 html[data-client="desktop"] #pop-menu button:hover,
 html[data-client="desktop"] #track-menu [data-track-action]:hover,
 html[data-client="desktop"] #cover-menu [data-cover-action]:hover {

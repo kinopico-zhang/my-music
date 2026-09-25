@@ -4,9 +4,9 @@
 // 1.8.72 来源行整行撤了 (用户点名) —— credits 接口还在, 前端没人读了。
 "use strict";
 /* global $, ICON_PAUSE, ICON_PAUSE_BIG, ICON_PLAY, ICON_PLAY_BIG, ICON_REPEAT,
-          ICON_REPEAT_ONE, PLACEHOLDER_ARTWORK,
+          ICON_REPEAT_ONE, ICON_SHUFFLE, PLACEHOLDER_ARTWORK,
           currentTrack, playQueue, playerCurrentTrackId, playerIsPlaying */
-/* exported renderPlayerChrome, updatePlayButtons, updateShuffleRepeatButtons */
+/* exported renderPlayerChrome, updatePlayButtons, updatePlayModeButton */
 
 // ------------------------------------------------------------ 界面渲染
 
@@ -27,7 +27,7 @@ function renderPlayerChrome() {
   $("#fp-art").src = artwork;
   $("#fp-bg-img").src = artwork;
   updatePlayButtons();
-  updateShuffleRepeatButtons();
+  updatePlayModeButton();
 }
 
 /** 迷你条一行文字: 放得下静止, 放不下挂 .marquee 来回滚
@@ -70,15 +70,14 @@ function updatePlayButtons() {
   }
 }
 
-function updateShuffleRepeatButtons() {
+/** 三态循环键 (1.8.89 用户点名): 列表/单曲/随机各有各的图标, 队列没起时
+    回落列表循环形 (页面内联默认形与之逐字节同款, 首拍刷新不跳位)。 */
+function updatePlayModeButton() {
   if (!playQueue) return;
-  $("#fp-shuffle").classList.toggle("on", playQueue.shuffle);
-  const repeat = playQueue.repeat;
-  const repeatButton = $("#fp-repeat");
-  repeatButton.classList.toggle("on", repeat !== "off");
-  // 1.8.5 图标换用户贴的循环标: 单曲循环带 "1", 列表循环去 "1"
-  // (原 CSS ::after 贴 "1" 的做法随旧图标一起撤)
-  repeatButton.innerHTML = repeat === "one" ? ICON_REPEAT_ONE : ICON_REPEAT;
+  const shuffle = playQueue.shuffle;
+  const one = !shuffle && playQueue.repeat === "one";
+  $("#fp-mode-btn").innerHTML = shuffle ? ICON_SHUFFLE
+    : one ? ICON_REPEAT_ONE : ICON_REPEAT;
 }
 
 // 收起后等滑出动画 (300ms) 再 display:none。这期间两层都要放行点击到下层列表

@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const dir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../app/music/static/js");
 const { createPlayQueue, queueCurrent, queueSetShuffle, queueShuffleAll,
-        queueCycleRepeat, queueAdvance, queueGoBack, queueJump, queueUpcoming,
+        queueCyclePlayMode, queueAdvance, queueGoBack, queueJump, queueUpcoming,
         queueReorder, queueRemove } =
   require(path.join(dir, "player-queue.js"));
 
@@ -102,10 +102,18 @@ test("queueShuffleAll: 单曲/空队列不炸", () => {
   assert.equal(queueCurrent(empty), null);
 });
 
-test("queueCycleRepeat: off → all → one → off", () => {  const queue = createPlayQueue(titles, 0);
-  assert.equal(queueCycleRepeat(queue), "all");
-  assert.equal(queueCycleRepeat(queue), "one");
-  assert.equal(queueCycleRepeat(queue), "off");
+test("queueCyclePlayMode: 三态一键 列表→单曲→随机→列表 (「关」退役)", () => {
+  const queue = createPlayQueue(titles, 0);
+  queue.repeat = "all";                              // 起播默认列表循环
+  assert.equal(queueCyclePlayMode(queue), "one");
+  assert.equal(queueCyclePlayMode(queue), "shuffle");
+  assert.ok(queue.shuffle);                          // 随机 = 洗牌开着
+  assert.equal(queueUpcoming(queue)[0].title, "A");  // 当前曲钉队首
+  assert.equal(queueCyclePlayMode(queue), "all");    // 随机 → 列表, 顺序复原
+  assert.ok(!queue.shuffle);
+  assert.deepEqual(queue.order, [0, 1, 2, 3]);
+  queue.repeat = "off";                              // 老存档: 落列表循环使唤
+  assert.equal(queueCyclePlayMode(queue), "all");
 });
 
 test("queueUpcoming: 当前曲领头的剩余队列", () => {

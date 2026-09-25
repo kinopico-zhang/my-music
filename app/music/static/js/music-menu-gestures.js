@@ -127,8 +127,8 @@ $("#track-menu").addEventListener("click", async (event) => {
   else if (action.dataset.trackAction === "playlist") openPlaylistPicker(track);
 });
 
-// 全屏页 ⋯ / ♥: ⋯ 开长按菜单 (没有"播放"项), ♥ 直接开加歌选择单。
-// 当前曲目跟着换曲走 (恢复现场那首也接得上)。
+// 全屏页 ⋯: 开长按菜单 (没有"播放"项; 加列表也在菜单里 —— 1.8.89 底行的
+// ♥ 键让位循环模式键)。当前曲目跟着换曲走 (恢复现场那首也接得上)。
 let fpCurrentTrack = null;
 onTrackChange((track) => { fpCurrentTrack = track; });
 fpCurrentTrack = playerCurrentTrack();
@@ -136,9 +136,6 @@ fpCurrentTrack = playerCurrentTrack();
 $("#fp-menu-btn").addEventListener("click", (event) => {
   if (!fpCurrentTrack) return;
   openTrackMenuForTrack(fpCurrentTrack, { x: event.clientX, y: event.clientY });
-});
-$("#fp-like-btn").addEventListener("click", () => {
-  if (fpCurrentTrack) openPlaylistPicker(fpCurrentTrack);
 });
 
 // 长按检测: 指针按下起 500ms 计时, 移动超 10px / 抬起 / 取消都作废;

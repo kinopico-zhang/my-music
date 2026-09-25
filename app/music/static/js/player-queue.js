@@ -95,15 +95,14 @@ function queueShuffleAll(queue) {
   queue.position = queue.order.length ? 0 : -1;
 }
 
-/**
- * 循环模式循环切换: 关 → 全部循环 → 单曲循环 → 关。
- * @param {PlayQueue} queue
- * @returns {RepeatMode} 切换后的模式
- */
-function queueCycleRepeat(queue) {
-  queue.repeat = queue.repeat === "off" ? "all"
-    : queue.repeat === "all" ? "one" : "off";
-  return queue.repeat;
+/** 三态循环一键切 (1.8.89 用户点名): 列表循环 → 单曲循环 → 随机循环 →
+    列表循环; 「关」退役 —— 起播默认列表循环, 老存档的 off 落列表循环。
+    随机 = 列表循环 + 洗牌 (queueSetShuffle 语义不变: 当前曲钉队首)。 */
+function queueCyclePlayMode(queue) {
+  if (queue.shuffle) { queueSetShuffle(queue, false); queue.repeat = "all"; }
+  else if (queue.repeat === "one") { queue.repeat = "all"; queueSetShuffle(queue, true); }
+  else { queue.repeat = queue.repeat === "all" ? "one" : "all"; }
+  return queue.shuffle ? "shuffle" : queue.repeat;
 }
 
 /**
@@ -195,6 +194,6 @@ function queueRemove(queue, orderPos) {
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { createPlayQueue, queueCurrent, queueSetShuffle,
-    queueShuffleAll, queueCycleRepeat, queueAdvance, queueGoBack, queueJump,
+    queueShuffleAll, queueCyclePlayMode, queueAdvance, queueGoBack, queueJump,
     queueUpcoming, queueReorder, queueRemove };
 }
