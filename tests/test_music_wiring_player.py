@@ -80,6 +80,11 @@ def test_music_queue_cover_view_wiring():
     common = (MUSIC_STATIC / "js" / "music-common.js").read_text(encoding="utf-8")
     for icon in ["ICON_REPEAT = ", "ICON_REPEAT_ONE = ", "ICON_SHUFFLE = "]:
         assert icon in common, f"music-common.js 缺少 {icon}"
+    # 1.8.91 (用户点名「放在标题上, 整体居中」): 播放页开着时气泡上标题行
+    # —— JS 现量 .fp-now 行位钉 top, CSS 收 bottom 让位
+    assert '$("#full-player.open .fp-now")' in common
+    assert 'classList.toggle("on-title"' in common
+    assert "#toast.on-title" in html and "#toast.on-title.show" in html
     assert "#fp-repeat.one" not in html          # 旧「1」角标那套撤了
     assert "fq-modes" not in html                    # 旧顶排胶囊撤了
     assert "queue-sheet" not in html and "queue-mask" not in html \
