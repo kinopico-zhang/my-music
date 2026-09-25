@@ -16,6 +16,7 @@ from .changelog_versions_1_0_to_1_3 import VERSIONS_1_0_TO_1_3
 from .changelog_versions_1_4_to_1_6 import VERSIONS_1_4_TO_1_6
 from .changelog_versions_1_7 import VERSIONS_1_7
 from .changelog_versions_1_8 import VERSIONS_1_8
+from .changelog_versions_1_8_59_to_1_8_66 import VERSIONS_1_8_59_TO_1_8_66
 from .changelog_versions_1_8_40_to_1_8_58 import VERSIONS_1_8_40_TO_1_8_58
 from .changelog_versions_1_8_33_to_1_8_39 import VERSIONS_1_8_33_TO_1_8_39
 from .changelog_versions_1_8_0_to_1_8_4 import VERSIONS_1_8_0_TO_1_8_4
@@ -27,6 +28,7 @@ from .changelog_versions_1_8_25_to_1_8_32 import VERSIONS_1_8_25_TO_1_8_32
 from .changelog_versions_1_8_5_to_1_8_9 import VERSIONS_1_8_5_TO_1_8_9
 
 VERSIONS: Final[list[ChangelogVersion]] = (VERSIONS_1_8
+                                           + VERSIONS_1_8_59_TO_1_8_66
                                            + VERSIONS_1_8_40_TO_1_8_58
                                            + VERSIONS_1_8_33_TO_1_8_39
                                            + VERSIONS_1_8_25_TO_1_8_32
