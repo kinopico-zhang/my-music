@@ -6,7 +6,8 @@
 /* global $, closeFullPlayer, closeTrackMenu, downloadTrackFromUI, fetchJSON,
           menuTrackDirect, navigate, onTrackChange, openPlaylistPicker, openTrackMenu,
           openTrackMenuForTrack, placeMenuAt, playTrackFromMenu, playerCurrentTrack,
-          playerOpen, renderPlaylistView, rowForTrackMenu, shareTrack, toast,
+          playerOpen, refreshPlaylistCoverIcons, renderPlaylistView, rowForTrackMenu,
+          shareTrack, toast,
           trackFromRow */
 /* exported bindCoverPress */
 
@@ -95,9 +96,11 @@ $("#cover-menu").addEventListener("click", async (event) => {
   if (action.dataset.coverAction === "remove") {
     if (!window.confirm(`移除「${coverMenuPlaylistName}」的自定义封面?`)) return;
     try {
-      await fetchJSON(`/music/api/playlists/${coverMenuPlaylistId}/cover`,
-                      { method: "DELETE" });
+      const updated = await fetchJSON(
+        `/music/api/playlists/${coverMenuPlaylistId}/cover`,
+        { method: "DELETE" });
       toast("封面已移除");
+      refreshPlaylistCoverIcons(updated);   // 底下列表页/主页的封面就地跟着撤
       renderPlaylistView(coverMenuPlaylistId);
     } catch (error) {
       toast(`没移除掉: ${error.message}`);

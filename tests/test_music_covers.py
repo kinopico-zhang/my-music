@@ -165,3 +165,31 @@ def test_track_artwork_endpoint_and_changed_flag(auth, tmp_path):
         f"/music/media/tracks/{tracks['曲B']['track_id']}/artwork"
     ).status_code == 404
     assert auth.get("/music/media/tracks/99999/artwork").status_code == 404
+
+
+def test_playlist_cover_refresh_wiring():
+    """接线 (1.8.99 修「设完封面回所有播放列表页, 封面没变」): 换/撤封面
+    只重铺详情层, 底下的列表页/主页收层回去不重铺, 行里的旧 ?v= 地址
+    直等下次整页重铺 —— 1.8.80 删列表的同款陈货坑。现在 PUT/DELETE 响应
+    顺手把底下的行/卡封面就地换掉 (整行不重铺: 滚动和左滑状态保住)。"""
+    from tests.music_static_files import MUSIC_STATIC
+    rendering = (MUSIC_STATIC / "js" / "music-list-rendering.js").read_text(
+        encoding="utf-8")
+    view_js = (MUSIC_STATIC / "js" / "music-playlist-view.js").read_text(
+        encoding="utf-8")
+    gestures_js = (MUSIC_STATIC / "js" / "music-menu-gestures.js").read_text(
+        encoding="utf-8")
+    # 行/卡的封面块拆成共享小件 (刷新器与渲染器同一份素材, 不抄两份)
+    assert "function playlistRowIconHTML" in rendering
+    assert "function playlistCardArtHTML" in rendering
+    assert "${playlistRowIconHTML(playlist)}" in rendering
+    assert '<span class="art-wrap">${playlistCardArtHTML(playlist)}</span>' \
+        in rendering
+    # 刷新器: 全文档把这张列表的行引导位/卡封面就地换新 (新 ?v= 即新址,
+    # SW 封面档跟着换)
+    assert "function refreshPlaylistCoverIcons" in rendering
+    assert ".playlist-row[data-playlist-id=" in rendering
+    assert ".playlist-card[data-playlist-id=" in rendering
+    # 两条改封面的路都带响应刷: 详情页选图 PUT / 长按菜单撤封面 DELETE
+    assert "refreshPlaylistCoverIcons(updated);" in view_js
+    assert "refreshPlaylistCoverIcons(updated);" in gestures_js

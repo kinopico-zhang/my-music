@@ -11,7 +11,8 @@
           coverUploadPlaylistId: writable,
           describeDuration, downloadAllFromUI, downloadsEnabled, escapeHTML,
           fetchJSON, heroBarHTML, listPlaceholderHTML, navigate, playerStart,
-          playlistCoverURL, pushPaneTarget, renderRootView,
+          playlistCoverURL, pushPaneTarget, refreshPlaylistCoverIcons,
+          renderRootView,
           sharePlaylist, syncPlayerIndicators, toast, trackArtHTML, trackRowHTML,
           wireHeroBarActions */
 /* exported coverUploadPlaylistId, renderPlaylistView, uploadPlaylistCover */
@@ -178,12 +179,15 @@ async function uploadPlaylistCover(playlistId) {
     return;
   }
   try {
-    await fetchJSON(`/music/api/playlists/${playlistId}/cover`, {
-      method: "PUT",
-      headers: { "Content-Type": file.type || "application/octet-stream" },
-      body: file,
-    });
+    const updated = await fetchJSON(
+      `/music/api/playlists/${playlistId}/cover`, {
+        method: "PUT",
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+        body: file,
+      });
     toast("封面已更新");
+    // 响应里是新版本号: 底下列表页/主页的封面就地换新, 返回看到的才是新图
+    refreshPlaylistCoverIcons(updated);
     renderPlaylistView(playlistId);
   } catch (error) {
     toast(`封面没传上去: ${error.message}`);
