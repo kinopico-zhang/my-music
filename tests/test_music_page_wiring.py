@@ -79,9 +79,10 @@ def test_music_downloads_wiring():
     # +player-prefetch 预取拆分; 1.8.60: +player-art-stage 3D 封面舞台;
     # 1.8.76: +player-sources 源解析/失败兜底拆分, +player-slider 滑杆
     # 拆分, +downloads-pane 已下载面板拆分; 1.8.77: +autocache 自动缓存
-    # 状态机, +autocache-integration 接线),
+    # 状态机, +autocache-integration 接线; 1.8.100: +handoff 后台连播
+    # 提前接力裁决,
     # 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 64 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 65 and all("?v=" in src for src in scripts)
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/autocache.js?v=" in html                  # 1.8.77 自动缓存状态机
     assert "js/music-autocache-integration.js?v=" in html  # 1.8.77 自动缓存接线
@@ -103,7 +104,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v89" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v90" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 

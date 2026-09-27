@@ -9,16 +9,18 @@
           currentTrack: writable, directStreamURL, discardNetworkRetry,
           discardPrefetch, loadLyrics, lyricsActiveIndex: writable,
           lyricsCache, lyricsViewOpen, noteAudioSourceChanged, pauseAudio,
-          playQueue: writable, playRecorded: writable,
+          playQueue: writable, playbackDuration, playRecorded: writable,
           playerUpgradeDownloadedSource, playingObjectURL: writable,
           prefetchLyrics, prefetchNextTrack, prefetched: writable,
           queueAdvance, queueCurrent, queueGoBack, queueShuffleAll,
           queueViewOpen, renderPlayerChrome, renderQueueView,
-          savePlayerState, startAudio, syncLyricsButton, toast,
+          savePlayerState, scrubbing: writable, shouldHandoffEarly,
+          startAudio, syncLyricsButton, toast,
           trackChangeListeners, trackLocalCached, updateMediaSession */
-/* exported loadTrack, lyricsActiveIndex, onTrackChange, playRecorded,
-            playerCurrentTrack, playerCurrentTrackId, playerIsPlaying,
-            playerNext, playerPrevious, playerStart, playerToggle */
+/* exported loadTrack, lyricsActiveIndex, maybeHandoffEarly, onTrackChange,
+            playRecorded, playerCurrentTrack, playerCurrentTrackId,
+            playerIsPlaying, playerNext, playerPrevious, playerStart,
+            playerToggle */
 
 // ------------------------------------------------------------ 队列驱动
 
@@ -145,6 +147,31 @@ async function loadTrack(track, autoplay, startTime = 0) {
 
 function playerCurrentTrackId() {
   return currentTrack ? currentTrack.track_id : 0;
+}
+
+/** 后台连播提前接力 (1.8.100): timeupdate 每拍问一嘴 (裁决在 handoff.js,
+    纯逻辑 node 直测) —— 还剩零点几秒、页面在后台、没在拖进度条, 就趁
+    声音还在响先把下一曲切了。iOS 在「上一曲停了、下一曲还没出声」的
+    空窗里能把整页挂起 (1.8.76 把 ended→play() 做成同步也躲不开: 出声
+    在 WebKit 内部异步落地, 偶发先被冻住 = 实报「第二首没声音, 进度条
+    还在走」, 锁屏进度其实是浏览器自估的); 会话活着时换源即接上 (与
+    补刀换 blob 同一机理), 空窗根本不出现。前台不切 (自然播完零裁切),
+    ended 路永远保底 (元素/库时长都不准没触发就走老路)。 */
+let handoffSpent = false;   // 本曲末尾的接力已用过 (剩余回 1 秒上自动复位)
+
+function maybeHandoffEarly() {
+  const audio = audioElement();
+  const duration = isFinite(audio.duration) && audio.duration > 0
+    ? audio.duration : playbackDuration();   // 元素时长优先 (它知道自己何时完)
+  const verdict = shouldHandoffEarly({
+    hidden: document.hidden,
+    scrubbing,
+    repeatOne: !!(playQueue && playQueue.repeat === "one"),
+    remaining: duration - audio.currentTime,
+    spent: handoffSpent,
+  });
+  handoffSpent = verdict.spent;
+  if (verdict.handoff) playerNext(true);   // 还在响 = 强续 (loadTrack 原状态带走)
 }
 
 /** 全屏页 ⋯ / ♥ 按钮要的当前曲目 (含恢复现场那首)。 */

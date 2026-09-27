@@ -5,14 +5,12 @@
 // 1.8.71 起播/暂停统一入口搬来本模块: iOS 被别的 App 打断 (来电/微信语音)
 // 会把 audio 掐进「拒播」态, 直接 play() 不走 —— 非自发的 pause 记成打断,
 // 下次起播先同源 load() 重挂解锁, 进度放回原位。
-// 1.8.73 解锁补两道闸 (「在线的放不了, 下载过的能播」): 换源补刀的 pause
-// 不算打断; 解锁 seek 前验位置在当前源时长内 (陈值 seek 卡死流媒体)。
-// 1.8.74 进度显示不再信 audio.duration (「拖完进度条剩余时间是 0」): iOS
-// 流上 seek 后元素时长会翻脸, 显示基准换成 playbackDuration() 库时长。
+// 1.8.73 解锁补两道闸: 换源补刀的 pause 不算打断; 解锁 seek 只在位置对得上
+// 当前源时长时放行 (陈值 seek 卡死流媒体)。
+// 1.8.74 进度显示不再信 audio.duration (流上 seek 后会翻脸): 换 playbackDuration() 库时长。
 // 1.8.76 播放挂了不再只弹一句就停: error 兜底交给 notePlaybackFailed
 // (缓存救回/跳下一首/连挂 3 首封顶); 滑杆命中区增强拆去 music-player-slider。
-// 1.8.78 加过「打断后自动续播」, 1.8.83 撤了 (自动恢复会抢走别的 app 的
-// 声音) —— 打断后想接着播自己点, 1.8.71 的同源重挂解锁还在。
+// 1.8.78 加过「打断后自动续播」, 1.8.83 撤了 (自动恢复抢别的 app 声音)。
 // 1.8.84/85/86 会话被别的 app 夺走后的三副面孔, 都修: ① 裸 play() 被拒
 // (AbortError 除外) 就当被打断重挂再试; ② 元素没收 pause —— paused 一直
 // false、声音没了、timeupdate 停更: 停更超 5 秒即判幽灵记打断; ③ 幽灵
@@ -20,7 +18,8 @@
 "use strict";
 /* global $, audioElement, currentTrack,
           enhanceSliderTouch, formatPlaybackTime, highlightActiveLyric,
-          notePlaybackFailed, notePlaybackSucceeded, playbackDuration,
+          maybeHandoffEarly, notePlaybackFailed, notePlaybackSucceeded,
+          playbackDuration,
           playQueue, playRecorded: writable, playerIsPlaying, playerNext,
           rearmMediaSession, savePlayerState, updateMediaSession,
           scrubbing: writable, syncPositionState, updatePlayButtons */
@@ -165,6 +164,7 @@ function bindPlayerAudioEvents(audio) {
   }
   audio.addEventListener("timeupdate", () => {
     lastTimeupdateAt = Date.now();   // 幽灵播放探针 (1.8.85): 还在出声推进
+    maybeHandoffEarly();             // 后台连播提前接力 (1.8.100): 趁还响着切
     // 显示基准走 playbackDuration (库时长): 元素时长在 iOS 流上 seek 后
     // 会翻脸 (NaN / 偏短), 信它就是「剩余 -0:00 歌照播」; 进度钳在 [0,1],
     // 库里时长万一比实际音频长也不撑破进度条

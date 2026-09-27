@@ -64,6 +64,7 @@ node node_modules/c8/bin/c8.js \
   --include 'app/music/static/js/player-queue.js' \
   --include 'app/music/static/js/downloads.js' \
   --include 'app/music/static/js/autocache.js' \
+  --include 'app/music/static/js/handoff.js' \
   --include 'app/music/static/js/downloads-capability.js' \
   --check-coverage --lines 95 --branches 95 --functions 95 \
   --reporter text node --test tests/js/ || rc=1

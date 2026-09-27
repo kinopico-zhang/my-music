@@ -16,6 +16,7 @@
     "app/music/static/js/player-queue.js",
     "app/music/static/js/downloads.js",
     "app/music/static/js/autocache.js",
+    "app/music/static/js/handoff.js",
     "app/music/static/js/downloads-capability.js",
     "app/music/static/js/cellular-usage.js",
     "app/music/static/js/music-client.js",
