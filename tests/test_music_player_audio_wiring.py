@@ -3,6 +3,8 @@
 test_music_player_wiring.py (超 200 行按域分家); 打断/幽灵一域 (1.8.83
 撤自动续播起) 1.8.86 拆去 test_music_player_interrupt_wiring.py。"""
 
+from pathlib import Path
+
 from tests.music_static_files import MUSIC_STATIC
 
 
@@ -159,3 +161,38 @@ def test_music_offline_transition_wiring():
     # 1.8.96 连挂封顶退役后的防转圈: 缓存救回出手打点, 刚救回又挂转挂起
     assert "let lastRecoverAt = 0;" in sources_js
     assert "Date.now() - lastRecoverAt < 3000" in sources_js
+
+
+def test_music_background_handoff_wiring():
+    """1.8.100 修「后台连播第二首没声音, 进度条还在走, 过一阵锁屏卡片
+    也没了」(用户实报, 全程零服务端请求 = playing 从未落地, 锁屏进度是
+    浏览器自估的): iOS 在「上一曲停了、下一曲还没出声」的空窗里能把
+    整页挂起 —— 1.8.76 把 ended→play() 做成同步也躲不开, 出声在 WebKit
+    内部异步落地, 偶发先被冻住。改趁还剩零点几秒、声音还在响时先切
+    (会话活着换源即接上, 与补刀换 blob 同机理): 裁决拆纯模块 handoff.js
+    (node 直测), 驱动住 queue, timeupdate 每拍问一嘴; 前台不切 (自然
+    播完零裁切), ended 路保底 (时长不准没触发走老路)。"""
+    handoff_js = (MUSIC_STATIC / "js" / "handoff.js").read_text(encoding="utf-8")
+    queue_js = (MUSIC_STATIC / "js" / "music-player-queue.js").read_text(
+        encoding="utf-8")
+    audio_js = (MUSIC_STATIC / "js" / "music-player-audio-events.js").read_text(
+        encoding="utf-8")
+    # 裁决本体 (纯逻辑): 窗口 0.45s / 复位线 1s, 状态机一处收口
+    assert "const HANDOFF_WINDOW_S = 0.45;" in handoff_js
+    assert "const HANDOFF_RESET_S = 1;" in handoff_js
+    assert "function shouldHandoffEarly" in handoff_js
+    assert "module.exports" in handoff_js
+    # 驱动: 元素时长优先 (它知道自己何时完), 库时长兜底; 还在响 = 强续
+    assert "function maybeHandoffEarly" in queue_js
+    assert "isFinite(audio.duration) && audio.duration > 0" in queue_js
+    assert "hidden: document.hidden," in queue_js
+    assert "repeatOne: !!(playQueue && playQueue.repeat === \"one\")" in queue_js
+    assert "if (verdict.handoff) playerNext(true);" in queue_js
+    # 接线: timeupdate 每拍问一嘴 (停更 = 页面冻结, 问不着, ended 保底)
+    assert "maybeHandoffEarly();" in audio_js
+    # 门禁收编: tsc 类型检查 + c8 覆盖率都认这个纯模块
+    root = Path(__file__).resolve().parent.parent
+    assert "app/music/static/js/handoff.js" in (root / "tsconfig.json"
+                                                ).read_text(encoding="utf-8")
+    assert "app/music/static/js/handoff.js" in (root / "run_tests.sh"
+                                                ).read_text(encoding="utf-8")
