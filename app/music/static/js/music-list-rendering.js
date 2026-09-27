@@ -6,8 +6,9 @@
           downloadsEnabled, escapeHTML, formatPlaybackTime, playerStart, playlistCoverURL,
           toast, trackArtworkURL, updatePlayButtons */
 /* exported albumCardHTML, artistRowHTML, bindTrackLists, listPlaceholderHTML,
-            playlistCardHTML, playlistRowHTML, rowForTrackMenu, syncPlayerIndicators,
-            trackArtHTML, trackListBindings, trackRowHTML */
+            playlistCardHTML, playlistRowHTML, refreshPlaylistCoverIcons,
+            rowForTrackMenu, syncPlayerIndicators, trackArtHTML, trackListBindings,
+            trackRowHTML */
 
 // ------------------------------------------------------------ 公共渲染件
 
@@ -75,16 +76,43 @@ function artistRowHTML(artist) {
     </button>`;
 }
 
+/** 播放列表行引导位: 自定义封面 / 渐变音符块。 */
+function playlistRowIconHTML(playlist) {
+  const cover = playlistCoverURL(playlist);
+  return cover
+    ? `<img class="pl-icon art" loading="lazy" decoding="async" alt="" src="${cover}">`
+    : '<span class="pl-icon">♫</span>';
+}
+
+/** 播放列表卡封面方块的内容 (裂图退音符块, 与行同一份素材)。 */
+function playlistCardArtHTML(playlist) {
+  const cover = playlistCoverURL(playlist);
+  return cover
+    ? `<img loading="lazy" decoding="async" alt="" src="${cover}"
+         onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'pl-icon',textContent:'♫'}))">`
+    : '<span class="pl-icon">♫</span>';
+}
+
+/** 换/撤封面后把底下各页这张列表的封面就地换新 (列表页行 + 主页卡):
+    底下的层收层回去不重铺 (1.8.80 的老坑), 行里的旧 ?v= 地址不换掉,
+    返回看到的就是旧图 (1.8.99 用户实报)。只换封面那一块 —— 滚动位置
+    和左滑状态都原地保住。 */
+function refreshPlaylistCoverIcons(playlist) {
+  document.querySelectorAll(
+    `.playlist-row[data-playlist-id="${playlist.playlist_id}"] > .pl-icon`)
+    .forEach((icon) => { icon.outerHTML = playlistRowIconHTML(playlist); });
+  document.querySelectorAll(
+    `.playlist-card[data-playlist-id="${playlist.playlist_id}"] .art-wrap`)
+    .forEach((wrap) => { wrap.innerHTML = playlistCardArtHTML(playlist); });
+}
+
 /** 播放列表行: 自定义封面 (传过) / 渐变音符块 + 名字 + 规模。
     外面套一层左滑删除的壳 (播放列表页的行在用, 整列左滑删除)。 */
 function playlistRowHTML(playlist) {
-  const cover = playlistCoverURL(playlist);
   return `
     <div class="swipe-wrap" data-swipe-playlist="${playlist.playlist_id}">
       <button class="playlist-row" data-playlist-id="${playlist.playlist_id}">
-        ${cover
-          ? `<img class="pl-icon art" loading="lazy" decoding="async" alt="" src="${cover}">`
-          : '<span class="pl-icon">♫</span>'}
+        ${playlistRowIconHTML(playlist)}
         <span class="a-main"><b>${escapeHTML(playlist.name)}</b>
           <small>${describeDuration(playlist.duration_seconds, playlist.track_count)}</small></span>
         <span class="chev">›</span>
@@ -97,14 +125,9 @@ function playlistRowHTML(playlist) {
     的整套卡排版, 封面方块里自定义封面 / 渐变音符块 + 名字 + 规模副题。
     卡片不套壳 —— 整列删除走播放列表页的列表行。 */
 function playlistCardHTML(playlist) {
-  const cover = playlistCoverURL(playlist);
   return `
     <button class="album-card playlist-card" data-playlist-id="${playlist.playlist_id}">
-      <span class="art-wrap">${cover
-        ? `<img loading="lazy" decoding="async" alt="" src="${cover}"
-             onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'pl-icon',textContent:'♫'}))">`
-        : '<span class="pl-icon">♫</span>'}
-      </span>
+      <span class="art-wrap">${playlistCardArtHTML(playlist)}</span>
       <b>${escapeHTML(playlist.name)}</b>
       <small>${describeDuration(playlist.duration_seconds, playlist.track_count)}</small>
     </button>`;

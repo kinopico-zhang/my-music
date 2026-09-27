@@ -8,6 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.99", date="2026-09-27", items=[
+        ChangelogItem(kind="修复", text="换了播放列表封面后, 回到所有播放"
+                                       "列表页和主页看到的还是旧图的问题修了"
+                                       " —— 现在设完封面, 底下的列表当场"
+                                       "换上新图, 撤掉封面也一样"),
+    ]),
     ChangelogVersion(version="1.8.98", date="2026-09-26", items=[
         ChangelogItem(kind="修复", text="服务器修过的歌手机也认账了 —— 之前音频"
                                        "文件在服务器换新, 手机自动缓存里的旧字节"
