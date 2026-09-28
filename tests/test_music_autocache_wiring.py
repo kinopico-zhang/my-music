@@ -14,7 +14,12 @@ def test_music_autocache_wiring():
     次网络) + 已下载页统计行分栏 (没有手动下载也带出这行)。
     1.8.98 换代清仓 (实报「修过的歌手机还播旧坏字节」): 服务端换了音频
     文件, 这仓的旧字节没有逐首清除的口 —— 仓一代一跳 (v2), 旧代整仓清
-    掉, 索引自愈; 手动下载仓不受牵连。"""
+    掉, 索引自愈; 手动下载仓不受牵连。
+    1.8.101 存储保卫 (实报「放着已缓存的歌, 蜂窝流量爆走」: 服务日志实锤
+    刚听过的歌一小时内字节就被系统清掉, 索引还当都在 → 整首重下走流量,
+    手机端 Safari 存储只剩 86MB): 申请 persist + 打开/回到应用两仓对账
+    (影子账出清) + 预算跟 estimate().quota 走 + 统计行标「系统可能自动
+    清理」。"""
     pure_js = (MUSIC_STATIC / "js" / "autocache.js").read_text(encoding="utf-8")
     integration_js = (MUSIC_STATIC / "js"
                       / "music-autocache-integration.js").read_text(
@@ -50,6 +55,26 @@ def test_music_autocache_wiring():
     # 已下载页统计行分栏: 空列表分支也带出这行 (不然私仓用着却看不见)
     assert 'id="dl-autocache"' in pane_js
     assert "autoCache.usage()" in pane_js
+    # 1.8.101 存储保卫三道防线:
+    # ① persist 申请 (打开/回到应用都试, 批没批记账给统计行)
+    assert "navigator.storage.persist" in integration_js
+    assert "autoCachePersisted = granted;" in integration_js
+    # ② 两仓对账: 自动缓存 reconcile + 手动下载 removeDownload (影子账出清)
+    assert "function reconcile" in pure_js
+    assert "presentIds.has(entry.track_id)" in pure_js
+    assert "async function presentTrackIds" in integration_js
+    assert "autoCache.reconcile(await presentTrackIds(AUTO_CACHE));" \
+        in integration_js
+    assert "await downloads.removeDownload(entry.track_id);" in integration_js
+    assert "if (!entry.state && !present.has(entry.track_id))" in integration_js
+    assert 'document.addEventListener("visibilitychange"' in integration_js
+    # ③ 预算跟 quota 走 (减半留一半给手动下载/壳/封面, 最低 128MB)
+    assert "function setBudget" in pure_js
+    assert "autoCache.setBudget(Math.max(128 * 1024 * 1024," in integration_js
+    assert "Math.floor(estimate.quota / 2)" in integration_js
+    # 统计行: 存储没固定时标出来 (数字缩水 = 系统在腾地方, 不是应用在删)
+    assert "autoCachePersisted" in pane_js
+    assert "系统可能自动清理" in pane_js
     # 门禁收编: tsc 类型检查 + c8 覆盖率都认这个纯模块
     assert "app/music/static/js/autocache.js" in (ROOT / "tsconfig.json"
                                                   ).read_text(encoding="utf-8")

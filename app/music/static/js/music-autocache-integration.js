@@ -6,9 +6,14 @@
 // 字节会一直压着不放 (没有逐首清除的口) —— 仓一代一跳, 旧代整仓清掉,
 // 索引自愈 (autocache.blob 字节没了自动出账), 听过自动回填; 手动下载仓
 // (music-downloads-v1) 不受牵连。
+// 1.8.101 存储保卫 (实报「放着已缓存的歌, 蜂窝流量爆走」): 手机系统存储
+// 吃紧会悄悄清 Cache API (没申请 persist 的源随便清, 一个小时内就能清掉
+// 刚听过的歌), 索引还在 → 播到那首整首重新走流量。三道防线: ① 申请
+// persist; ② 打开/回到应用就对账 (两仓索引里在、字节没了的影子账当场
+// 出清 —— 统计行不再谎报「都缓存好了」); ③ 预算跟系统实际给的存储走。
 "use strict";
-/* global createAutoCache, downloadsEnabled */
-/* exported autoCache, autoCacheEnabled, autoCacheStash */
+/* global createAutoCache, downloads, downloadsEnabled */
+/* exported autoCache, autoCacheEnabled, autoCachePersisted, autoCacheStash */
 
 // 同一道门: 没有下载能力 (明文 HTTP / 无 Cache API) 就没有自动缓存
 const autoCacheEnabled = downloadsEnabled;
@@ -68,4 +73,74 @@ const autoCache = autoCacheEnabled
 function autoCacheStash(trackId, blob) {
   if (!autoCache) return;
   autoCache.put(trackId, blob).catch(() => {});
+}
+
+// ------------------------------------------------------------ 1.8.101 存储保卫
+
+let autoCachePersisted = false;   // persist 批没批 (没批 = 系统可能随时清)
+
+/** 申请固定存储 (整个源生效, 手动下载也受益): 没批过的源随使用时长/
+    加桌面有机会翻盘, 每次回到应用再试一把。 */
+function requestPersist() {
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then((granted) => {
+      autoCachePersisted = granted;
+    }).catch(() => {});
+  }
+}
+
+/** 一个仓里字节真在场的曲目号 (keys() 只翻目录不读字节, 便宜)。 */
+async function presentTrackIds(storeName) {
+  const present = new Set();
+  const cache = await caches.open(storeName);
+  for (const key of await cache.keys()) {
+    const match = /\/music\/media\/stream\/(\d+)$/.exec(
+      new URL(key.url).pathname);
+    if (match) present.add(Number(match[1]));
+  }
+  return present;
+}
+
+/** 两仓对账: 自动缓存走 reconcile, 手动下载走 removeDownload (同款键形,
+    同款病 —— 字节没了账还在, 已下载页谎报 + 播到那首整首走流量重下)。
+    下载中的 (有 state) 不碰: 字节还没落完。 */
+async function reconcileLocalAudioStores() {
+  try {
+    autoCache.reconcile(await presentTrackIds(AUTO_CACHE));
+    if (typeof downloads !== "undefined" && downloads) {
+      const present = await presentTrackIds("music-downloads-v1");
+      for (const entry of downloads.entries()) {
+        if (!entry.state && !present.has(entry.track_id)) {
+          await downloads.removeDownload(entry.track_id);
+        }
+      }
+    }
+  } catch (_error) { /* 这趟对不上就先不对: 播放路径自己会自愈 */ }
+}
+
+/** 预算跟系统实际给的存储走: quota 减半给自动缓存 (另一半留给手动下载/
+    壳/封面), 最低 128MB; 估不出维持默认 2GB。收紧时超预算的清最旧
+    (setBudget 自己收), 不压着等系统清 —— 它清完索引还不知道。 */
+function clampBudgetToQuota() {
+  if (!(navigator.storage && navigator.storage.estimate)) return;
+  navigator.storage.estimate().then((estimate) => {
+    if (estimate && estimate.quota) {
+      autoCache.setBudget(Math.max(128 * 1024 * 1024,
+        Math.min(AUTO_CACHE_MAX_BYTES, Math.floor(estimate.quota / 2))));
+    }
+  }).catch(() => {});
+}
+
+if (autoCacheEnabled && autoCache && window.caches) {
+  requestPersist();
+  reconcileLocalAudioStores();   // 异步对账, 不挡起播
+  clampBudgetToQuota();
+  // 回到应用再对一遍 (清场多发生在后台/锁屏期间), 顺手重试 persist
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      requestPersist();
+      reconcileLocalAudioStores();
+      clampBudgetToQuota();
+    }
+  });
 }
