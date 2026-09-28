@@ -4,7 +4,8 @@
 // views 顶到 200 行帽按逻辑再切一刀, 代码逐字节未动); 1.8.77 统计行
 // 加自动缓存用量一行 (music-autocache-integration 的私仓, LRU 自动让位)。
 "use strict";
-/* global $, autoCache, autoCacheEnabled, bindDownloadsSelect, bindLibraryBody,
+/* global $, autoCache, autoCacheEnabled, autoCachePersisted,
+          bindDownloadsSelect, bindLibraryBody,
           bindSwipeDelete, cancelDownloadAll, downloadRingHTML, downloads,
           downloadsEnabled, escapeHTML, formatBytes, listPlaceholderHTML,
           playerStart, syncDownloadsSelect, toast */
@@ -152,7 +153,10 @@ async function fillDownloadsStats(body) {
   if (auto) {
     const autoUsage = autoCacheEnabled && autoCache ? autoCache.usage() : null;
     if (autoUsage && autoUsage.count) {
-      auto.textContent = `自动缓存 ${autoUsage.count} 首 · ${formatBytes(autoUsage.totalBytes)}`;
+      // 1.8.101: 存储没固定 (persist 没批) 时标出来 —— 系统可能随时清,
+      // 这行数字缩水不是应用在删, 是手机在腾地方
+      auto.textContent = `自动缓存 ${autoUsage.count} 首 · ${formatBytes(autoUsage.totalBytes)}`
+        + (autoCachePersisted ? "" : " · 系统可能自动清理");
       auto.hidden = false;
     } else {
       auto.hidden = true;

@@ -158,3 +158,30 @@ test("坏入参: 非数 id / 空 blob 拒收", async () => {
   assert.equal(await cache.put(7, new Blob([])), false);
   assert.equal(cache.has(7), false);
 });
+
+test("reconcile 对账 (1.8.101): 字节没了的影子账出清, 在场的保留; 没影子可出索引不动", async () => {
+  const { adapters } = stubAdapters();
+  const cache = createAutoCache(adapters, { maxBytes: 100 });
+  await cache.put(1, blobOf(30));
+  await cache.put(2, blobOf(30));
+  await cache.put(3, blobOf(30));
+  assert.equal(cache.reconcile(new Set([2, 3])), 1);   // 1 的字节被系统清了
+  assert.equal(cache.has(1), false);
+  assert.equal(cache.has(2), true);
+  assert.deepEqual(cache.usage(), { count: 2, totalBytes: 60 });  // 不再谎报
+  assert.equal(cache.reconcile(new Set([2, 3])), 0);   // 全在场: 索引不动
+});
+
+test("setBudget 收紧 (1.8.101): 超新预算的清最旧, 字节与索引一起走", async () => {
+  let now = 1000;
+  const { adapters, calls } = stubAdapters({ now: () => now });
+  const cache = createAutoCache(adapters, { maxBytes: 100 });
+  await cache.put(1, blobOf(40));          // 1000
+  now = 1100;
+  await cache.put(2, blobOf(40));          // 1100
+  await cache.setBudget(50);               // 只留得住一首: 清 1 (最旧)
+  assert.equal(cache.has(1), false);
+  assert.equal(cache.has(2), true);
+  assert.deepEqual(calls.deletes, ["/music/media/stream/1"]);
+  assert.deepEqual(cache.usage(), { count: 1, totalBytes: 40 });
+});

@@ -8,6 +8,14 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.101", date="2026-09-28", items=[
+        ChangelogItem(kind="修复", text="手机系统悄悄清掉的缓存不再被当成还"
+                                       "在 —— 之前索引记着「都缓存好了」, "
+                                       "放到那首才发现字节没了、整首重新走"
+                                       "流量, 现在回到应用就当场对账出清, "
+                                       "并申请把存储固定住不被系统清理, 手"
+                                       "机存储吃紧时缓存上限也跟着收紧"),
+    ]),
     ChangelogVersion(version="1.8.100", date="2026-09-27", items=[
         ChangelogItem(kind="修复", text="后台连播第二首开始没声音、锁屏进度"
                                        "却还在走, 过一阵锁屏连播放卡片都没"

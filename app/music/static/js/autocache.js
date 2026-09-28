@@ -35,6 +35,13 @@
  * @property {Function} remove (trackId: number) => Promise
  * @property {Function} clear  () => Promise                            整仓清空
  * @property {Function} usage  () => {count: number, totalBytes: number} 索引口径
+ * @property {Function} reconcile (presentIds: Set<number>) => number
+ *                             对账: 字节真在场的曲目号集合之外的索引条目
+ *                             出账 (系统清了字节, 索引还当都在 = 谎报 +
+ *                             播到那首整首走流量重下); 返回出掉几条
+ * @property {Function} setBudget (bytes: number) => Promise
+ *                             收紧预算, 超了的当场清最旧 (系统实际给的
+ *                             存储比默认小时收着用, 留着也是被先清)
  */
 
 /**
@@ -44,7 +51,7 @@
  * @returns {AutoCacheManager}
  */
 function createAutoCache(adapters, options) {
-  const maxBytes = (options && options.maxBytes) || 2 * 1024 * 1024 * 1024;
+  let maxBytes = (options && options.maxBytes) || 2 * 1024 * 1024 * 1024;
 
   // 缓存键 = 音频流光杆地址 (与手动下载同款键形, 但住各自的缓存仓)
   const streamURL = (trackId) => `/music/media/stream/${trackId}`;
@@ -114,7 +121,31 @@ function createAutoCache(adapters, options) {
     return { count: entries.length, totalBytes: totalBytes(entries) };
   }
 
-  return { has, blob, put, remove, clear, usage };
+  /** 对账 (1.8.101): presentIds = keys() 现场里字节真在的曲目号。索引里
+      不在场的 = 系统已清掉字节的影子账 —— 出账后 usage 不再谎报容量,
+      播放/预取也不会先信索引、到换源那步才发现没了 (整首走流量重下)。
+      只动索引不删字节 (能被对掉的条目本就没有字节; 对账途中新落盘的
+      字节也不误伤)。 */
+  function reconcile(presentIds) {
+    const entries = indexEntries();
+    const kept = entries.filter((entry) => presentIds.has(entry.track_id));
+    if (kept.length !== entries.length) adapters.writeIndex(kept);
+    return entries.length - kept.length;
+  }
+
+  /** 预算收紧 (1.8.101): 系统实际给的存储小了就收着用, 超新预算的当场
+      清最旧 —— 与其压着等系统清 (它清完索引还不知道, 白走流量重下),
+      不如自己按 LRU 让位, 留下的都真在。 */
+  async function setBudget(bytes) {
+    maxBytes = Math.max(0, Number(bytes) || 0);
+    const entries = indexEntries();
+    while (totalBytes(entries) > maxBytes && entries.length > 0) {
+      await adapters.cacheDelete(streamURL(entries.shift().track_id));
+    }
+    adapters.writeIndex(entries);
+  }
+
+  return { has, blob, put, remove, clear, usage, reconcile, setBudget };
 }
 
 if (typeof module !== "undefined" && module.exports) {
