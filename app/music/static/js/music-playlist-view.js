@@ -129,8 +129,12 @@ async function renderPlaylistView(playlistId, target) {
   bindTrackLists(target.querySelector("#playlist-tracks"), () => page.tracks);
   // 曲目行左滑露出删除: 移出列表后就地抽掉那行 (不整页重铺, 滚动位置保住),
   // 头上的 规模/时长 文案顺手重算。
+  // 1.8.110 二次确认 (用户点名「所有的删除都要二次确认」), 反悔行自动收起
   bindSwipeDelete(target.querySelector("#playlist-tracks"), async (wrap) => {
     const trackId = Number(wrap.dataset.swipeTrack);
+    const track = page.tracks.find((item) => item.track_id === trackId);
+    const title = track ? track.title : "这首歌";
+    if (!window.confirm(`从「${playlist.name}」移除「${title}」?`)) return;
     try {
       await fetchJSON(`/music/api/playlists/${playlistId}/tracks/${trackId}`,
                       { method: "DELETE" });

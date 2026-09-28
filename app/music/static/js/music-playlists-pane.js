@@ -20,9 +20,14 @@ function renderPlaylistsPane(target) {
     const row = event.target.closest("[data-playlist-id]");
     if (row) navigate(`playlist/${row.dataset.playlistId}`);
   });
-  // 列表行左滑露出删除: 删掉后就地抽行, 不整页重铺 (与主页同款)
+  // 列表行左滑露出删除: 删掉后就地抽行, 不整页重铺 (与主页同款)。
+  // 1.8.110 二次确认 (用户点名「删除歌单应该给二次确认」): 与详情页删列表
+  // 同一句话、同款原生 confirm; 反悔了行自动收起 (swipe 模块统一收尾)
   bindSwipeDelete(list, async (wrap) => {
     const playlistId = Number(wrap.dataset.swipePlaylist);
+    const nameTag = wrap.querySelector(".a-main b");
+    const name = nameTag ? nameTag.textContent : "这个列表";
+    if (!window.confirm(`删除播放列表「${name}」?`)) return;
     try {
       await fetchJSON(`/music/api/playlists/${playlistId}`, { method: "DELETE" });
       wrap.remove();

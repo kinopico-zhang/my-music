@@ -2,6 +2,9 @@
 // 拆自 music.js (结构化重构), 1.8.23 改款 (用户报「左滑时左边的信息不见了」):
 // 早先行整体左移、删除钮从底下露出来 —— 封面跟着行左移被左缘裁掉。现在行
 // 原地不动, 删除钮从右缘滑上来盖在行尾内容上 (同色纱跟着延伸, 见同名 css)。
+// 1.8.110 删除二次确认 (用户点名「所有的删除都要二次确认」) 后的统一收尾:
+// 红钮点下去 onDelete 没把行抽走 (用户在确认里反悔了 / 请求失败) 就地收起
+// —— 各消费方只管删, 收尾不用各家自己记。
 "use strict";
 /* exported bindSwipeDelete */
 
@@ -122,6 +125,9 @@ function bindSwipeDelete(container, onDelete) {
       const wrap = del.closest(".swipe-wrap");
       swipeOpenWrap = null;
       await onDelete(wrap);
+      // 没删成 (二次确认里反悔 / 请求失败) 的行自动收起; 删成了的行早被
+      // 消费方抽走 (isConnected = false), 收尾是空操作
+      if (wrap.isConnected) setSwipeTransform(wrap, 0);
       return;
     }
     if (swipeOpenWrap && swipeOpenWrap.contains(event.target)) {

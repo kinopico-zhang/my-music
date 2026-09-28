@@ -8,6 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.110", date="2026-09-28", items=[
+        ChangelogItem(kind="改进", text="所有删除都加了二次确认 —— 左滑"
+                                       "的红色删除按钮点下去会先问一句 (删哪"
+                                       "个列表/哪首歌都点名道姓), 确认了才"
+                                       "真删, 反悔了按钮自己缩回去"),
+    ]),
     ChangelogVersion(version="1.8.109", date="2026-09-28", items=[
         ChangelogItem(kind="修复", text="修了电脑大屏上菜单弹层离菜单键老"
                                        "远 —— 之前钉死在屏幕左下角, 现在从"

@@ -50,7 +50,8 @@ def test_music_downloads_wiring():
     assert "downloadRingHTML(state.progress, 17)" in js
     assert 'id="album-download" data-dl-all' in js
     assert 'id="playlist-download" data-dl-all' in js
-    assert "if (busy) cancelDownloadAll();" in js
+    assert "if (busy) {" in js and "cancelDownloadAll();" in js   # 取消整批不确认
+    assert 'window.confirm(`删除「${title}」的下载?`)' in js   # 1.8.110 删除要确认
     # 1.8.2: 下载中的进度从百分比文字换成圆环 (r=8.5 周长切 dashoffset,
     # 正上方顺时针画满; 已下载照旧是勾)
     assert "function downloadRingHTML" in js
@@ -106,7 +107,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v99" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v100" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 

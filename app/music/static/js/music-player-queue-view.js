@@ -44,13 +44,11 @@ function renderQueueView() {
   const upcoming = queueUpcoming(playQueue);
   const currentId = playerCurrentTrackId();
   $("#fq-count").textContent = `${upcoming.length} 首歌曲`;
-  // 当前曲封面上盖纱+动条, 其余是曲目封面 (1.8.38 用户点名「去掉序号,
-  // 显示歌曲封面, 跟歌单里的歌曲风格一致」: 行 = 44px 封面 + 歌名上行/
-  // 作者下行, 与播放列表行同一套语言); 1.8.31 整行按住一会儿拖换序
+  // 当前曲封面上盖纱+动条, 其余是曲目封面 (1.8.38 用户点名「去掉序号, 显示歌曲
+  // 封面」: 44px 封面 + 歌名/作者两行, 与播放列表行同款); 1.8.31 整行拖换序
   // (把手退役)。1.8.27 行套 .swipe-wrap (左滑删除); data-queue-pos 记
   // order 绝对位 (视图下标 0 = order[position]), 删行/换序都按它换算。
-  // 1.8.58 动条扶正 (用户点名「正在播放的动态」): 纱罩动条自 1.8.38 起
-  // 一直没亮过 (.bars 基类 display:none, 开它的 .playing 类没给到队列行)
+  // 1.8.58 动条扶正 (用户点名「正在播放的动态」): 纱罩动条自 1.8.38 起没亮过
   $("#queue-list").innerHTML = upcoming.map((track, index) => {
     const on = track.track_id === currentId;
     return `
@@ -183,12 +181,14 @@ function bindQueueDrag() {
 }
 
 // 左滑删行 (1.8.27, 用户点名「所有列表的删除按钮都这样」): 与播放列表/
-// 下载列表同款 bindSwipeDelete。删的是 wrap 记的 order 绝对位; 当前曲
-// 删不得 (queueRemove 拒), 重铺 + 提示一句。bindSwipeDelete 在浏览模块
-// (加载在播放器组之后), 所以只在队列视图第一次打开时调用 (见上)。
+// 下载列表同款 bindSwipeDelete。删的是 wrap 记的 order 绝对位; 当前曲删不得
+// (queueRemove 拒), 重铺 + 提示一句。住浏览模块, 视图第一次打开才绑 (见上)。
 function bindQueueSwipeDelete() {
   bindSwipeDelete($("#queue-list"), async (wrap) => {
     if (!playQueue) return;
+    // 1.8.110 二次确认 (用户点名「所有的删除都要二次确认」), 反悔行自动收起
+    const title = wrap.querySelector(".q-title").textContent;
+    if (!window.confirm(`从待播列表移除「${title}」?`)) return;
     if (queueRemove(playQueue, Number(wrap.dataset.queuePos))) {
       savePlayerState();
     } else {
