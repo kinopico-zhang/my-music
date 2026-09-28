@@ -8,6 +8,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.108", date="2026-09-28", items=[
+        ChangelogItem(kind="改进", text="电脑上播放列表的曲目直接按住鼠标拖"
+                                       "动就能换顺序 —— 不用再长按等待, 手机"
+                                       "触屏上照旧按住一小会儿再拖"),
+    ]),
     ChangelogVersion(version="1.8.107", date="2026-09-28", items=[
         ChangelogItem(kind="修复", text="修电脑上来回切换页面后画中画小窗不"
                                        "再出现 —— Chrome 只许刚点过页面时开"
