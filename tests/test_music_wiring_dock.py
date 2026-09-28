@@ -29,13 +29,13 @@ def test_music_dock_wiring():
         < dock_html.index('id="dock-search"')
     # 船坞本体透明 (点击穿到内容), 三件各自磨砂; 让位账收进 --dock-clear
     dock_css = html[html.index("#dock {"):html.index(".dock-row {")]
-    assert "pointer-events: none;" in dock_css
-    assert "--dock-h: 46px;" in html
+    assert "pointer-events: none;" in dock_css and "--dock-h: 46px;" in html
     # 1.8.1 撤掉页签栏时代多记的那层 46px 空带: 内容铺到三件套底下, 只留呼吸缝
     assert "--dock-clear: calc(var(--dock-h) + 14px + env(safe-area-inset-bottom));" in html
     assert "calc(4px + env(safe-area-inset-bottom))" in dock_css   # 三件套贴屏底
     assert "env(safe-area-inset-bottom)" in dock_css       # 让开小白条
-    keys_css = html[html.index("#dock-menu, #dock-search, #dock-volume {"):html.index("#dock-menu:active")]
+    keys_css = html[html.index("#dock-menu, #dock-search, #dock-volume {"):
+                  html.index("#dock-menu:active")]
     assert "border-radius: 50%;" in keys_css               # 圆键
     assert "rgba(44,44,46,.7);" in keys_css               # 磨砂配方与气泡同款 (1.8.5 调回半透明)
     assert "backdrop-filter: blur(20px) saturate(180%);" in keys_css

@@ -81,15 +81,17 @@ def test_music_fluid_morph_css_states():
                  "#full-player.morphing.revealed .fp-sheet > * {",
                  "#full-player.morphing.revealed .fp-bg {"]:
         assert frag in css, f"形变样式缺 {frag}"
-    # 分层错峰: 封面 70ms → 文字 130 → 控件 175 → 进度 215 → 底排 245,
-    # 氛围底慢拍铺满 (.55s)
+    # 分层错峰: 封面 70ms → 文字 130 → 音量行 150 (1.8.104, 键鼠端) →
+    # 控件 175 → 进度 215 → 底排 245, 氛围底慢拍铺满 (.55s)
     for frag in [".fp-sheet > .fp-body {",
                  ".fp-sheet > .fp-meta {",
+                 ".fp-sheet > .fp-volrow {",
                  ".fp-sheet > .fp-controls {",
                  ".fp-sheet > .fp-transport {",
                  ".fp-sheet > .fp-actions {",
                  "cubic-bezier(.22,.61,.36,1) 70ms,",
                  "cubic-bezier(.22,.61,.36,1) 130ms,",
+                 "cubic-bezier(.22,.61,.36,1) 150ms,",
                  "cubic-bezier(.22,.61,.36,1) 175ms,",
                  "cubic-bezier(.22,.61,.36,1) 215ms,",
                  "cubic-bezier(.22,.61,.36,1) 245ms,",

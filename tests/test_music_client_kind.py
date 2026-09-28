@@ -126,7 +126,7 @@ def test_music_1839_desktop_input_batch():
     assert 'function setDesktopVolume(' in keys
     assert 'localStorage.setItem("music-volume"' in keys  # 下回打开接着用
     assert "$(\"#fp-volume\")" in keys
-    assert 'id="fp-volume"' in html                     # 播放页底行最左一根
+    assert 'id="fp-volume"' in html               # 1.8.104 起标题下整行
     assert "#fp-volume { display: none; }" in player_css  # 触摸端音量归硬件键
     assert 'html[data-input="keymouse"] #fp-volume {' in css  # 键鼠端放行
     # 鼠标手感的关键几条 (作用域规矩由上一测守)
@@ -137,6 +137,9 @@ def test_music_1839_desktop_input_batch():
         assert frag in css, f"desktop.css 缺 {frag}"
     # 行距密度 (1.8.103): 触摸基线 8px 行衬是手指的尺寸, 键鼠收紧一档
     assert 'html[data-input="keymouse"] .track-row,' in css
+    # 悬停删除钮改驻留半秒才亮 (1.8.104, 用户点名「鼠标扫过每行都弹红钮
+    # 太吵」): transition-delay 只写在悬停态 —— 进场等半秒, 离行立刻缩回
+    assert "transition-delay: .5s;" in css
     # 悬停亮删除钮的前提: 收起清行内样式 (不是写 0)
     assert 'del.style.transform = x ? `translateX(${SWIPE_REVEAL + x}px)` : "";' \
         in swipe
@@ -147,8 +150,8 @@ def test_music_volume_ui_axes_split():
     """音量控制的分端规矩 (1.5.1 用户点名「音量条去掉吧」全平台撤除 →
     1.8.102 键鼠端回归): 触摸端音量归设备硬件键, 基线一根不剩 —— iOS 的
     audio.volume 写了也白写, 1.5.0 的 WebAudio 增益又拖不动还脱开音量键,
-    那套机器不许再爬回来; 电脑没有硬件音量键可按, 键鼠端在播放页底行和
-    船坞气泡各放一处 (1.8.103 双轴: 放行只许走操作轴
+    那套机器不许再爬回来; 电脑没有硬件音量键可按, 键鼠端在播放页 (标题下
+    整行, 1.8.104 用户点名挪位拉长) 和船坞气泡各放一处 (放行只许走操作轴
     html[data-input="keymouse"], 勿用尺寸轴 —— iPad 大屏也是触摸)。
     回归: WebAudio 音量路由全套禁词 + 播放器模块不碰音量 + 基线藏。"""
     html = music_page_shell()
@@ -168,3 +171,10 @@ def test_music_volume_ui_axes_split():
     # 基线藏 (触摸端), 只有键鼠端放行 —— 两句都在拼进 html 的 css 里
     assert "#fp-volume { display: none; }" in html
     assert 'html[data-input="keymouse"] #fp-volume {' in html
+    # 1.8.104 挪位 (用户点名「放 << || >> 上面, 标题下面, 和进度条一样长」):
+    # 独占一行站标题与传输三键之间; 触摸端整行藏, 键鼠端放行
+    assert html.index('<div class="fp-meta">') \
+        < html.index('<div class="fp-volrow">') \
+        < html.index('<div class="fp-controls">')
+    assert ".fp-volrow { display: none; }" in html
+    assert 'html[data-input="keymouse"] .fp-volrow {' in html
