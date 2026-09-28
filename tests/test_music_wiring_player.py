@@ -33,8 +33,11 @@ def test_music_controls_apple_style_wiring():
     # 切歌」撤掉, 切歌走气泡横滑 —— 见 test_music_wiring_dock 的 185 条)
     assert 'id="mini-play"' in html and 'id="mini-open"' in html
     assert 'class="mq-line"' in html and 'class="mq-run"' in html
-    # 音量条整个撤了 (1.5.1, 用户点名): 音量交给设备音量键/系统音量
-    assert "#fp-volume" not in html and ".fp-volume" not in html
+    # 音量条 (1.5.1 用户点名撤了 → 1.8.102 分端回归): 移动端基线藏 (音量
+    # 归设备键), 桌面端才放行 —— 分端全量断言在
+    # test_music_client_kind.py 的 test_music_volume_ui_desktop_only
+    assert 'id="fp-volume"' in html
+    assert "#fp-volume { display: none; }" in html
     # 气泡磨砂玻璃 (用户点名): 七成底色配 blur(20), 底下划过的内容糊成
     # 影子透上来 —— 不是一块实心灰板; 1.8.3 调实一档后 1.8.5 调回半透明
     # (八成看着偏实心板, 磨砂感回来)

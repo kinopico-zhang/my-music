@@ -167,6 +167,9 @@
 .fp-actions > button { position: relative; width: 40px; height: 40px; padding: 0;
   display: flex; align-items: center; justify-content: center; }
 .fp-actions > button:active { opacity: .6; }
+/* 音量条 (1.8.102 桌面键鼠补全): 基线藏 —— 移动端音量归系统硬件键
+   (iOS 的 audio.volume 只读), 桌面端 music-desktop.css 放行上桌 */
+#fp-volume { display: none; }
 #fp-lyrics-btn.on { color: #fff; }
 #fp-lyrics-btn:disabled { opacity: .35; }   /* 探明没歌词的曲子, 键灰掉点不开 */
 #fp-queue-btn.on { color: #fff; }           /* 队列翻开着 (封面区显示队列) */

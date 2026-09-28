@@ -1,5 +1,5 @@
 """My Music 播放交互接线测试: 搜索页/锁屏进度, 歌词动画,
-点播从头, 音量 UI 撤除, 词标行平齐, 歌词行匹配纯逻辑。"""
+点播从头, 词标行平齐, 歌词行匹配纯逻辑。"""
 
 
 from app.music.library_tags import extract_album_artwork
@@ -120,19 +120,6 @@ def test_music_lockscreen_sw_bypass_wiring():
     assert 'streamURL(trackId) + "?direct=1"' in downloads_js
     assert "async function cachedBlob" in downloads_js   # 播放器直读缓存字节
     assert "cacheRead" in downloads_js
-
-
-def test_music_volume_ui_removed():
-    """音量条全平台撤除 (用户点名"音量条去掉吧"): iOS 的 audio.volume
-    写了也白写, 1.5.0 的 WebAudio 增益又拖不动还脱开音量键 —— 桌面也
-    不留了, 音量统一设备自己的键。回归: 旧的音量代码不许再爬回来。"""
-    html = music_page_shell()
-    player = music_player_js()
-    for gone in ["AudioContext", "createGain", "createMediaElementSource",
-                 "ensureVolumeRouting", "loadSavedVolume", "nativeVolumeWorks",
-                 "applyVolume", "music-volume", "volume-off", "fp-volume"]:
-        assert gone not in player, f"音量残留: {gone}"
-        assert gone not in html, f"音量残留 (html): {gone}"
 
 
 def test_music_lyrics_mark_row_badge():
