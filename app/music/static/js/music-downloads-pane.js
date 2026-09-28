@@ -21,11 +21,20 @@ function renderDownloadsPane(target) {
   bindLibraryBody(body);
   bindDownloadsSelect(target);   // 多选删除 (1.8.6): 绑 pane 层, 正文重铺不丢
   // 左滑删除 (1.8.17 用户点名, 替掉行尾删除钮): 绑 pane 层, 正文重铺不丢;
-  // 曲库只读铁律不变 —— 这页删的只是下载缓存, 碰不到库里一个字节
+  // 曲库只读铁律不变 —— 这页删的只是下载缓存, 碰不到库里一个字节。
+  // 1.8.110 删除二次确认 (用户点名「所有的删除都要二次确认」): 下载中的
+  // 那颗是「取消」不是删除, 不确认; 反悔了行自动收起 (swipe 模块统一收尾)
   bindSwipeDelete(target, async (wrap) => {
     const trackId = Number(wrap.dataset.dlWrap);
     const busy = Boolean(wrap.querySelector(".busy"));
-    if (busy) cancelDownloadAll();   // 批量下载在跑: 这首取消即整批叫停
+    if (busy) {
+      cancelDownloadAll();   // 批量下载在跑: 这首取消即整批叫停
+    } else {
+      const entry = downloads.entries()
+        .find((item) => item.track_id === trackId);
+      const title = entry && entry.title ? entry.title : `曲目 ${trackId}`;
+      if (!window.confirm(`删除「${title}」的下载?`)) return;
+    }
     try {
       await downloads.removeDownload(trackId);
       toast(busy ? "已取消下载" : "已删除下载");
