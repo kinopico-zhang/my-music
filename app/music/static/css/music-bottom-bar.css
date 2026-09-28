@@ -26,7 +26,7 @@
   display: flex; align-items: center; gap: 10px;
   width: 100%; max-width: 860px;
 }
-#dock-menu, #dock-search {
+#dock-menu, #dock-search, #dock-volume {
   pointer-events: auto;
   width: var(--dock-h); height: var(--dock-h); border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -40,6 +40,10 @@
   transform: translateZ(0);   /* 自家合成层: 邻居层动起来时防复印 */
 }
 #dock-menu:active, #dock-search:active { transform: translateZ(0) scale(.92); }
+/* 船坞音量键 (1.8.103, 用户点名): 键鼠端专属 —— 触摸端音量归系统硬件键
+   (iOS 的 audio.volume 只读), 基线整个不显示; 键鼠端 music-desktop.css
+   放行上桌 (操作轴 data-input, 勿用尺寸轴 —— iPad 大屏也是触摸) */
+#dock-volume { display: none; }
 /* 1.8.17 搜索框上移页顶 (用户点名「键盘弹出时搜索框在屏幕最上方」) 后,
    1.8.5 那套「搜索层到顶三件套让位」(body.search-top) 整个撤了 —— 三件套
    在搜索页也常驻; 扫描进度条不在行里, 照常站岗。 */

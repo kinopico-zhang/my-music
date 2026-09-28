@@ -39,7 +39,7 @@ def test_music_1846_eaten_tap_catcher():
                  "width: var(--bar-row-w, 80px); height: 52px;",
                  "pointer-events: none; touch-action: none;",
                  ".push-pane.bar-catch .hero-bar-catch span { pointer-events: auto; }",
-                 'html[data-client="desktop"] .hero-bar-catch span '
+                 'html[data-input="keymouse"] .hero-bar-catch span '
                  "{ pointer-events: none; }"]:
         assert frag in html, f"接点条样式缺 {frag}"
 
