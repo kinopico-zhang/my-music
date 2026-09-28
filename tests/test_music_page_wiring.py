@@ -42,8 +42,7 @@ def test_music_downloads_wiring():
     # 收缩顶栏的「下载全部」键都换成 ✕/「取消下载」, 点了整批叫停 (连
     # 在下的那首一起掐断); 已下载页删掉在下那首也整批叫停; 单曲下载标
     # 照旧进度环, 不掺和取消 (1.8.50 头版做错的单曲取消已全数回退)
-    assert "let downloadAllJob = null;" in js
-    assert "async function cancelDownloadAll" in js
+    assert "let downloadAllJob = null;" in js and "async function cancelDownloadAll" in js
     assert "function syncDownloadAllButtons" in js
     assert "if (downloadAllJob) { await cancelDownloadAll(); return; }" in js
     assert '[data-bar-act="download"], [data-dl-all]' in js
@@ -107,7 +106,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v100" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v101" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 

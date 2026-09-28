@@ -262,12 +262,20 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
   // 逐字节同款 (首拍 updatePlayModeButton 不跳位); 单曲/随机两态住
   // music-common.js 换 innerHTML —— 1.8.90 三态重画为粗描边 (用户点名
   // 「线条要粗一点」), 1.8.91 再并进同一枚 path (半透明描边下一枚 path 只
-  // 上一次色, 交叉/接头不叠深) 并 28→24 缩到与邻键同量 (用户点名「偏大」)
+  // 上一次色, 交叉/接头不叠深) 并 28→24 缩到与邻键同量 (用户点名「偏大」);
+  // 1.8.111 换 iconfont 实底新画法: 列表/单曲共用同一枚环和同一视框 (用户
+  // 点名「循环主题的位置要重叠」) —— 单曲的 d 以列表的 d 起头, 徽章收在
+  // 环心不越出环包围盒, 切换只有徽章显隐, 环逐像素不动
   const repeatSvg = iconSvg("ICON_REPEAT");
   assert.ok(page.includes(repeatSvg), "页面默认形与 ICON_REPEAT 不同款");
   svgCentered("ICON_REPEAT (列表循环态)", repeatSvg);
   svgCentered("ICON_REPEAT_ONE (单曲循环态)", iconSvg("ICON_REPEAT_ONE"));
   svgCentered("ICON_SHUFFLE (随机循环态)", iconSvg("ICON_SHUFFLE"));
+  // 1.8.111 循环主题重叠门禁: 两态同视框 + 单曲的环与列表逐字节同枚
+  assert.ok(iconSvg("ICON_REPEAT_ONE").startsWith(
+    repeatSvg.slice(0, repeatSvg.indexOf("d="))), "列表/单曲该共用同一视框");
+  assert.ok(iconSvg("ICON_REPEAT_ONE").includes(`d="${iconPath("ICON_REPEAT")}`),
+    "单曲的环该与列表同枚 (切换只有徽章显隐)");
   for (const name of ["ICON_REPEAT", "ICON_REPEAT_ONE", "ICON_SHUFFLE"]) {
     const svg = iconSvg(name);
     assert.ok((svg.match(/<path /g) || []).length === 1,

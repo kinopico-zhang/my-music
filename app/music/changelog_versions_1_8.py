@@ -8,6 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.111", date="2026-09-28", items=[
+        ChangelogItem(kind="改进", text="随机播放和循环键换了实底新图标 —— "
+                                       "列表循环/单曲循环/随机三态和随机播"
+                                       "放键同一批换装, 单曲循环的「1」徽章"
+                                       "收进环心, 切换循环模式时环纹丝不动"),
+    ]),
     ChangelogVersion(version="1.8.110", date="2026-09-28", items=[
         ChangelogItem(kind="改进", text="所有删除都加了二次确认 —— 左滑"
                                        "的红色删除按钮点下去会先问一句 (删哪"
