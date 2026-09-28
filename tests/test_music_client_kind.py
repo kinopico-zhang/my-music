@@ -187,3 +187,13 @@ def test_music_volume_ui_axes_split():
     assert html.count('class="vol-ico"') == 2          # 左小喇叭 / 右大喇叭
     assert 'html[data-input="keymouse"] .fp-volrow .vol-ico {' in html
     assert "flex: 1; min-width: 0; height: 28px;" in html   # 条子吃满中槽
+
+
+def test_music_dock_menu_anchor():
+    """1.8.109 修用户实报「pc 菜单弹出的位置和左下角菜单按钮太远」: 船坞行
+    大屏居中, 菜单键离屏左缘几百 px, 基线钉死屏左 8px 的弹层飞到远角 ——
+    开时现量键的 x 跟着走; 手机窄屏量出来与基线同值, 触摸端观感不变。"""
+    js = (MUSIC_STATIC / "js" / "music-dock-menu.js").read_text(
+        encoding="utf-8")
+    assert "menu.style.left = `${keyX}px`;" in js
+    assert "event.currentTarget.getBoundingClientRect().left" in js
