@@ -23,7 +23,9 @@
    1.8.105: 画中画入口上桌 (播放页底排第四键, 用户点名「pc 版本支持
    画中画模式」)。
    1.8.106: 音量条缩到与进度条等长 (时间戳槽钉宽镜像对齐) + 两端小/大
-   喇叭图标; 画中画入口键撤了改失焦自动开关 (用户点名)。 */
+   喇叭图标; 画中画入口键撤了改失焦自动开关 (用户点名)。
+   1.8.108: 播放列表行鼠标拖拽换序 (用户点名) 的光标提示 —— 行板亮
+   抓手, 拖起来换抓取态; 拖拽路径本体在 music-playlist-drag.js。 */
 
 /* ---- 滚动条 (1.8.35 第一条分叉) ---- */
 /* 全站滚动条是移动端 App 观感特意藏掉的, 桌面端鼠标用户没了滚动反馈会
@@ -41,6 +43,12 @@ html[data-input="keymouse"] ::-webkit-scrollbar-track { background: transparent;
 /* ---- 光标: 可点的都给手型 (触屏没有光标, 这套只在桌面出现) ---- */
 html[data-input="keymouse"] button { cursor: pointer; }
 html[data-input="keymouse"] .pl-name { cursor: pointer; }   /* span 改名钮 */
+/* 播放列表的行整根可拖换序 (1.8.108 鼠标拖拽, JS 同名模块): 行板亮抓手
+   告诉「能拖」, 拖起来换抓取态 (.dragging 挂在 wrap 上, 光标跟着捕获行) */
+html[data-input="keymouse"] #playlist-tracks .track-row { cursor: grab; }
+html[data-input="keymouse"] #playlist-tracks .swipe-wrap.dragging .track-row {
+  cursor: grabbing;
+}
 
 /* ---- 悬停: 键鼠要看得见「这里能点」—— 行/卡/钮亮一档 (与 :active 同
    语言, 稍亮半分); 船坞圆键悬停胀一圈, 按下照旧缩回去 ---- */

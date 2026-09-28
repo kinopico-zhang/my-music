@@ -60,7 +60,8 @@ def test_playlist_rename_reorder_query(tmp_path):
 def test_music_playlist_rename_reorder_wiring():
     """接线: 列表名点按 prompt 改名 (PATCH); 1.8.31 起曲目行整行按住一小会儿
     上下拖换序 (队列拖拽同款: 预备/让位平移/尾随 click 吞掉, 把手退役),
-    松手 PUT 全量顺序, 没存上整页重拉对齐服务端。"""
+    松手 PUT 全量顺序, 没存上整页重拉对齐服务端; 1.8.108 键鼠端鼠标按下
+    即拖 (不用按住等预备)。"""
     html = music_page_shell()
     view_js = (MUSIC_STATIC / "js" / "music-playlist-view.js").read_text(
         encoding="utf-8")
@@ -77,9 +78,26 @@ def test_music_playlist_rename_reorder_wiring():
     assert 'class="pl-grip"' not in view_js and "ICON_GRIP" not in view_js
     assert "function bindPlaylistDrag" in drag_js
     assert "const PLAYLIST_ARM_MS = 200;" in drag_js
-    assert 'try { row.setPointerCapture(event.pointerId); }' in drag_js
+    assert "try { arm.row.setPointerCapture(pointerId); }" in drag_js
     assert "playlistDragSwallowClick" in drag_js   # 按住过的尾随 click 吞掉 (不开播)
     assert 'bindPlaylistDrag(target.querySelector("#playlist-tracks")' in view_js
+    # 1.8.108 鼠标拖拽 (用户点名「播放列表要支持鼠标拖拽调整顺序」): 键鼠
+    # 端按下即起拖 (没动过不吞 click, 点了照旧开播), 触摸端照旧等 200ms;
+    # 行首封面 <img> 的原生拖拽会抢走指针流 —— 预备/拖拽中掐 dragstart;
+    # 右键 (菜单)/中键 (自动滚动) 不是拖拽意图
+    assert 'if (event.pointerType === "mouse" && isKeyMouseInput()) {' \
+        in drag_js
+    assert "armDrag(event.pointerId, false);" in drag_js
+    assert "if (arm && arm.armed) event.preventDefault();" in drag_js
+    assert "if (event.pointerType === \"mouse\" && event.button !== 0) return;" \
+        in drag_js
+    # 动够 8px 才算拖拽意图 (横向仍交还左滑删除), 那一下起尾随 click 吞掉
+    assert "if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;\n" \
+           "      playlistDragSwallowClick = true;" in drag_js
+    desktop_css = (MUSIC_STATIC / "css" / "music-desktop.css").read_text(
+        encoding="utf-8")
+    assert "html[data-input=\"keymouse\"] #playlist-tracks .track-row " \
+        "{ cursor: grab; }" in desktop_css
     # 持久化: 就地先挪 DOM, 再 PUT 全量新顺序; 失败整页重拉
     assert '`/music/api/playlists/${playlistId}/order`' in view_js
     assert 'method: "PUT"' in view_js
