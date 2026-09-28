@@ -172,6 +172,10 @@
    硬件键 (iOS 的 audio.volume 只读), 键鼠端 music-desktop.css 放行 */
 .fp-volrow { display: none; }
 #fp-volume { display: none; }
+/* 画中画入口 (1.8.105, 用户点名「pc 版本支持画中画模式」): 键鼠端专属,
+   基线藏; 探测不到 Document PiP API 的浏览器 JS 再整键收走
+   (music-pip.js), 键鼠端 music-desktop.css 放行 */
+#fp-pip-btn { display: none; }
 #fp-lyrics-btn.on { color: #fff; }
 #fp-lyrics-btn:disabled { opacity: .35; }   /* 探明没歌词的曲子, 键灰掉点不开 */
 #fp-queue-btn.on { color: #fff; }           /* 队列翻开着 (封面区显示队列) */
