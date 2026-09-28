@@ -19,7 +19,9 @@
    1.8.103: 双轴拆分 (交互规则从单轴 data-client 迁来) + 行距密度 +
    船坞音量气泡 (用户点名「非移动端底下加一个音量调节气泡」)。
    1.8.104: 音量条挪位拉长 (标题与传输三键之间独占一行, 用户点名) +
-   悬停删除钮改驻留半秒才亮 (用户点名优化)。 */
+   悬停删除钮改驻留半秒才亮 (用户点名优化)。
+   1.8.105: 画中画入口上桌 (播放页底排第四键, 用户点名「pc 版本支持
+   画中画模式」)。 */
 
 /* ---- 滚动条 (1.8.35 第一条分叉) ---- */
 /* 全站滚动条是移动端 App 观感特意藏掉的, 桌面端鼠标用户没了滚动反馈会
@@ -128,6 +130,10 @@ html[data-input="keymouse"] #fp-volume::-webkit-slider-thumb {
   -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
   background: #fff; margin-top: -3px;
 }
+/* 画中画入口 (1.8.105, 用户点名「pc 版本支持画中画模式」): 播放页底排
+   第四键, 点开 Chrome 的 Document PiP 小窗 (music-pip.js); 基线藏
+   (music-player.css), 探测不到 API 的浏览器 JS 再收走 */
+html[data-input="keymouse"] #fp-pip-btn { display: flex; }
 
 /* ---- 行距密度 (1.8.103): 触摸基线的 8px 行衬是手指的尺寸, 鼠标指哪打
    哪可以收紧一档 (5px), 列表一屏多塞两行。只动上下行衬, 不碰字号/图标/
