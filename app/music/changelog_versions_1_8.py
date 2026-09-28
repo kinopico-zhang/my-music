@@ -8,6 +8,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.109", date="2026-09-28", items=[
+        ChangelogItem(kind="修复", text="修了电脑大屏上菜单弹层离菜单键老"
+                                       "远 —— 之前钉死在屏幕左下角, 现在从"
+                                       "菜单键正上方长出来"),
+    ]),
     ChangelogVersion(version="1.8.108", date="2026-09-28", items=[
         ChangelogItem(kind="改进", text="电脑上播放列表的曲目直接按住鼠标拖"
                                        "动就能换顺序 —— 不用再长按等待, 手机"
