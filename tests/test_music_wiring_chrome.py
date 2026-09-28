@@ -67,7 +67,7 @@ def test_music_pane_fixed_chrome_wiring():
     mini_css = html[html.index("#mini-player {"):html.index("#mini-progress")]
     assert "transform: translateZ(0);" in mini_css
     # 船坞两颗圆键同款护甲 (和气泡一样是 fixed 常驻件, 邻居层动起来时防复印)
-    keys_css = html[html.index("#dock-menu, #dock-search {"):html.index("#dock-menu:active")]
+    keys_css = html[html.index("#dock-menu, #dock-search, #dock-volume {"):html.index("#dock-menu:active")]
     assert "transform: translateZ(0);" in keys_css
     # 泳道撤了 (层铺满全高, 没有夹缝可露); 重影对策 = 运动期暂撤磨砂:
     # CSS 挂 body.pane-anim 实底 (船坞三件一起), JS 的 paneMotion()

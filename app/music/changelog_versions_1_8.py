@@ -8,6 +8,18 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.103", date="2026-09-28", items=[
+        ChangelogItem(kind="新增", text="电脑上底部多了一颗音量键 —— 点开在键"
+                                       "上方弹出小气泡, 拖滑杆直接调音量, 与播"
+                                       "放页音量条和上下方向键三处同源, 手机上"
+                                       "不出现 (音量归系统硬件键)"),
+        ChangelogItem(kind="改进", text="电脑等大屏上内容不再挤在手机宽度里 —— "
+                                       "版面随屏幕加宽, 专辑格更大更饱满"),
+        ChangelogItem(kind="改进", text="页面改为按「屏幕大小」和「键鼠/触摸」"
+                                       "两条线分开适配 —— 电脑上列表行距收紧一"
+                                       "屏多放几行, 之后给电脑加的键鼠优化都不"
+                                       "会再波及手机触屏体验"),
+    ]),
     ChangelogVersion(version="1.8.102", date="2026-09-28", items=[
         ChangelogItem(kind="修复", text="电脑上打开补齐了键鼠手感 —— 之前点"
                                        "过一次按钮后空格和方向键就全没反应了, "

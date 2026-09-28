@@ -110,8 +110,7 @@ main {
   transform: translateX(-50%) translateY(calc(-50% - 6px)); }
 #toast.in-player.show { transform: translateX(-50%) translateY(-50%); }
 
-@media (min-width: 700px) {
-  #root-view { padding-left: 28px; padding-right: 28px; }
-  .album-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
-}
+/* 大屏分档 (≥700px) 的布局规则 1.8.103 拆去 music-large.css (双轴架构
+   的布局轴: 判定唯一事实源是 music-client.js 写的 data-size, 媒体查询
+   撤掉免得两把尺各说各话) */
 

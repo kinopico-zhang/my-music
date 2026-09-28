@@ -70,11 +70,12 @@ function bindGlobalEvents() {
   setInterval(() => {
     if (!document.hidden) checkScanStatus();
   }, SCAN_POLL_INTERVAL_MS);
-  // 电脑上的"返回": Esc 依序收上弹菜单 → 播放页 → 顶层二级页 (手机上有右划,
-  // 电脑总不能指望鼠标拖页面; 浏览器返回键在应用里已没有可退的条目)
+  // 电脑上的"返回": Esc 依序收音量气泡 (1.8.103 键鼠端) → 上弹菜单 → 播放页
+  // → 顶层二级页 (手机上有右划, 电脑总不能指望鼠标拖页面; 返回键已无可退条目)
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || event.repeat) return;
-    if (!$("#pop-menu").hidden) closeDockMenu();
+    if ($("#volume-pop") && !$("#volume-pop").hidden) $("#volume-pop").hidden = true;
+    else if (!$("#pop-menu").hidden) closeDockMenu();
     else if (playerOpen) closeFullPlayer("morph");   // 1.8.63 水滴收回
     else if (pushStack.length) closePushStack(pushStack.length - 1);
   });
@@ -102,8 +103,7 @@ function bindGlobalEvents() {
       if (Math.hypot(ev.clientX - x, ev.clientY - y) > 10) cancel();
     }, { passive: true, signal: press.signal });
     document.addEventListener("pointercancel", cancel, { signal: press.signal });
-    document.addEventListener("pointerup", () => press.abort(),
-                              { signal: press.signal });
+    document.addEventListener("pointerup", () => press.abort(), { signal: press.signal });
   }, { passive: true, capture: true });
   // 键盘避让 (1.8.16 文档解锁 · 用户实测病愈): 六轮失败回传实锤 —— iOS
   // 让位就是滚文档, 页面里

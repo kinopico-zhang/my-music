@@ -35,7 +35,7 @@ def test_music_dock_wiring():
     assert "--dock-clear: calc(var(--dock-h) + 14px + env(safe-area-inset-bottom));" in html
     assert "calc(4px + env(safe-area-inset-bottom))" in dock_css   # 三件套贴屏底
     assert "env(safe-area-inset-bottom)" in dock_css       # 让开小白条
-    keys_css = html[html.index("#dock-menu, #dock-search {"):html.index("#dock-menu:active")]
+    keys_css = html[html.index("#dock-menu, #dock-search, #dock-volume {"):html.index("#dock-menu:active")]
     assert "border-radius: 50%;" in keys_css               # 圆键
     assert "rgba(44,44,46,.7);" in keys_css               # 磨砂配方与气泡同款 (1.8.5 调回半透明)
     assert "backdrop-filter: blur(20px) saturate(180%);" in keys_css
@@ -163,9 +163,9 @@ def test_music_top_fallback_removed():
     # 被吞点按补发; 1.8.47: +share-links 分享链接拆分; 1.8.59:
     # +player-prefetch 下一曲预取拆分; 1.8.60: +player-art-stage 3D 封面;
     # 1.8.76: +player-sources/+player-slider/+downloads-pane 拆分;
-    # 1.8.77: +autocache 自动缓存 + 接线; 1.8.100: +handoff 后台连播提前接力裁决)
+    # 1.8.77: +autocache 自动缓存; 1.8.100: +handoff 后台连播接力; 1.8.103: +dock-volume 音量气泡
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    assert len(scripts) == 65 and all("?v=" in src for src in scripts)
+    assert len(scripts) == 66 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
     assert "js/music-playlists-pane.js?v=" in html
     assert "js/music-playlist-drag.js?v=" in html   # 1.8.17 拖拽换序

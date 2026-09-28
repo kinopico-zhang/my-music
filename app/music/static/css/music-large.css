@@ -1,0 +1,36 @@
+/* music-large — 大屏布局 (1.8.103 双轴拆分的布局轴, 用户点名「按屏幕
+   尺寸分手机小/PC 大, 尺寸只会影响布局, 不同尺寸布局不一样」): 大屏
+   专属的布局规则统一收在这个文件, 作用域一律 html[data-size="large"]
+   (music-client.js 按视口宽 ≥700px 写上, 窗口拖宽/缩窄跟着换; 手机窄屏
+   是无前缀基线, 一个字节不动)。真机上 ?ui=pc 可临时预览大屏布局。
+   这一层只动布局 (内容列宽/网格列数/播放页列宽), 不碰任何操作手感 ——
+   键鼠/触摸的手感分叉在操作轴 music-desktop.css
+   (html[data-input="keymouse"]), 两轴独立翻转 (iPad = 大屏 + 触摸,
+   PC 拖窄窗口 = 小屏 + 键鼠)。
+   收编说明: 1.8.35–1.8.102 布局曾散在 music-base.css 的一条
+   @media (min-width: 700px) 里 (阈值同源), 1.8.103 拆轴时迁来此处
+   (该媒体查询已从 music-base.css 撤掉, 大屏判定的唯一事实源是
+   music-client.js 的 data-size)。 */
+
+/* ---- 内容列加宽: 手机 860 → 大屏 1040 ---- */
+/* 一级页 / 二级推入页 / 底部船坞三处同宽对齐 (本体的 max-width 在各自的
+   基线文件里, 这里只在大屏盖一层); 船坞跟内容列同宽, 圆键贴着列边 */
+html[data-size="large"] #root-view { max-width: 1040px; }
+html[data-size="large"] .push-pane .pane-scroll { max-width: 1040px; }
+html[data-size="large"] .dock-row { max-width: 1040px; }
+
+/* 大屏左右留白加宽一档 (收编自 music-base.css 的 700px 媒体查询);
+   二级页的 16px 侧衬不动 —— 收缩顶栏靠 -16px 出血到层宽, 动了会露缝 */
+html[data-size="large"] #root-view { padding-left: 28px; padding-right: 28px; }
+
+/* ---- 专辑网格: 卡片最小宽 150 → 200 (收编 + 加大) ---- */
+/* 列宽 1040 之下 auto-fill 自己排开 (约五列), 大屏的卡更大一格;
+   手机基线的 minmax(150px) 不动 */
+html[data-size="large"] .album-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+/* ---- 播放页列宽: 手机 520 → 大屏 600 ---- */
+/* 全屏页本体满屏铺氛围底, 列宽只管控件栈; 封面 440 上限不动, 控件行
+   呼吸更宽 */
+html[data-size="large"] .fp-sheet { max-width: 600px; }

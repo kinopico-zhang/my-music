@@ -140,4 +140,4 @@
   pointer-events: none; touch-action: none;   /* 点按不当滚动手势, click 必来 */
 }
 .push-pane.bar-catch .hero-bar-catch span { pointer-events: auto; }
-html[data-client="desktop"] .hero-bar-catch span { pointer-events: none; }
+html[data-input="keymouse"] .hero-bar-catch span { pointer-events: none; }

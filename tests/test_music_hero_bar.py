@@ -62,8 +62,8 @@ def test_music_1845_hero_bar_actions():
     # … 的图标 (三点横排) 进了公共图标件, 生成器拿它渲染
     assert "ICON_ACTION_MORE" in js
     # 桌面端同款手感: 悬停亮一档 + 图标钮悬停出文字提示
-    assert 'html[data-client="desktop"] .bar-btn:hover { background: var(--surface-3); }' in html
-    assert 'html[data-client="desktop"] .bar-btn:hover::after {' in html
+    assert 'html[data-input="keymouse"] .bar-btn:hover { background: var(--surface-3); }' in html
+    assert 'html[data-input="keymouse"] .bar-btn:hover::after {' in html
 
 
 def test_music_1846_bar_path_travel():
