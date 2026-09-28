@@ -8,6 +8,15 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.106", date="2026-09-28", items=[
+        ChangelogItem(kind="改进", text="电脑上播放页的音量条两端加了小/大喇"
+                                       "叭图标标明这是音量, 条子也缩短到和进"
+                                       "度条一样长 (正好落在进度条正下方)"),
+        ChangelogItem(kind="改进", text="电脑 Chrome 的画中画小窗改成自动的"
+                                       " —— 播放中切去别的窗口小窗自己弹出"
+                                       "来, 回到播放页自己收掉, 底排的画中"
+                                       "画按钮撤了 (还是三颗键)"),
+    ]),
     ChangelogVersion(version="1.8.105", date="2026-09-28", items=[
         ChangelogItem(kind="新增", text="电脑 Chrome 播放页多了画中画键 —— 点开"
                                        "弹一枚总在最前的小窗 (封面/歌名/进度/"
