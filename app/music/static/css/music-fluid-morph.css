@@ -45,6 +45,11 @@
               transform .34s cubic-bezier(.22,.61,.36,1) 130ms,
               visibility 0s 0s;
 }
+#full-player.morphing.revealed .fp-sheet > .fp-volrow {   /* 1.8.104 键鼠端音量行 */
+  transition: opacity .34s cubic-bezier(.22,.61,.36,1) 150ms,
+              transform .34s cubic-bezier(.22,.61,.36,1) 150ms,
+              visibility 0s 0s;
+}
 #full-player.morphing.revealed .fp-sheet > .fp-controls {
   transition: opacity .34s cubic-bezier(.22,.61,.36,1) 175ms,
               transform .34s cubic-bezier(.22,.61,.36,1) 175ms,

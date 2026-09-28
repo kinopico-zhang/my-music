@@ -8,6 +8,14 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.104", date="2026-09-28", items=[
+        ChangelogItem(kind="改进", text="电脑上播放页的音量条挪到了歌名下方、"
+                                       "播放按钮上方, 加长到和进度条一样长 —— "
+                                       "原先挤在底部一排的角落里, 太短不好拖"),
+        ChangelogItem(kind="改进", text="电脑上鼠标扫过播放列表不再每一行都弹"
+                                       "出红色删除按钮了 —— 现在在歌曲上停住"
+                                       "半秒才会出现, 一扫而过只亮行背景"),
+    ]),
     ChangelogVersion(version="1.8.103", date="2026-09-28", items=[
         ChangelogItem(kind="新增", text="电脑上底部多了一颗音量键 —— 点开在键"
                                        "上方弹出小气泡, 拖滑杆直接调音量, 与播"

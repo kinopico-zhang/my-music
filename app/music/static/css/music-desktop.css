@@ -17,7 +17,9 @@
    (music-desktop-keys.js), 记档下回接着用。键位另两改 (箭头快进退、
    点过的按钮不再吞键) 纯 JS, 不占这文件。
    1.8.103: 双轴拆分 (交互规则从单轴 data-client 迁来) + 行距密度 +
-   船坞音量气泡 (用户点名「非移动端底下加一个音量调节气泡」)。 */
+   船坞音量气泡 (用户点名「非移动端底下加一个音量调节气泡」)。
+   1.8.104: 音量条挪位拉长 (标题与传输三键之间独占一行, 用户点名) +
+   悬停删除钮改驻留半秒才亮 (用户点名优化)。 */
 
 /* ---- 滚动条 (1.8.35 第一条分叉) ---- */
 /* 全站滚动条是移动端 App 观感特意藏掉的, 桌面端鼠标用户没了滚动反馈会
@@ -85,10 +87,17 @@ html[data-input="keymouse"] .track-row:not(.playing, .disabled):hover
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5.029 3.127L19 10.889Q21 12 19 13.111L5.029 20.873Q3 22 3 19.679L3 4.321Q3 2 5.029 3.127z' fill='%23fff'/%3E%3C/svg%3E");
 }
 
-/* 左滑删除的桌面替身: 悬停直接亮出删除钮 (移动端靠左滑, 鼠标拖行别扭);
-   同名 JS 收起时会清掉行内样式, 这条规则始终拿得回接管权 */
+/* 左滑删除的桌面替身: 悬停亮出删除钮 (移动端靠左滑, 鼠标拖行别扭);
+   1.8.104 悬停改驻留 (用户点名优化: 鼠标扫一遍列表, 每行都弹出红钮
+   太吵) —— 在行上停满半秒钮才滑出来: transition-delay 只写在悬停态,
+   进场等半秒、离行立刻缩回, 扫过的行只亮背景不亮钮。拖拽揭示照旧
+   (JS 同名模块), 收起时会清掉行内样式, 这条规则始终拿得回接管权 */
 html[data-input="keymouse"] .swipe-wrap:hover { --veil: 1; }
-html[data-input="keymouse"] .swipe-wrap:hover .swipe-del { transform: translateX(0); }
+html[data-input="keymouse"] .swipe-wrap:hover::after { transition-delay: .5s; }
+html[data-input="keymouse"] .swipe-wrap:hover .swipe-del {
+  transform: translateX(0);
+  transition-delay: .5s;
+}
 
 /* 键盘焦点环: Tab 走得到的地方给个看得见的落点 (触屏点按不触发
    :focus-visible, 移动端无感) */
@@ -96,12 +105,18 @@ html[data-input="keymouse"] :focus-visible {
   outline: 2px solid rgba(255, 255, 255, .45); outline-offset: 2px;
 }
 
-/* ---- 音量条 (1.8.102): 基线 display:none (music-player.css, 移动端音量
-   归系统硬件键, iOS 的 audio.volume 只读), 这里放行上桌。与进度条同一套
-   轨道/旋钮语言, 短一号; 高度与三颗 40px 钮齐 (28 + 上下 6), --fill 由
-   music-desktop-keys.js 同步 (键与条同源, 拖条也会记档) ---- */
+/* ---- 音量条 (1.8.102 上桌 → 1.8.104 挪位拉长, 用户点名「放在 << || >>
+   控制按键的上面, 标题的下面, 长度和进度条一样长」): 独占一行站标题与
+   传输三键之间, 两侧 24px 对齐进度行 (fp-transport 同款衬); 进度条本体
+   在两个时间戳之间略短一点 —— 时间戳宽度随曲长变, 钉不死, 按行宽对齐。
+   基线整行藏 (music-player.css, 触摸端音量归系统硬件键, iOS 的
+   audio.volume 只读), 这里放行。与进度条同一套轨道/旋钮语言, --fill 由
+   music-desktop-keys.js 同步 (键与条同源, 船坞气泡也同源) ---- */
+html[data-input="keymouse"] .fp-volrow {
+  display: flex; margin: 6px 24px 0;
+}
 html[data-input="keymouse"] #fp-volume {
-  display: block; width: 96px; height: 28px; margin: 6px 0;
+  display: block; width: 100%; height: 28px;
   appearance: none; -webkit-appearance: none; background: none;
 }
 html[data-input="keymouse"] #fp-volume::-webkit-slider-runnable-track {
