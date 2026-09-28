@@ -8,6 +8,13 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.107", date="2026-09-28", items=[
+        ChangelogItem(kind="修复", text="修电脑上来回切换页面后画中画小窗不"
+                                       "再出现 —— Chrome 只许刚点过页面时开"
+                                       "窗, 收了就弹不回来; 小窗改长驻 (回到"
+                                       "播放页不再自动收), 不想要就点它自己"
+                                       "的 ✕, 关过这一页就不会再自动弹"),
+    ]),
     ChangelogVersion(version="1.8.106", date="2026-09-28", items=[
         ChangelogItem(kind="改进", text="电脑上播放页的音量条两端加了小/大喇"
                                        "叭图标标明这是音量, 条子也缩短到和进"

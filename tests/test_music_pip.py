@@ -1,8 +1,10 @@
 """My Music 画中画迷你播放窗测试 (1.8.105, 用户点名「pc 版本支持画中画
-模式」; 1.8.106 用户点名改自动: 撤入口键, 播放中页面失焦自动开、回焦自动
-关): Chrome 的 Document Picture-in-Picture API 开一枚总在最前的小窗遥控
-主页播放器 —— 音频照旧留在主页 #audio (PiP 窗只是遥控器), 控制键回连主页
-播放函数。探测不到 API 的浏览器整个模块歇着。静态文本断言, 不开真浏览器。"""
+模式」; 1.8.106 改失焦自动开; 1.8.107 修用户实报「来回切换页面, 画中画
+就没了」: Chrome 只许赶在最近用户手势 (~5 秒) 里 requestWindow, 回焦即关
+的小窗再想弹开时手势早过期 —— 小窗改长驻): Chrome 的 Document
+Picture-in-Picture API 开一枚总在最前的小窗遥控主页播放器 —— 音频照旧
+留在主页 #audio (PiP 窗只是遥控器), 控制键回连主页播放函数。探测不到 API
+的浏览器整个模块歇着。静态文本断言, 不开真浏览器。"""
 from tests.music_static_files import MUSIC_STATIC, music_page_shell
 
 
@@ -29,26 +31,33 @@ def test_music_pip_wiring():
 
 
 def test_music_pip_auto_trigger():
-    """失焦自动开/回焦自动关 (1.8.106 用户点名): blur 后观望 300ms 还没
-    回焦、还正在播才开窗 (点地址栏等一闪而过的失焦不弹, 没声的遥控器没
-    意义); 回焦清掉观望计时 (还没弹就不弹了) 并关掉开着的小窗; 主页收页
-    小窗别成孤儿。Chrome 规定 requestWindow 要最近的用户手势 —— 听了
-    半天再切走会被 NotAllowedError 拦下, 静默作罢不炸页面。"""
+    """失焦自动开 (1.8.106) → 小窗长驻 (1.8.107 修「来回切换页面, 画中画
+    就没了」): Chrome 只许赶在最近用户手势 (~5 秒) 里开窗, 回焦即关的小窗
+    再想弹开时手势早过期, 被 NotAllowedError 拦下 —— 收窗那条路整个撤了。
+    现在的规矩: blur 后观望 300ms 还没回焦、还正在播、用户没亲手 ✕ 过、
+    手上还没开着, 才开; 回焦只清观望计时不收窗; 亲手 ✕ (pagehide 不是我们
+    代关的) 这一页会话不再自动弹; 主页收页不留孤儿窗。手势没赶上被浏览器
+    拒时静默作罢不炸页面。"""
     pip_js = (MUSIC_STATIC / "js" / "music-pip.js").read_text(encoding="utf-8")
-    # 失焦 → 观望 300ms → 还没回焦且正在播才开
+    # 失焦 → 观望 300ms → 还没回焦且正在播且没亲手关过才开
     assert 'window.addEventListener("blur"' in pip_js
     assert "pipOpenTimer = setTimeout(async () => {" in pip_js
-    assert "if (document.hasFocus() || !playerIsPlaying()) return;" in pip_js
+    assert "if (document.hasFocus() || !playerIsPlaying() || pipDismissed) return;" \
+        in pip_js
     assert "}, 300);" in pip_js
     # 手势没赶上被浏览器拒: 静默兜住 (try/catch), 页面不炸
     assert "await openPipWindow();" in pip_js
     assert "catch (_error) {" in pip_js
-    # 回焦: 清观望计时 + 关小窗; 主页收页也关 (不留孤儿窗)
-    assert 'window.addEventListener("focus"' in pip_js
-    assert "clearTimeout(pipOpenTimer);" in pip_js
-    assert "closePipWindow();" in pip_js
+    # 回焦: 只清观望计时, 不再收窗 (1.8.107 —— 收了这小窗就再也弹不回来)
+    focus_js = pip_js[pip_js.index('window.addEventListener("focus"'):
+                      pip_js.index('window.addEventListener("pagehide"')]
+    assert "clearTimeout(pipOpenTimer);" in focus_js
+    assert "closePipWindow" not in focus_js
+    # 亲手 ✕ 过的小窗这会话不再自动弹 (我们代关的不算嫌弃)
+    assert "let pipDismissed = false;" in pip_js
+    assert "if (!pipClosingByApp) pipDismissed = true;" in pip_js
+    # 主页收页不留孤儿窗; 开着就不重开; 小窗自己的 pagehide 清引用+记账
     assert 'window.addEventListener("pagehide", closePipWindow);' in pip_js
-    # 开着就不重开; 关窗收尾走小窗自己的 pagehide
     assert "if (pipWindow && !pipWindow.closed) return;" in pip_js
     assert 'pipWindow.addEventListener("pagehide"' in pip_js
 
