@@ -1,15 +1,20 @@
-// music-pip — 画中画迷你播放窗 (1.8.105, 用户点名「pc 版本支持画中画模式」):
+// music-pip — 画中画迷你播放窗 (1.8.105, 用户点名「pc 版本支持画中画模式」;
+// 1.8.106 用户点名改自动: 撤入口键, 播放中页面失焦自动开小窗, 回焦自动关):
 // Chrome 的 Document Picture-in-Picture API 开一枚总在最前的小窗, 里面
 // 封面/歌名/进度线/上一首·播停·下一首 —— 音频照旧留在主页的 #audio 里播
 // (PiP 窗只是遥控器+显示器, 主页最小化、切去别的应用都不断音), 控制键
 // 回连主页的播放函数 (监听器闭包在 opener 一侧, 主页的全局都拿得到)。
-// 仅键鼠端亮入口 (触摸端按钮基线藏), 探测不到这 API 的浏览器 (Firefox/
-// Safari) JS 再整键收走。窗内文档不吃主页样式, 自带 music-pip.css。
+// 触发: window blur 后等 300ms 还没回焦且正在播才开 (点地址栏等一闪而过
+// 的失焦不弹); Chrome 规定 requestWindow 要「最近的用户手势」, 听了半天
+// 再切走会被 NotAllowedError 拦下 —— 静默作罢, 刚点过播放就切走的场景
+// 正好是最该弹的时候。探测不到这 API 的浏览器 (Firefox/Safari) 整个
+// 模块歇着。窗内文档不吃主页样式, 自带 music-pip.css。
 "use strict";
 /* global $, ICON_PAUSE, ICON_PLAY, PLACEHOLDER_ARTWORK, currentTrack,
           playerIsPlaying, playerNext, playerPrevious, playerToggle */
 
-let pipWindow = null;   // 开着的画中画窗 (null = 没开, pagehide 时清)
+let pipWindow = null;     // 开着的画中画窗 (null = 没开, pagehide 时清)
+let pipOpenTimer = 0;     // 失焦后的 300ms 观望计时 (回焦了就不弹)
 
 // 上一首/下一首键的图标 (全屏播放页同款三角, 缩到 24)
 const PIP_PREV = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M21.981 6.098L14.6 10.949Q13 12 14.6 13.051L21.981 17.902Q23.5 18.9 23.5 17.082L23.5 6.918Q23.5 5.1 21.981 6.098M9.481 6.098L2.1 10.949Q0.5 12 2.1 13.051L9.481 17.902Q11 18.9 11 17.082L11 6.918Q11 5.1 9.481 6.098" fill="currentColor"/></svg>';
@@ -48,12 +53,9 @@ function updatePipProgress() {
   bar.style.width = total > 0 ? `${(audio.currentTime / total) * 100}%` : "0%";
 }
 
-/** 开画中画窗: 得由用户手势触发 (键鼠端的按钮点击); 窗开着就聚焦, 不叠第二只。 */
+/** 开画中画窗 (已在开着就不动); 没赶上用户手势会被浏览器拒 —— 调用方兜。 */
 async function openPipWindow() {
-  if (pipWindow && !pipWindow.closed) {
-    pipWindow.focus();
-    return;
-  }
+  if (pipWindow && !pipWindow.closed) return;
   pipWindow = await documentPictureInPicture.requestWindow(
     { width: 400, height: 112 });
   const doc = pipWindow.document;
@@ -88,15 +90,34 @@ async function openPipWindow() {
   updatePipProgress();
 }
 
-/** 播放页底排的画中画键: 键鼠端专属; API 探测不到整键收走。 */
+/** 关画中画窗 (回焦 / 主页收页时); pagehide 会跟着清引用, 这里只管叫它关。 */
+function closePipWindow() {
+  if (pipWindow && !pipWindow.closed) pipWindow.close();
+}
+
+/** 失焦自动开 / 回焦自动关 (1.8.106 用户点名, 撤了 1.8.105 的入口键)。 */
 function bindPip() {
-  const button = $("#fp-pip-btn");
-  if (!button) return;
-  if (!("documentPictureInPicture" in window)) {
-    button.hidden = true;   // 没这 API 的浏览器 (Firefox/Safari): 整键收走
-    return;
-  }
-  button.addEventListener("click", () => { openPipWindow(); });
+  if (!("documentPictureInPicture" in window)) return;   // Firefox/Safari 歇着
+  window.addEventListener("blur", () => {
+    // 失焦先观望 300ms (一闪而过的失焦不弹窗), 到点还不在焦点、还正在播
+    // 才开 —— 没声的遥控器没意义
+    clearTimeout(pipOpenTimer);
+    pipOpenTimer = setTimeout(async () => {
+      if (document.hasFocus() || !playerIsPlaying()) return;
+      try {
+        await openPipWindow();
+      } catch (_error) {
+        // Chrome 要求 requestWindow 赶在最近的用户手势里 (约 5 秒):
+        // 听了半天再切走的场景会被 NotAllowedError 拦下, 静默作罢
+      }
+    }, 300);
+  });
+  window.addEventListener("focus", () => {
+    clearTimeout(pipOpenTimer);      // 还没弹就回来了: 不弹
+    closePipWindow();                // 回焦即关 (用户点名)
+  });
+  // 主页整个收掉 (关标签/跳走): 小窗别成孤儿
+  window.addEventListener("pagehide", closePipWindow);
   // 主页播放器的动静带进小窗: 起播刷文案+键, 暂停刷键, 换曲 (loadedmetadata)
   // 刷整套, timeupdate 刷进度 —— 全从主 #audio 的原生事件取, 窗没开时早退
   const audio = $("#audio");

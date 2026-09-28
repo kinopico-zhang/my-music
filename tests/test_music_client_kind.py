@@ -178,3 +178,12 @@ def test_music_volume_ui_axes_split():
         < html.index('<div class="fp-controls">')
     assert ".fp-volrow { display: none; }" in html
     assert 'html[data-input="keymouse"] .fp-volrow {' in html
+    # 1.8.106 缩到与进度条本体等长 + 两端小/大喇叭图标 (用户点名): 时间戳
+    # 宽度随曲长变, 钉不齐 —— 键鼠端时间戳槽钉 44px 把进度条 (fp-scrub) 的
+    # 起止钉成常量, 音量行同款三槽 [喇叭 44][条 flex:1][喇叭 44] 逐列
+    # 镜像, 条子正好落在进度条正下方、一模一样长
+    assert 'html[data-input="keymouse"] .fp-time {' in html
+    assert "width: 44px; text-align: center;" in html
+    assert html.count('class="vol-ico"') == 2          # 左小喇叭 / 右大喇叭
+    assert 'html[data-input="keymouse"] .fp-volrow .vol-ico {' in html
+    assert "flex: 1; min-width: 0; height: 28px;" in html   # 条子吃满中槽

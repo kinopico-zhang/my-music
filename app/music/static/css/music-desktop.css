@@ -21,7 +21,9 @@
    1.8.104: 音量条挪位拉长 (标题与传输三键之间独占一行, 用户点名) +
    悬停删除钮改驻留半秒才亮 (用户点名优化)。
    1.8.105: 画中画入口上桌 (播放页底排第四键, 用户点名「pc 版本支持
-   画中画模式」)。 */
+   画中画模式」)。
+   1.8.106: 音量条缩到与进度条等长 (时间戳槽钉宽镜像对齐) + 两端小/大
+   喇叭图标; 画中画入口键撤了改失焦自动开关 (用户点名)。 */
 
 /* ---- 滚动条 (1.8.35 第一条分叉) ---- */
 /* 全站滚动条是移动端 App 观感特意藏掉的, 桌面端鼠标用户没了滚动反馈会
@@ -107,18 +109,27 @@ html[data-input="keymouse"] :focus-visible {
   outline: 2px solid rgba(255, 255, 255, .45); outline-offset: 2px;
 }
 
-/* ---- 音量条 (1.8.102 上桌 → 1.8.104 挪位拉长, 用户点名「放在 << || >>
-   控制按键的上面, 标题的下面, 长度和进度条一样长」): 独占一行站标题与
-   传输三键之间, 两侧 24px 对齐进度行 (fp-transport 同款衬); 进度条本体
-   在两个时间戳之间略短一点 —— 时间戳宽度随曲长变, 钉不死, 按行宽对齐。
-   基线整行藏 (music-player.css, 触摸端音量归系统硬件键, iOS 的
-   audio.volume 只读), 这里放行。与进度条同一套轨道/旋钮语言, --fill 由
-   music-desktop-keys.js 同步 (键与条同源, 船坞气泡也同源) ---- */
+/* ---- 音量条 (1.8.102 上桌 → 1.8.104 挪位 → 1.8.106 用户点名「跟进度条
+   一样长 + 两端小/大喇叭图标」): 要和进度条本体 (fp-scrub) 等长, 得先把
+   进度行两端的跨距钉成常量 —— 键鼠端时间戳槽钉 44px 居中 (盖到 1:59:59,
+   更长的曲子居中溢出几像素, 无碍), fp-scrub 的起止就成了常量; 音量行同款
+   三槽结构 [喇叭 44][条 flex:1][喇叭 44] 逐列对齐, 条子正好落在进度条
+   正下方、一模一样长。基线整行藏 (music-player.css, 触摸端音量归系统
+   硬件键), 轨道/旋钮与进度条同一套语言, --fill 由 music-desktop-keys.js
+   同步 (键与条同源, 船坞气泡也同源) ---- */
+html[data-input="keymouse"] .fp-time {
+  width: 44px; text-align: center;
+}
 html[data-input="keymouse"] .fp-volrow {
-  display: flex; margin: 6px 24px 0;
+  display: flex; align-items: center; gap: 10px; margin: 6px 24px 0;
+}
+html[data-input="keymouse"] .fp-volrow .vol-ico {
+  width: 44px; flex-shrink: 0;
+  display: flex; justify-content: center;
+  color: rgba(255, 255, 255, .5);   /* 与时间戳同调的注脚灰 */
 }
 html[data-input="keymouse"] #fp-volume {
-  display: block; width: 100%; height: 28px;
+  display: block; flex: 1; min-width: 0; height: 28px;
   appearance: none; -webkit-appearance: none; background: none;
 }
 html[data-input="keymouse"] #fp-volume::-webkit-slider-runnable-track {
@@ -130,10 +141,8 @@ html[data-input="keymouse"] #fp-volume::-webkit-slider-thumb {
   -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
   background: #fff; margin-top: -3px;
 }
-/* 画中画入口 (1.8.105, 用户点名「pc 版本支持画中画模式」): 播放页底排
-   第四键, 点开 Chrome 的 Document PiP 小窗 (music-pip.js); 基线藏
-   (music-player.css), 探测不到 API 的浏览器 JS 再收走 */
-html[data-input="keymouse"] #fp-pip-btn { display: flex; }
+/* 画中画 (1.8.105) 的入口键 1.8.106 撤了 (用户点名「底部还是保持三个
+   按钮」): 改成页面失焦自动开/回焦自动关, 全在 music-pip.js, 不占样式 */
 
 /* ---- 行距密度 (1.8.103): 触摸基线的 8px 行衬是手指的尺寸, 鼠标指哪打
    哪可以收紧一档 (5px), 列表一屏多塞两行。只动上下行衬, 不碰字号/图标/
