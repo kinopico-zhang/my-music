@@ -4,7 +4,12 @@
    基线, 不加作用域前缀)。真机上 ?ui=desktop 可临时预览桌面端样子。
    1.8.39 键鼠适配批 (用户点名「优化桌面 ui, 适配键鼠操作」): 光标/悬停/
    悬停亮删除钮/图标钮提示/键盘焦点环/行悬停播放符; 键盘快捷键 (空格播停、
-   左右箭头切歌、/ 进搜索) 在 music-desktop-keys.js。 */
+   / 进搜索) 在 music-desktop-keys.js。
+   1.8.102 键鼠补全 (用户实报「PC Chrome 打开并没有适配键鼠」): 音量条
+   上桌 —— 全应用原先一根音量控制都没有, 移动端音量归硬件键没感觉, 电脑
+   上就是「没适配」; 播放页底行最左一根, ↑/↓ 键同源
+   (music-desktop-keys.js), 记档下回接着用。键位另两改 (箭头快进退、
+   点过的按钮不再吞键) 纯 JS, 不占这文件。 */
 
 /* ---- 滚动条 (1.8.35 第一条分叉) ---- */
 /* 全站滚动条是移动端 App 观感特意藏掉的, 桌面端鼠标用户没了滚动反馈会
@@ -81,4 +86,22 @@ html[data-client="desktop"] .swipe-wrap:hover .swipe-del { transform: translateX
    :focus-visible, 移动端无感) */
 html[data-client="desktop"] :focus-visible {
   outline: 2px solid rgba(255, 255, 255, .45); outline-offset: 2px;
+}
+
+/* ---- 音量条 (1.8.102): 基线 display:none (music-player.css, 移动端音量
+   归系统硬件键, iOS 的 audio.volume 只读), 这里放行上桌。与进度条同一套
+   轨道/旋钮语言, 短一号; 高度与三颗 40px 钮齐 (28 + 上下 6), --fill 由
+   music-desktop-keys.js 同步 (键与条同源, 拖条也会记档) ---- */
+html[data-client="desktop"] #fp-volume {
+  display: block; width: 96px; height: 28px; margin: 6px 0;
+  appearance: none; -webkit-appearance: none; background: none;
+}
+html[data-client="desktop"] #fp-volume::-webkit-slider-runnable-track {
+  height: 5px; border-radius: 2.5px;
+  background: linear-gradient(to right, rgba(255, 255, 255, .7) var(--fill, 100%),
+                              rgba(255, 255, 255, .3) 0);
+}
+html[data-client="desktop"] #fp-volume::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
+  background: #fff; margin-top: -3px;
 }
