@@ -47,7 +47,12 @@ def test_music_1834_hero_collapse_geometry():
     1.8.113 并齐收紧 (用户二报「感觉前面有空格」): (1-p)^3 铺满全程, 半
     程还错着几个 px —— 改成宽的那行 (居中起得靠左) 当锚走线性原路, 窄
     的那行头 22% 行程追平 (追向与自家飞向同向, 不逆行), 之后两行贴成一
-    整块飞; 两处重复的摘样式循环顺手抽成 heroReset 共用。"""
+    整块飞; 两处重复的摘样式循环顺手抽成 heroReset 共用。
+    1.8.114 墨迹对齐 (用户三报「还是没改好」): 长标题换行后 h2 盒被
+    max-width 钳到整栏宽, 居中排版把第一行排在盒中间 —— 拿盒缘对齐,
+    盒对了字没对; 横向锚 (titleTx/并齐/右刀) 全改认第一行行盒左缘
+    tInkL (= tLines[0].left, titleClip 同一份 Range rect), 单行标题两值
+    重合零回归。"""
     js = music_browser_js()
     assert "const HERO_MINI = 44;" in js and "const HERO_BAR = 52;" in js
     assert "dist: head.offsetHeight - padTop - HERO_BAR," in js
@@ -58,22 +63,21 @@ def test_music_1834_hero_collapse_geometry():
     # 整摞在上行 44 里垂直居中; 副标题顶 = 摞顶 + 原缝缩放; 共用一尺 —
     # 高按整摞 (标题+副标题+中缝), 宽度 1.8.112 起彻底退出缩放 (见下)
     assert "const textX = contentLeft + HERO_MINI + 12;" in js
-    assert "const titleTx = textX - (titleRect.left - headRect.left);" in js
+    assert "const titleTx = textX - (tInkL - headRect.left);" in js
     assert "const subTx = subRect ? textX - (subRect.left - headRect.left) : titleTx;" in js
     assert "const stackY = padTop + (HERO_MINI - stackH * textScale) / 2;" in js
     assert "titleTy: stackY - (titleRect.top - headRect.top)," in js
     assert "anchorTx, titleCorr, subCorr," in js
     assert "const textScale = Math.min(1, HERO_MINI / Math.max(1, stackH));" in js
     assert 'for (const el of movers) el.style.transformOrigin = "0 0";' in js
-    # 1.8.113 并齐收紧 (用户二报「感觉前面有空格」): 宽的那行 (居中起得靠
-    # 左) 当锚走线性原路, 窄的那行头 22% 行程追平 —— 追向与自家飞向同向
-    # (不逆行), 之后两行贴成一整块飞; 1.8.112 的 (1-p)^3 铺满全程, 半程
-    # 还错着几个 px。锚/横修在 heroCollect 一次算好, 每帧只做乘加
-    assert "const anchorTx = !subRect || subRect.left < titleRect.left ? subTx : titleTx;" in js
-    assert ("const titleCorr = subRect && subRect.left < titleRect.left"
-            " ? subRect.left - titleRect.left : 0;") in js
-    assert ("const subCorr = subRect && subRect.left >= titleRect.left"
-            " ? titleRect.left - subRect.left : 0;") in js
+    # 1.8.113 并齐收紧 (用户二报「感觉前面有空格」): 宽的那行 (起得靠左)
+    # 当锚走线性原路, 窄的那行头 22% 行程追平 —— 追向与自家飞向同向
+    # (不逆行), 之后两行贴成一整块飞; 1.8.114 起比的是行墨迹左缘 (tInkL)
+    # —— 换行标题的盒缘不在字上, 拿盒比会把居中排版的第一行比偏。锚/
+    # 横修在 heroCollect 一次算好, 每帧只做乘加
+    assert "const anchorTx = !subRect || subRect.left < tInkL ? subTx : titleTx;" in js
+    assert "const titleCorr = subRect && subRect.left < tInkL ? subRect.left - tInkL : 0;" in js
+    assert "const subCorr = subRect && subRect.left >= tInkL ? tInkL - subRect.left : 0;" in js
     assert "const catchUp = 1 - Math.max(0, 1 - p / 0.22) ** 3;" in js
     assert ("textMove(ctrl.title, ctrl.anchorTx * p + ctrl.titleCorr"
             " * catchUp, ctrl.titleTy * p);") in js
@@ -85,18 +89,19 @@ def test_music_1834_hero_collapse_geometry():
     assert "const tRange = document.createRange();" in js
     assert "tRange.selectNodeContents(title);" in js
     assert "const tLines = tRange.getClientRects();" in js
+    assert "const tInkL = tLines.length ? tLines[0].left : titleRect.left;" in js
     assert "const titleClip = tLines.length > 1" in js
     assert "? Math.max(0, titleRect.bottom - tLines[0].bottom) : 0;" in js
     assert ("const stackH = (subRect ? subRect.bottom - titleRect.top"
-            " : titleRect.height)") in js
-    assert "- titleClip;" in js
+            " : titleRect.height) - titleClip;") in js
     assert "? stackY + (subRect.top - titleRect.top - titleClip) * textScale" in js
     assert "title, sub, titleClip, titleCutR," in js
     # 1.8.112 宽度退出缩放 (用户点名「字体不需要变小」): 字号不再为塞进
     # 条簇缩小 (缩放只剩「两行摞塞进 44」的轻收); 溢出右刀单行也吃, 后段
     # (0.55 起) 才走 —— 与渐隐纱同一条坡进场, 纱没上不硬切字, 终点正好
-    # 切在条簇左缘 (availW 边界); 底刀 (1.8.55) 照旧乘 p 随缩放走
-    assert "const titleCutR = Math.max(0, titleRect.width - availW);" in js
+    # 切在条簇左缘 (availW 边界); 1.8.114 起从墨锚量到盒右 (盒左随墨锚
+    # 多移一截墨距, 刀量如数扣回, 刃不挪窝); 底刀 (1.8.55) 照旧乘 p
+    assert "const titleCutR = Math.max(0, titleRect.right - tInkL - availW);" in js
     assert "if (ctrl.titleClip || ctrl.titleCutR)" in js
     assert "const rCut = ctrl.titleCutR * Math.min(1, Math.max(0, (p - 0.55) * 2.5));" in js
     assert "`inset(0px ${rCut.toFixed(1)}px`" in js

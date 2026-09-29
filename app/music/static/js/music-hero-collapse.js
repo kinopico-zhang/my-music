@@ -2,7 +2,7 @@
 // 挪向左上角, 按钮挪到右上角, 到位钉成顶栏, 列表从底下滚过; 下滑对称还
 // 原; 动画要细腻」): 专辑/播放列表/艺人页头包进 .hero-head 钉在推入层顶。
 // 版式沿革: 1.8.40 两行 → 1.8.42 左对齐 → 1.8.45 单行 → 1.8.46 换岗补程
-// → 1.8.55 只收第一行 → 1.8.56 不缩小 → 1.8.112 并齐+宽度退出缩放 → 1.8.113 并齐收紧到开头。
+// → 1.8.55 只收第一行 → 1.8.112 宽度退出缩放 → 1.8.113 并齐收紧 → 1.8.114 墨迹对齐。
 // (细腻的根): sticky 钉住 + 布局恒高, 全程只写 transform/opacity/clip-path
 // (零重排), 滚动位置线性直驱; 行程 = 页头自然高 − 顶栏高; 全按 padTop 量。
 "use strict";
@@ -90,8 +90,9 @@ function heroCollect(scroller) {
   const tRange = document.createRange();   // 换行标题只收第一行 (1.8.55,
   tRange.selectNodeContents(title);        // 用户点名): 落位按第一行的行盒
   const tLines = tRange.getClientRects();  // 量, 第二行起随行程 clip-path 裁
-  const titleClip = tLines.length > 1      // 掉 —— 缩放同步作用在裁口上,
-    ? Math.max(0, titleRect.bottom - tLines[0].bottom) : 0;  // 裁缝落在行缝
+  const tInkL = tLines.length ? tLines[0].left : titleRect.left;  // 掉; 横向
+  const titleClip = tLines.length > 1      // 也认第一行 (1.8.114) — 居中排版
+    ? Math.max(0, titleRect.bottom - tLines[0].bottom) : 0;  // 里墨迹不在盒左
   const rowRect = row.getBoundingClientRect();
   const padTop = parseFloat(getComputedStyle(head).paddingTop) || 0;
   const contentLeft = rowRect.left - headRect.left;   // 头内相对位 (层滑入平移被同吃); 内容盒左缘
@@ -102,20 +103,19 @@ function heroCollect(scroller) {
     .style.setProperty("--bar-row-w", `${Math.ceil(barInfo.barRowW)}px`);
   // 共用目标尺 (1.8.112 用户点名「字体不需要变小」): 宽度彻底退出缩放 —
   // 溢出右刀裁 (纱+键衬底盖软), 高按整摞塞进 44、摞超高才轻微收一点
-  const stackH = (subRect ? subRect.bottom - titleRect.top : titleRect.height)
-                 - titleClip;
+  const stackH = (subRect ? subRect.bottom - titleRect.top : titleRect.height) - titleClip;
   const availW = contentW - HERO_MINI - 12 - barInfo.barRowW - 10;
   const textScale = Math.min(1, HERO_MINI / Math.max(1, stackH));
-  const titleCutR = Math.max(0, titleRect.width - availW);  // 右刀: 单行也吃
+  const titleCutR = Math.max(0, titleRect.right - tInkL - availW);  // 右刀: 单行也吃
   const textX = contentLeft + HERO_MINI + 12;      // 左缘贴封面右边 12px
   const stackY = padTop + (HERO_MINI - stackH * textScale) / 2;   // 整摞 44 里居中
-  const titleTx = textX - (titleRect.left - headRect.left);   // 两行各自的线性落位
+  const titleTx = textX - (tInkL - headRect.left);   // 标题按第一行墨迹左缘落位
   const subTx = subRect ? textX - (subRect.left - headRect.left) : titleTx;
-  // 并齐 (1.8.113 用户点名「感觉前面有空格」): 宽的那行 (居中起得靠左) 当锚
-  // 走线性原路, 窄的那行头 22% 行程追平 (追向与飞向同向不逆行), 后贴齐飞
-  const anchorTx = !subRect || subRect.left < titleRect.left ? subTx : titleTx;
-  const titleCorr = subRect && subRect.left < titleRect.left ? subRect.left - titleRect.left : 0;
-  const subCorr = subRect && subRect.left >= titleRect.left ? titleRect.left - subRect.left : 0;
+  // 1.8.114 (用户三报): 换行标题的盒缘不在字上 — 盒对了, 字没对; 并齐
+  // (1.8.113「感觉前面有空格」): 宽行当锚走线性, 窄行头 22% 追平 (不逆行)
+  const anchorTx = !subRect || subRect.left < tInkL ? subTx : titleTx;
+  const titleCorr = subRect && subRect.left < tInkL ? subRect.left - tInkL : 0;
+  const subCorr = subRect && subRect.left >= tInkL ? tInkL - subRect.left : 0;
   const ctrl = {
     head, cover, movers, row, rowButtons, fades, title, sub, titleClip, titleCutR,
     width: scroller.clientWidth,                          // 转屏/改窗宽后懒重测的哨兵
@@ -124,7 +124,7 @@ function heroCollect(scroller) {
     coverTx: contentLeft - (coverRect.left - headRect.left),   // 封面左上角 → 内容盒左上角
     coverTy: padTop - (coverRect.top - headRect.top),
     scale: HERO_MINI / coverRect.width,                   // 44px (origin 左上, 一边缩一边靠角)
-    // 竖向各自贴 (整摞 44 里居中); 横向并齐的锚/横修见上 (1.8.113)
+    // 竖向各自贴 (整摞 44 里居中); 横向并齐的锚/横修见上 (1.8.113/114)
     titleTy: stackY - (titleRect.top - headRect.top),
     anchorTx, titleCorr, subCorr,
     subTy: subRect
