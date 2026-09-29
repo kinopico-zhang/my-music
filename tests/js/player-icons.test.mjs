@@ -278,10 +278,11 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
   assert.ok(iconSvg("ICON_REPEAT_ONE").includes(`d="${iconPath("ICON_REPEAT")}`),
     "单曲的环该与列表同枚 (切换只有徽章显隐)");
   // 1.8.115 徽章右上角钉: 圆片顶点顶到视框 y=0, 「1」反向镂空随圆片就位
+  // (1.8.116 「1」绕圆心放大到 ¾ 圆片高, M 点随缩放外移)
   assert.ok(iconPath("ICON_REPEAT_ONE").includes("M907.99 0C1015.01"),
     "徽章圆片该顶到视框顶 (右上角就位)");
-  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M963.25 314.59L963.25 71.42"),
-    "「1」笔画该还在 (圆片里镂空)");
+  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M973.77 337.75L973.77 48.26"),
+    "「1」笔画该是放大款 (圆片里镂空, 1.8.116 ¾ 圆片高)");
   for (const name of ["ICON_REPEAT", "ICON_REPEAT_ONE", "ICON_SHUFFLE"]) {
     const svg = iconSvg(name);
     assert.ok((svg.match(/<path /g) || []).length === 1,
