@@ -1,8 +1,8 @@
 // music-hero-collapse — 封面收缩顶栏 (1.8.34, 用户点名「上划时封面边缩边
 // 挪向左上角, 按钮挪到右上角, 到位钉成顶栏, 列表从底下滚过; 下滑对称还
 // 原; 动画要细腻」): 专辑/播放列表/艺人页头包进 .hero-head 钉在推入层顶。
-// 版式沿革: 1.8.40 两行 → 1.8.42 左对齐 → 1.8.45 单行 → 1.8.46 行键沿路
-// 径换岗+停稳补程 → 1.8.55 换行标题只收第一行 → 1.8.56 不缩小按原字号。
+// 版式沿革: 1.8.40 两行 → 1.8.42 左对齐 → 1.8.45 单行 → 1.8.46 换岗补程
+// → 1.8.55 只收第一行 → 1.8.56 不缩小 → 1.8.112 宽度退出缩放+两行先并齐。
 // (细腻的根): sticky 钉住 + 布局恒高, 全程只写 transform/opacity/clip-path
 // (零重排), 滚动位置线性直驱; 行程 = 页头自然高 − 顶栏高; 全按 padTop 量。
 "use strict";
@@ -99,18 +99,13 @@ function heroCollect(scroller) {
   // 收拢簇宽写层根 (五改纱钉左缘 + 十改接点条对位); 无层兜底写回头上
   (head.closest(".push-pane") || head)
     .style.setProperty("--bar-row-w", `${Math.ceil(barInfo.barRowW)}px`);
-  // 共用目标尺 (1.8.56 用户点名「大小没必要缩小」): 换行标题不占宽 —— 收拢
-  // 态按原字号; 宽约束只留副标题, 高按整摞 (第一行+副标题) 塞进 44
-  const lineW = Math.max(titleClip ? 0 : titleRect.width,
-                         subRect ? subRect.width : 0);
+  // 共用目标尺 (1.8.112 用户点名「字体不需要变小」): 宽度彻底退出缩放 —
+  // 溢出右刀裁 (纱+键衬底盖软), 高按整摞塞进 44、摞超高才轻微收一点
   const stackH = (subRect ? subRect.bottom - titleRect.top : titleRect.height)
                  - titleClip;
   const availW = contentW - HERO_MINI - 12 - barInfo.barRowW - 10;
-  const textScale = Math.min(1, availW / Math.max(1, lineW),
-                             HERO_MINI / Math.max(1, stackH));
-  // 换行标题不缩宽后的右刀: 收拢态溢出条簇的量 (行程里乘 p, 跟底刀一把裁)
-  const titleCutR = titleClip
-    ? Math.max(0, titleRect.width - availW / textScale) : 0;
+  const textScale = Math.min(1, HERO_MINI / Math.max(1, stackH));
+  const titleCutR = Math.max(0, titleRect.width - availW);  // 右刀: 单行也吃
   const textX = contentLeft + HERO_MINI + 12;      // 左缘贴封面右边 12px
   const stackY = padTop + (HERO_MINI - stackH * textScale) / 2;   // 整摞 44 里居中
   const ctrl = {
@@ -121,10 +116,10 @@ function heroCollect(scroller) {
     coverTx: contentLeft - (coverRect.left - headRect.left),   // 封面左上角 → 内容盒左上角
     coverTy: padTop - (coverRect.top - headRect.top),
     scale: HERO_MINI / coverRect.width,                   // 44px (origin 左上, 一边缩一边靠角)
-    // 标题/副标题各自的目标位: 左缘同贴封面右边, 副标题顶 = 摞顶 + 原缝缩放
+    // 标题/副标题各自的目标位: 左缘同贴封面右边; subDx = 展开态两行左缘差
     titleTx: textX - (titleRect.left - headRect.left),
     titleTy: stackY - (titleRect.top - headRect.top),
-    subTx: subRect ? textX - (subRect.left - headRect.left) : 0,
+    subDx: subRect ? subRect.left - titleRect.left : 0,   // (1.8.112 并齐用)
     subTy: subRect
       ? stackY + (subRect.top - titleRect.top - titleClip) * textScale
         - (subRect.top - headRect.top) : 0,
@@ -176,17 +171,22 @@ function heroApply(scroller) {
   ctrl.cover.style.transform =
     `translate(${(ctrl.coverTx * p).toFixed(2)}px, ${(ctrl.coverTy * p).toFixed(2)}px)` +
     ` scale(${(1 - p * (1 - ctrl.scale)).toFixed(4)})`;
-  const textMove = (el, tx, ty) => {   // 两行各自搬: 同尺缩放, 左缘都贴封面右边
+  const textMove = (el, tx, ty) => {  // 两行各自搬: 同尺缩放, 左缘都贴封面右边
     el.style.transform =
-      `translate(${(tx * p).toFixed(2)}px, ${(ty * p).toFixed(2)}px)` +
+      `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)` +
       ` scale(${(1 - p * (1 - ctrl.textScale)).toFixed(4)})`;
   };
-  textMove(ctrl.title, ctrl.titleTx, ctrl.titleTy);
-  if (ctrl.titleClip || ctrl.titleCutR)   // 两刀都乘 p、随缩放走: 底刀裁掉
-    ctrl.title.style.clipPath =           // 第二行 (1.8.55), 右刀给条簇让位
-      `inset(0px ${(ctrl.titleCutR * p).toFixed(1)}px`
+  textMove(ctrl.title, ctrl.titleTx * p, ctrl.titleTy * p);
+  if (ctrl.titleClip || ctrl.titleCutR) {  // 底刀乘 p 裁第二行 (1.8.55); 右刀
+    // 1.8.112 起单行也吃且后段才走 —— 与渐隐纱同一条坡进场, 纱没上不硬切
+    const rCut = ctrl.titleCutR * Math.min(1, Math.max(0, (p - 0.55) * 2.5));
+    ctrl.title.style.clipPath = `inset(0px ${rCut.toFixed(1)}px`
       + ` ${(ctrl.titleClip * p).toFixed(1)}px 0px)`;
-  if (ctrl.sub) textMove(ctrl.sub, ctrl.subTx, ctrl.subTy);
+  }
+  if (ctrl.sub) {  // 两行先并齐 (1.8.112 用户点名「标题跟下面的对齐」): 居中
+    // 左缘各是各、线性到 p=1 才碰头 —— 副标题左缘改跟主标题走, 错位按 (1-p)^3 早收
+    textMove(ctrl.sub, ctrl.titleTx * p - ctrl.subDx * (1 - (1 - p) ** 3), ctrl.subTy * p);
+  }
   // 操作行的键一进收缩就藏 (1.8.46): 顶栏键从键位起飞接班, 藏着也不截点
   for (const btn of ctrl.rowButtons) {
     btn.style.opacity = "0";
