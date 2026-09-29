@@ -8,7 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
-    ChangelogVersion(version="1.8.120", date="2026-09-29", items=[
+    ChangelogVersion(version="1.8.121", date="2026-09-29", items=[
+    ChangelogItem(kind="改进", text="循环键在列表循环和单曲循环之间切换时, "
+                                   "循环圈不再挪位了 —— 两态的圈完全重叠, "
+                                   "点下去感觉只是多出/少了个「1」的圆片。"),
+]),
+ChangelogVersion(version="1.8.120", date="2026-09-29", items=[
     ChangelogItem(kind="改进", text="单曲循环的圆片徽章跟循环图标分家"
                                    "了 —— 圆圈周围留出 1px 镂空, 原先"
                                    "顶杆和右杆都贴着圆片长, 看着粘在一"
