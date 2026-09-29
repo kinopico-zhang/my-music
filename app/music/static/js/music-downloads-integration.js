@@ -3,9 +3,9 @@
 "use strict";
 /* global $, ICON_CANCEL, ICON_DOWNLOAD, createDownloads, currentRoute,
           downloadsSupported, refreshDownloadsBody, toast */
-/* exported cancelDownloadAll, downloadAllFromUI, downloadMarkHTML,
-            downloadRingHTML, downloadTrackFromUI, downloads, downloadsEnabled,
-            syncDownloadIcons */
+/* exported DOWNLOAD_CACHE, cancelDownloadAll, downloadAllFromUI,
+            downloadMarkHTML, downloadRingHTML, downloadTrackFromUI, downloads,
+            downloadsEnabled, syncDownloadIcons */
 
 // ------------------------------------------------------------ 下载 (离线)
 

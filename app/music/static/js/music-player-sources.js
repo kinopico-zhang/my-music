@@ -18,6 +18,9 @@
 // 封顶 —— 1.8.96 (用户点名「网络不好也别直接跳过, 跳过是用户才能定的」)
 // 分家收摊: WebKit 网络失败常报 code 4, 信号差与文件烂本就分不清 ——
 // 出错一律不跳歌, 缓存救不回就地挂起重试, 强续与连挂封顶退役。
+// 1.8.122 缓存真查 (用户点名「Safari 会随机清空缓存, 下载过 ≠ 一直在」):
+// localBlobFor 撞到「索引说有、字节没了」当场 removeDownload 出账 (行图标
+// 跟着翻), 不等下一趟对账 —— 「已下载」以缓存里真有没有为准。
 "use strict";
 /* global audioElement, autoCache, autoCacheEnabled, currentTrack, downloads,
           downloadsEnabled, noteAudioSourceChanged, startAudio, toast */
@@ -56,11 +59,15 @@ function directStreamURL(trackId) {
   return `/music/media/stream/${trackId}?direct=1`;
 }
 
-/** 本地音字节: 手动下载优先 (用户亲手下的不许被 LRU 清), 自动缓存次之。 */
+/** 本地音字节: 手动下载优先 (用户亲手下的不许被 LRU 清), 自动缓存次之。
+    1.8.122 索引谎报当场出账: 索引说下载过、字节却读不出 (系统清了仓) 时
+    立刻 removeDownload —— 行图标跟着翻 (notify), 不等下一趟对账; 自动
+    缓存侧 autoCache.blob 自带同款自愈。 */
 async function localBlobFor(trackId) {
   if (trackDownloaded(trackId)) {
     const blob = await downloads.cachedBlob(trackId);
     if (blob) return blob;
+    downloads.removeDownload(trackId).catch(() => {});   // 字节没了不算下载过
   }
   if (autoCached(trackId)) return autoCache.blob(trackId);
   return null;
