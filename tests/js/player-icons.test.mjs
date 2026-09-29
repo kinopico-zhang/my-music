@@ -264,8 +264,9 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
   // 「线条要粗一点」), 1.8.91 再并进同一枚 path (半透明描边下一枚 path 只
   // 上一次色, 交叉/接头不叠深) 并 28→24 缩到与邻键同量 (用户点名「偏大」);
   // 1.8.111 换 iconfont 实底新画法: 列表/单曲共用同一枚环和同一视框 (用户
-  // 点名「循环主题的位置要重叠」) —— 单曲的 d 以列表的 d 起头, 徽章收在
-  // 环心不越出环包围盒, 切换只有徽章显隐, 环逐像素不动
+  // 点名「循环主题的位置要重叠」) —— 单曲的 d 以列表的 d 起头, 环逐像素
+  // 不动; 1.8.115 徽章从环心挪 logo 右上角 (用户点名): 圆片盖住右上折角
+  // 箭头旗顶到视框顶, 旗墨由反向旗子副本抵消, 切换环不跳位
   const repeatSvg = iconSvg("ICON_REPEAT");
   assert.ok(page.includes(repeatSvg), "页面默认形与 ICON_REPEAT 不同款");
   svgCentered("ICON_REPEAT (列表循环态)", repeatSvg);
@@ -276,6 +277,11 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
     repeatSvg.slice(0, repeatSvg.indexOf("d="))), "列表/单曲该共用同一视框");
   assert.ok(iconSvg("ICON_REPEAT_ONE").includes(`d="${iconPath("ICON_REPEAT")}`),
     "单曲的环该与列表同枚 (切换只有徽章显隐)");
+  // 1.8.115 徽章右上角钉: 圆片顶点顶到视框 y=0, 「1」反向镂空随圆片就位
+  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M907.99 0C1015.01"),
+    "徽章圆片该顶到视框顶 (右上角就位)");
+  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M963.25 314.59L963.25 71.42"),
+    "「1」笔画该还在 (圆片里镂空)");
   for (const name of ["ICON_REPEAT", "ICON_REPEAT_ONE", "ICON_SHUFFLE"]) {
     const svg = iconSvg(name);
     assert.ok((svg.match(/<path /g) || []).length === 1,
