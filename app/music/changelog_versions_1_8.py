@@ -8,6 +8,15 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.124", date="2026-09-30", items=[
+    ChangelogItem(kind="新增", text="播放计数离线补报: 断网、服务重启或报错"
+                                   "窗口里听过的歌不再丢账 —— 先暂存本机, 回网"
+                                   "或下次打开按真实播放时刻自动补记, 排行榜从"
+                                   "此离线也不缺账。"),
+    ChangelogItem(kind="改进", text="听歌上报开始认得出失败了: 以前服务器报错"
+                                   "也被当成记成功, 现在这样的也进补报队列"
+                                   "回头补记。"),
+    ]),
     ChangelogVersion(version="1.8.123", date="2026-09-29", items=[
     ChangelogItem(kind="修复", text="改了播放列表的名字, 收层回到列表页和主"
                                    "页看到的还是旧名字的问题修了 —— 现在改名"

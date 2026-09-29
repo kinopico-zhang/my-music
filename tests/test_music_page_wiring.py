@@ -82,7 +82,12 @@ def test_music_downloads_wiring():
     # 状态机, +autocache-integration 接线; 1.8.100: +handoff 后台连播
     # 提前接力裁决; 1.8.105: +pip 画中画小窗; 1.8.103: +dock-volume 船坞音量气泡 (键鼠端专属),
     # 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 67 and all("?v=" in src for src in scripts)
+    # 1.8.105: +pip 画中画小窗; 1.8.103: +dock-volume 船坞音量气泡 (键鼠端专属),
+    # 1.8.124: +play-outbox 补报队列纯逻辑 +play-outbox-integration 接线;
+    # 引用一律带版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 69 and all("?v=" in src for src in scripts) \
+        and "js/play-outbox.js?v=" in html \
+        and "js/music-play-outbox-integration.js?v=" in html  # 1.8.124 补报
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/autocache.js?v=" in html                  # 1.8.77 自动缓存状态机
     assert "js/music-autocache-integration.js?v=" in html  # 1.8.77 自动缓存接线
@@ -106,7 +111,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v113" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v114" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 

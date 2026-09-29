@@ -1,5 +1,4 @@
-"""My Music 的曲库浏览与查询路由: 状态/统计/重扫 + 专辑/艺人/曲目/
-播放记录/搜索/歌词/标签, 全在 /api 下 (登录用户)。"""
+"""My Music 的曲库浏览与查询路由: 状态/统计/重扫 + 专辑/艺人/曲目/播放记录/搜索/歌词/标签, 全在 /api 下 (登录用户)。"""
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -131,9 +130,10 @@ def music_tracks(
 def music_record_play(body: PlayRecordRequest, request: Request,
                       users: Session = Depends(database.get_users_db),
                       library: Session = Depends(get_db)) -> OkResponse:
-    """记一次播放 (最近播放的原料, 按人记; 曲目不在库里 404)。"""
+    """记一次播放 (最近播放的原料, 按人记; 曲目不在库里 404; played_at = 补报的真实时刻)。"""
     user = _require_user(request, users)
-    if not library_queries.record_play(library, user.uuid, body.track_id):
+    if not library_queries.record_play(library, user.uuid, body.track_id,
+                                       body.played_at):
         raise HTTPException(404, "曲目不存在")
     return OkResponse(ok=True)
 

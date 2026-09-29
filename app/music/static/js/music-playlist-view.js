@@ -1,8 +1,7 @@
 // music-playlist-view — My Music 播放列表详情页: 曲目管理/加歌/自定义封面上传/
 // 改名 (1.8.17) + 曲目拖拽换序 (拖拽住在 music-playlist-drag)。
-// 1.8.80 修删列表后主页还留着它: 原来先 navigate("home") 再补
-// renderRootView —— navigate 把层栈收干净了, 后头那个 if (pushStack.length)
-// 永远不成立, 主页没重铺过 (陈货直等下次整页重铺); 换成趁层还盖着先铺。
+// 1.8.80 修删列表后主页还留着它: navigate 收完层栈, 后头那个
+// if (pushStack.length) 永远不成立 = 死闸; 换成趁层还盖着先铺再收层。
 // 拆自 music.js (结构化重构, 经典脚本按 music.html 里的顺序加载, 跨模块引用走全局)。
 "use strict";
 /* global $, ICON_ACTION_IMAGE, ICON_ACTION_PLAY, ICON_ACTION_SHARE, ICON_ACTION_SHUFFLE,
@@ -12,8 +11,7 @@
           describeDuration, downloadAllFromUI, downloadsEnabled, escapeHTML,
           fetchJSON, heroBarHTML, listPlaceholderHTML, navigate, playerStart,
           playlistCoverURL, pushPaneTarget, refreshPlaylistCoverIcons,
-          refreshPlaylistName, renderRootView,
-          sharePlaylist, syncPlayerIndicators, toast, trackArtHTML, trackRowHTML,
+          refreshPlaylistName, renderRootView, sharePlaylist, syncPlayerIndicators, toast, trackArtHTML, trackRowHTML,
           wireHeroBarActions */
 /* exported coverUploadPlaylistId, renderPlaylistView, uploadPlaylistCover */
 
@@ -121,8 +119,7 @@ async function renderPlaylistView(playlistId, target) {
       });
       playlist.name = updated.name;
       target.querySelector("h2.pl-name").textContent = updated.name;
-      // 底下列表页/主页的名字就地跟着换 (1.8.123): 收层回去不重铺,
-      // 不换掉返回看到的就是旧名 (封面 1.8.99 同款坑)
+      // 底下列表页/主页的名字就地跟着换 (1.8.123, 封面 1.8.99 同款坑)
       refreshPlaylistName(updated);
       toast("列表名已更新");
     } catch (error) {
