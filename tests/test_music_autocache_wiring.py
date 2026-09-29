@@ -37,7 +37,9 @@ def test_music_autocache_wiring():
     assert "module.exports" in pure_js                  # node --test 直测路径
     # 接线: 与手动下载同一道门, 缓存/索引分仓 (LRU 清不到用户亲手下的)
     assert "const autoCacheEnabled = downloadsEnabled;" in integration_js
-    assert '"music-autocache-v2"' in integration_js
+    # 2026-09-29 再换代 v3: Angels & Demons 九曲服务端原位换正版 FLAC,
+    # v2 仓里的旧 14-bit 噪声字节照 1.8.98 的路子整仓清掉 (并行线收口)
+    assert '"music-autocache-v3"' in integration_js
     assert '"music-autocache"' in integration_js
     assert "autoCache.put(trackId, blob).catch(() => {});" in integration_js
     # 1.8.98 换代清仓: 旧代整仓清 (前缀认仓, 新仓除外), 没收 Cache API 的

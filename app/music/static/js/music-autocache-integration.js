@@ -11,6 +11,10 @@
 // 刚听过的歌), 索引还在 → 播到那首整首重新走流量。三道防线: ① 申请
 // persist; ② 打开/回到应用就对账 (两仓索引里在、字节没了的影子账当场
 // 出清 —— 统计行不再谎报「都缓存好了」); ③ 预算跟系统实际给的存储走。
+// 2026-09-29 v2→v3 再换代: 服务器重修了 Angels & Demons 整专辑 (下载源
+// 头顶包的 14-bit 噪声流, 九曲已原位换正版 FLAC) —— v2 仓里听过旧噪声
+// 字节的手机照 1.8.98 的路子清仓换血; 手动下载仓仍旧不牵连 (那首若是
+// 手动下载的, 得在 UI 里删了重下)。
 "use strict";
 /* global createAutoCache, downloads, downloadsEnabled */
 /* exported autoCache, autoCacheEnabled, autoCachePersisted, autoCacheStash */
@@ -18,7 +22,7 @@
 // 同一道门: 没有下载能力 (明文 HTTP / 无 Cache API) 就没有自动缓存
 const autoCacheEnabled = downloadsEnabled;
 
-const AUTO_CACHE = "music-autocache-v2";
+const AUTO_CACHE = "music-autocache-v3";
 const AUTO_INDEX_KEY = "music-autocache";
 const AUTO_CACHE_MAX_BYTES = 2 * 1024 * 1024 * 1024;   // 2GB 封顶, LRU 自动让位
 
