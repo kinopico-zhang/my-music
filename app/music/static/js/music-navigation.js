@@ -4,7 +4,7 @@
 // 更新日志) 全是推入层。
 "use strict";
 /* global checkScanStatus, routePushed, routeRoot, stopScanPolling, syncDownloadIcons,
-          syncPlayerIndicators */
+          syncPlayerIndicators, reconcileLocalAudioStoresSoon */
 /* exported clearLastRoute, coverUploadPlaylistId, currentRoute, navigate, pageState,
             parseRoute, pushStack, readLastRoute, route, routeKey, saveLastRoute,
             userRescanPending */
@@ -136,6 +136,12 @@ function routeTo(parsed, force) {
   if (!pushed) checkScanStatus();
   syncPlayerIndicators();
   syncDownloadIcons();
+  // 1.8.122 缓存真查: 重铺顺手验一遍真缓存 (Safari 清仓不一定挑后台,
+  // 正翻着列表也能被清), 已下载标记当场翻正; 15s 节流不白翻目录。
+  // 本文件先于 autocache-integration 加载, typeof 兜开局首铺那一拍
+  if (typeof reconcileLocalAudioStoresSoon !== "undefined") {
+    reconcileLocalAudioStoresSoon();
+  }
   saveLastRoute();   // 停在哪页记下来 (开局回跳用)
 }
 

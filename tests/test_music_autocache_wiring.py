@@ -77,6 +77,19 @@ def test_music_autocache_wiring():
     # 统计行: 存储没固定时标出来 (数字缩水 = 系统在腾地方, 不是应用在删)
     assert "autoCachePersisted" in pane_js
     assert "系统可能自动清理" in pane_js
+    # 1.8.122 缓存真查 (用户点名「Safari 会随机清空缓存, 下载过 ≠ 一直在」):
+    # 播放入口撞到「索引说有、字节没了」当场出账 (行图标跟着翻) + 对账触发
+    # 面扩到 bfcache 恢复 (pageshow) 与路由重铺 (15s 节流) —— Safari 清仓
+    # 不一定挑后台, 正翻着列表也能被清; 写死的仓名换 DOWNLOAD_CACHE 常量
+    assert "downloads.removeDownload(trackId).catch(() => {});" in sources_js
+    assert "function reconcileLocalAudioStoresSoon" in integration_js
+    assert "15000" in integration_js
+    assert 'window.addEventListener("pageshow"' in integration_js
+    assert "event.persisted" in integration_js
+    assert "presentTrackIds(DOWNLOAD_CACHE)" in integration_js
+    navigation_js = (MUSIC_STATIC / "js" / "music-navigation.js").read_text(
+        encoding="utf-8")
+    assert "reconcileLocalAudioStoresSoon();" in navigation_js  # 重铺即验真缓存
     # 门禁收编: tsc 类型检查 + c8 覆盖率都认这个纯模块
     assert "app/music/static/js/autocache.js" in (ROOT / "tsconfig.json"
                                                   ).read_text(encoding="utf-8")
