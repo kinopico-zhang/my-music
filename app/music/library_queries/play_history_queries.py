@@ -11,10 +11,14 @@ from ..schemas import RecentTrackBrief
 from .browse_queries import track_brief
 
 
-def record_play(session: Session, user_uuid: str, track_id: int) -> bool:
+def record_play(session: Session, user_uuid: str, track_id: int,
+                played_at: float | None = None) -> bool:
     """记一次播放, 同一事务双写: play_stats 聚合推进 (最近播放的原料)
     + play_events 落一行流水 (谁/何时/哪首, 排行的原料); 曲目不在库里
-    False。"""
+    False。played_at 是离线补报的真实播放时刻 (1.8.124): 没带用当下,
+    越界 (非正 / 超当下 5 分钟) 落回当下; 补报旧账只把 play_count 加一,
+    不把 last_played_at 拉回去 —— 最近播放的次序跟着真实时刻走, 不被
+    晚到的旧账翻乱。"""
     if session.get(Track, track_id) is None:
         return False
     stat = session.execute(
@@ -22,14 +26,16 @@ def record_play(session: Session, user_uuid: str, track_id: int) -> bool:
                                PlayStat.track_id == track_id)
     ).scalar_one_or_none()
     now = time.time()
+    when = played_at if played_at is not None and 0 < played_at <= now + 300 \
+        else now
     if stat is None:
         session.add(PlayStat(user_uuid=user_uuid, track_id=track_id,
-                             last_played_at=now))
+                             last_played_at=when))
     else:
-        stat.last_played_at = now
+        stat.last_played_at = max(stat.last_played_at, when)
         stat.play_count += 1
     session.add(PlayEvent(user_uuid=user_uuid, track_id=track_id,
-                          played_at=now))
+                          played_at=when))
     session.commit()
     return True
 

@@ -15,13 +15,15 @@
 // (AbortError 除外) 就当被打断重挂再试; ② 元素没收 pause —— paused 一直
 // false、声音没了、timeupdate 停更: 停更超 5 秒即判幽灵记打断; ③ 幽灵
 // 不止暂停键一条路 — 起播入口直接探, 解冻回前台也自愈 (1.8.86)。
+// 1.8.124 出声计数改走补报队列 (play-outbox.js): 报不上 (断网/5xx/401)
+// 先暂存本机, 开局/回网/回前台按真实播放时刻补报 —— 排行离线也不缺账。
 "use strict";
 /* global $, audioElement, currentTrack,
           enhanceSliderTouch, formatPlaybackTime, highlightActiveLyric,
           maybeHandoffEarly, notePlaybackFailed, notePlaybackSucceeded,
           playbackDuration,
           playQueue, playRecorded: writable, playerIsPlaying, playerNext,
-          rearmMediaSession, savePlayerState, updateMediaSession,
+          rearmMediaSession, reportPlay, savePlayerState, updateMediaSession,
           scrubbing: writable, syncPositionState, updatePlayButtons */
 /* exported bindPlayerAudioEvents, noteAudioSourceChanged, pauseAudio,
             startAudio */
@@ -135,14 +137,12 @@ function bindPlayerAudioEvents(audio) {
   audio.addEventListener("playing", () => {
     rearmMediaSession();   // 1.8.70 iOS 认出声那刻的键位, 重挂 (幂等)
     notePlaybackSucceeded();   // 1.8.76 出声了: 连挂计数清零
-    // 真正出声了才算"听过" (恢复现场直接暂停的不算); 暂停续播不重复报
+    // 真正出声了才算"听过" (恢复现场直接暂停的不算); 暂停续播不重复报。
+    // 1.8.124 发后不管退役: 走补报队列 (music-play-outbox-integration
+    // 的 reportPlay) —— 报不上暂存本机等回网补, 排行离线也不缺账
     if (playRecorded || !currentTrack) return;
     playRecorded = true;
-    fetch("/music/api/plays", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ track_id: currentTrack.track_id }),
-    }).catch(() => { /* 记不上不挡听歌 */ });
+    reportPlay(currentTrack.track_id);
   });
   audio.addEventListener("play", () => {
     updatePlayButtons();

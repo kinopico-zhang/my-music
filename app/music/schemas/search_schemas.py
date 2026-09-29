@@ -29,9 +29,11 @@ class SearchResult(BaseModel):
 
 
 class PlayRecordRequest(BaseModel):
-    """POST /api/plays 的请求体 (播一次报一次)。"""
+    """POST /api/plays 的请求体 (播一次报一次)。1.8.124 起 played_at 可带
+    (epoch 秒): 离线补报的真实播放时刻 —— 没带记成当下, 越界也落回当下。"""
 
     track_id: int
+    played_at: int | None = None
 
 
 class RecentTrackBrief(TrackBrief):
