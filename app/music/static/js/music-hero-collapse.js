@@ -2,7 +2,7 @@
 // 挪向左上角, 按钮挪到右上角, 到位钉成顶栏, 列表从底下滚过; 下滑对称还
 // 原; 动画要细腻」): 专辑/播放列表/艺人页头包进 .hero-head 钉在推入层顶。
 // 版式沿革: 1.8.40 两行 → 1.8.42 左对齐 → 1.8.45 单行 → 1.8.46 换岗补程
-// → 1.8.55 只收第一行 → 1.8.56 不缩小 → 1.8.112 宽度退出缩放+两行先并齐。
+// → 1.8.55 只收第一行 → 1.8.56 不缩小 → 1.8.112 并齐+宽度退出缩放 → 1.8.113 并齐收紧到开头。
 // (细腻的根): sticky 钉住 + 布局恒高, 全程只写 transform/opacity/clip-path
 // (零重排), 滚动位置线性直驱; 行程 = 页头自然高 − 顶栏高; 全按 padTop 量。
 "use strict";
@@ -15,6 +15,12 @@ const heroCtrls = new WeakMap();   // 滚动器 → 控制器 (重铺换元素, 
 const heroPending = new Set();     // 每帧最多一次重绘 (滚动事件按帧节流)
 const heroSnapTimers = new WeakMap();   // 滚动器 → 停稳补程的计时器 (七改)
 const heroTouching = new WeakSet();     // 手指还按着的滚动器 (长按不动别补程)
+const heroReset = (els) => {   // 摘净行内样式 (重测量前/回自然位共用, 1.8.113)
+  for (const el of els) {
+    el.style.transform = ""; el.style.opacity = "";
+    el.style.pointerEvents = ""; el.style.clipPath = "";
+  }
+};
 
 /** 渲染完详情页后挂线: 量自然位, 当场对齐当前滚位; 页头不完整就不挂。 */
 function bindHeroCollapse(scroller) {
@@ -75,12 +81,7 @@ function heroCollect(scroller) {
   const fades = [...hero.children].filter((el) => el !== cover && el !== text);
   const hint = hero.querySelector(".cover-hint");
   if (hint) fades.push(hint);
-  for (const el of [cover, ...movers, row, ...rowButtons, ...fades]) {
-    el.style.transform = "";
-    el.style.opacity = "";
-    el.style.pointerEvents = "";
-    el.style.clipPath = "";
-  }
+  heroReset([cover, ...movers, row, ...rowButtons, ...fades]);
   head.style.removeProperty("--hero-p");
   const headRect = head.getBoundingClientRect();
   const coverRect = cover.getBoundingClientRect();
@@ -108,6 +109,13 @@ function heroCollect(scroller) {
   const titleCutR = Math.max(0, titleRect.width - availW);  // 右刀: 单行也吃
   const textX = contentLeft + HERO_MINI + 12;      // 左缘贴封面右边 12px
   const stackY = padTop + (HERO_MINI - stackH * textScale) / 2;   // 整摞 44 里居中
+  const titleTx = textX - (titleRect.left - headRect.left);   // 两行各自的线性落位
+  const subTx = subRect ? textX - (subRect.left - headRect.left) : titleTx;
+  // 并齐 (1.8.113 用户点名「感觉前面有空格」): 宽的那行 (居中起得靠左) 当锚
+  // 走线性原路, 窄的那行头 22% 行程追平 (追向与飞向同向不逆行), 后贴齐飞
+  const anchorTx = !subRect || subRect.left < titleRect.left ? subTx : titleTx;
+  const titleCorr = subRect && subRect.left < titleRect.left ? subRect.left - titleRect.left : 0;
+  const subCorr = subRect && subRect.left >= titleRect.left ? titleRect.left - subRect.left : 0;
   const ctrl = {
     head, cover, movers, row, rowButtons, fades, title, sub, titleClip, titleCutR,
     width: scroller.clientWidth,                          // 转屏/改窗宽后懒重测的哨兵
@@ -116,10 +124,9 @@ function heroCollect(scroller) {
     coverTx: contentLeft - (coverRect.left - headRect.left),   // 封面左上角 → 内容盒左上角
     coverTy: padTop - (coverRect.top - headRect.top),
     scale: HERO_MINI / coverRect.width,                   // 44px (origin 左上, 一边缩一边靠角)
-    // 标题/副标题各自的目标位: 左缘同贴封面右边; subDx = 展开态两行左缘差
-    titleTx: textX - (titleRect.left - headRect.left),
+    // 竖向各自贴 (整摞 44 里居中); 横向并齐的锚/横修见上 (1.8.113)
     titleTy: stackY - (titleRect.top - headRect.top),
-    subDx: subRect ? subRect.left - titleRect.left : 0,   // (1.8.112 并齐用)
+    anchorTx, titleCorr, subCorr,
     subTy: subRect
       ? stackY + (subRect.top - titleRect.top - titleClip) * textScale
         - (subRect.top - headRect.top) : 0,
@@ -158,13 +165,7 @@ function heroApply(scroller) {
   heroBarTravel(ctrl, p);                 // 条键沿路径平移换岗 (1.8.46)
   if (p <= 0) {                        // 自然位: 行内样式全摘, 回纯 CSS
     ctrl.head.style.removeProperty("--hero-p");
-    for (const el of [ctrl.cover, ...ctrl.movers, ctrl.row,
-                      ...ctrl.rowButtons, ...ctrl.fades]) {
-      el.style.transform = "";
-      el.style.opacity = "";
-      el.style.pointerEvents = "";
-      el.style.clipPath = "";
-    }
+    heroReset([ctrl.cover, ...ctrl.movers, ctrl.row, ...ctrl.rowButtons, ...ctrl.fades]);
     return;
   }
   ctrl.head.style.setProperty("--hero-p", p.toFixed(3));
@@ -176,17 +177,16 @@ function heroApply(scroller) {
       `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px)` +
       ` scale(${(1 - p * (1 - ctrl.textScale)).toFixed(4)})`;
   };
-  textMove(ctrl.title, ctrl.titleTx * p, ctrl.titleTy * p);
+  // 并齐 (1.8.113, 见 heroCollect): 追行头 22% 行程里追平, 之后两行一整块飞
+  const catchUp = 1 - Math.max(0, 1 - p / 0.22) ** 3;
+  textMove(ctrl.title, ctrl.anchorTx * p + ctrl.titleCorr * catchUp, ctrl.titleTy * p);
   if (ctrl.titleClip || ctrl.titleCutR) {  // 底刀乘 p 裁第二行 (1.8.55); 右刀
     // 1.8.112 起单行也吃且后段才走 —— 与渐隐纱同一条坡进场, 纱没上不硬切
     const rCut = ctrl.titleCutR * Math.min(1, Math.max(0, (p - 0.55) * 2.5));
     ctrl.title.style.clipPath = `inset(0px ${rCut.toFixed(1)}px`
       + ` ${(ctrl.titleClip * p).toFixed(1)}px 0px)`;
   }
-  if (ctrl.sub) {  // 两行先并齐 (1.8.112 用户点名「标题跟下面的对齐」): 居中
-    // 左缘各是各、线性到 p=1 才碰头 —— 副标题左缘改跟主标题走, 错位按 (1-p)^3 早收
-    textMove(ctrl.sub, ctrl.titleTx * p - ctrl.subDx * (1 - (1 - p) ** 3), ctrl.subTy * p);
-  }
+  if (ctrl.sub) textMove(ctrl.sub, ctrl.anchorTx * p + ctrl.subCorr * catchUp, ctrl.subTy * p);
   // 操作行的键一进收缩就藏 (1.8.46): 顶栏键从键位起飞接班, 藏着也不截点
   for (const btn of ctrl.rowButtons) {
     btn.style.opacity = "0";

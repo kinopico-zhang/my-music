@@ -8,7 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
-    ChangelogVersion(version="1.8.112", date="2026-09-29", items=[
+    ChangelogVersion(version="1.8.113", date="2026-09-29", items=[
+    ChangelogItem(kind="修复", text="上划收起封面时标题和艺人名一开头就左"
+                                   "对齐 (原先整个收缩过程两行都还错着一"
+                                   "点, 标题看着像前面空了一格)。"),
+]),
+ChangelogVersion(version="1.8.112", date="2026-09-29", items=[
     ChangelogItem(kind="修复", text="上划收起封面的过程中标题和艺人名一路左"
                                    "对齐 (原先收缩途中两行一直错着, 到顶才"
                                    "对齐)。"),
