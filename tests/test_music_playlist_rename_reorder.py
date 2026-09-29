@@ -72,6 +72,17 @@ def test_music_playlist_rename_reorder_wiring():
     assert 'window.prompt("新的列表名"' in view_js
     assert 'method: "PATCH",' in view_js
     assert ".pl-name::after" in html and 'content: "✎"' in html
+    # 1.8.123 修「改名后收层回去列表页还是旧名」(用户实报): 底下的层收层
+    # 回去不重铺 (1.8.80/1.8.99 同款坑) —— 改名当场把列表页行/主页卡的名字
+    # 就地换新 (refreshPlaylistName, 换封面 1.8.99 同款套路)
+    rendering_js = (MUSIC_STATIC / "js" / "music-list-rendering.js").read_text(
+        encoding="utf-8")
+    assert "function refreshPlaylistName" in rendering_js
+    assert '.playlist-row[data-playlist-id="${playlist.playlist_id}"] .a-main b' \
+           in rendering_js
+    assert '.playlist-card[data-playlist-id="${playlist.playlist_id}"] > b' \
+           in rendering_js
+    assert "refreshPlaylistName(updated);" in view_js
     # 拖拽 (1.8.31 整行拖, 用户点名「不需要显示三个横杠, 默认都是直接
     # 拖动调整顺序, 长按是右键菜单」): 行上按住 ~200ms 进预备再拖 (预备期
     # 滑走交还滚动/左滑删除, 长按菜单开了也撤), 松手按落点落定

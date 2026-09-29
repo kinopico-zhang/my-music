@@ -12,7 +12,7 @@
           describeDuration, downloadAllFromUI, downloadsEnabled, escapeHTML,
           fetchJSON, heroBarHTML, listPlaceholderHTML, navigate, playerStart,
           playlistCoverURL, pushPaneTarget, refreshPlaylistCoverIcons,
-          renderRootView,
+          refreshPlaylistName, renderRootView,
           sharePlaylist, syncPlayerIndicators, toast, trackArtHTML, trackRowHTML,
           wireHeroBarActions */
 /* exported coverUploadPlaylistId, renderPlaylistView, uploadPlaylistCover */
@@ -121,6 +121,9 @@ async function renderPlaylistView(playlistId, target) {
       });
       playlist.name = updated.name;
       target.querySelector("h2.pl-name").textContent = updated.name;
+      // 底下列表页/主页的名字就地跟着换 (1.8.123): 收层回去不重铺,
+      // 不换掉返回看到的就是旧名 (封面 1.8.99 同款坑)
+      refreshPlaylistName(updated);
       toast("列表名已更新");
     } catch (error) {
       toast(`没改上: ${error.message}`);
