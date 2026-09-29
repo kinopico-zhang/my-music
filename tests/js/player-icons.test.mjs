@@ -277,12 +277,12 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
     repeatSvg.slice(0, repeatSvg.indexOf("d="))), "列表/单曲该共用同一视框");
   assert.ok(iconSvg("ICON_REPEAT_ONE").includes(`d="${iconPath("ICON_REPEAT")}`),
     "单曲的环该与列表同枚 (切换只有徽章显隐)");
-  // 1.8.115 徽章右上角钉: 圆片顶点顶到视框 y=0, 「1」反向镂空随圆片就位
-  // (1.8.116 「1」绕圆心放大到 ¾ 圆片高, M 点随缩放外移)
-  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M907.99 0C1015.01"),
-    "徽章圆片该顶到视框顶 (右上角就位)");
-  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M973.77 337.75L973.77 48.26"),
-    "「1」笔画该是放大款 (圆片里镂空, 1.8.116 ¾ 圆片高)");
+  // 1.8.115 徽章右上角钉; 1.8.117 整枚徽章按用户参照 logo 等比重定尺寸:
+  // 圆片 Ø 占图宽 47.8% 顶/右沿与环极值齐平, 「1」高占圆片一半
+  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M815.09 15.45C991.36"),
+    "徽章圆片该顶到环顶/右沿 (参照 logo 尺寸)");
+  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M872.86 503.82L872.86 185.95"),
+    "「1」笔画该是参照款 (圆片里镂空, 高占圆片一半)");
   for (const name of ["ICON_REPEAT", "ICON_REPEAT_ONE", "ICON_SHUFFLE"]) {
     const svg = iconSvg(name);
     assert.ok((svg.match(/<path /g) || []).length === 1,
