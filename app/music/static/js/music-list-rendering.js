@@ -7,8 +7,8 @@
           toast, trackArtworkURL, updatePlayButtons */
 /* exported albumCardHTML, artistRowHTML, bindTrackLists, listPlaceholderHTML,
             playlistCardHTML, playlistRowHTML, refreshPlaylistCoverIcons,
-            rowForTrackMenu, syncPlayerIndicators, trackArtHTML, trackListBindings,
-            trackRowHTML */
+            refreshPlaylistName, rowForTrackMenu, syncPlayerIndicators,
+            trackArtHTML, trackListBindings, trackRowHTML */
 
 // ------------------------------------------------------------ 公共渲染件
 
@@ -104,6 +104,19 @@ function refreshPlaylistCoverIcons(playlist) {
   document.querySelectorAll(
     `.playlist-card[data-playlist-id="${playlist.playlist_id}"] .art-wrap`)
     .forEach((wrap) => { wrap.innerHTML = playlistCardArtHTML(playlist); });
+}
+
+/** 改名后把底下各页这张列表的名字就地换新 (列表页行 + 主页卡): 底下的
+    层收层回去不重铺 (1.8.80 的老坑), 名字不换掉, 返回看到的就是旧名
+    (1.8.123 用户实报; 封面 1.8.99 修过同款)。只动名字那几个字 ——
+    滚动位置和左滑状态都原地保住。 */
+function refreshPlaylistName(playlist) {
+  document.querySelectorAll(
+    `.playlist-row[data-playlist-id="${playlist.playlist_id}"] .a-main b`)
+    .forEach((name) => { name.textContent = playlist.name; });
+  document.querySelectorAll(
+    `.playlist-card[data-playlist-id="${playlist.playlist_id}"] > b`)
+    .forEach((name) => { name.textContent = playlist.name; });
 }
 
 /** 播放列表行: 自定义封面 (传过) / 渐变音符块 + 名字 + 规模。
