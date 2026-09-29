@@ -8,7 +8,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
-    ChangelogVersion(version="1.8.115", date="2026-09-29", items=[
+    ChangelogVersion(version="1.8.116", date="2026-09-29", items=[
+    ChangelogItem(kind="改进", text="单曲循环徽章里的「1」放大 (高占圆片四分"
+                                   "之三)。"),
+]),
+ChangelogVersion(version="1.8.115", date="2026-09-29", items=[
     ChangelogItem(kind="改进", text="单曲循环键的「1」徽章从环心挪到 logo 右"
                                    "上角 (圆片盖住折角箭头, 顶杆顺势流入, iOS"
                                    " 角标款)。"),
