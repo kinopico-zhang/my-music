@@ -8,7 +8,13 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
-    ChangelogVersion(version="1.8.119", date="2026-09-29", items=[
+    ChangelogVersion(version="1.8.120", date="2026-09-29", items=[
+    ChangelogItem(kind="改进", text="单曲循环的圆片徽章跟循环图标分家"
+                                   "了 —— 圆圈周围留出 1px 镂空, 原先"
+                                   "顶杆和右杆都贴着圆片长, 看着粘在一"
+                                   "起。"),
+]),
+ChangelogVersion(version="1.8.119", date="2026-09-29", items=[
     ChangelogItem(kind="改进", text="单曲循环「1」的镂空擦干净了 —— 「1」"
                                    "右侧笔画正骑在循环 logo 的杆头上, 透过"
                                    "镂空看得见它, 现在镂空里只剩干净的底"
