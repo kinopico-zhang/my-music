@@ -8,7 +8,14 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
-    ChangelogVersion(version="1.8.111", date="2026-09-28", items=[
+    ChangelogVersion(version="1.8.112", date="2026-09-29", items=[
+    ChangelogItem(kind="修复", text="上划收起封面的过程中标题和艺人名一路左"
+                                   "对齐 (原先收缩途中两行一直错着, 到顶才"
+                                   "对齐)。"),
+    ChangelogItem(kind="改进", text="长标题收进顶栏不再缩成小字, 放不下的部"
+                                   "分在按钮旁边淡掉。"),
+]),
+ChangelogVersion(version="1.8.111", date="2026-09-28", items=[
         ChangelogItem(kind="改进", text="随机播放和循环键换了实底新图标 —— "
                                        "列表循环/单曲循环/随机三态和随机播"
                                        "放键同一批换装, 单曲循环的「1」徽章"
