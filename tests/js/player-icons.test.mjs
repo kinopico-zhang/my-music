@@ -263,26 +263,35 @@ test("全屏页新底行 (参考图 1:1 批): ⋯ / 循环 / 词 / 队列都居�
   // music-common.js 换 innerHTML —— 1.8.90 三态重画为粗描边 (用户点名
   // 「线条要粗一点」), 1.8.91 再并进同一枚 path (半透明描边下一枚 path 只
   // 上一次色, 交叉/接头不叠深) 并 28→24 缩到与邻键同量 (用户点名「偏大」);
-  // 1.8.111 换 iconfont 实底新画法: 列表/单曲共用同一枚环和同一视框 (用户
-  // 点名「循环主题的位置要重叠」) —— 单曲的 d 以列表的 d 起头, 环逐像素
+  // 1.8.111 换 iconfont 实底新画法: 列表/单曲共用同一枚环 (用户点名
+  // 「循环主题的位置要重叠」) —— 单曲的 d 以列表的 d 起头, 环逐字节
   // 不动; 1.8.115 徽章从环心挪 logo 右上角 (用户点名): 圆片盖住右上折角
-  // 箭头旗顶到视框顶, 旗墨由反向旗子副本抵消, 切换环不跳位
+  // 箭头旗顶到视框顶, 旗墨由反向旗子副本抵消; 1.8.118 圆片右移出角
+  // (用户点名「再往右边一点」, 参照 svg): 视框各开各的窗口 —— 单曲的
+  // 往右挪 95, 边长不动 → 环大小不变, 切换时环整体平移 0.86px
   const repeatSvg = iconSvg("ICON_REPEAT");
   assert.ok(page.includes(repeatSvg), "页面默认形与 ICON_REPEAT 不同款");
   svgCentered("ICON_REPEAT (列表循环态)", repeatSvg);
   svgCentered("ICON_REPEAT_ONE (单曲循环态)", iconSvg("ICON_REPEAT_ONE"));
   svgCentered("ICON_SHUFFLE (随机循环态)", iconSvg("ICON_SHUFFLE"));
-  // 1.8.111 循环主题重叠门禁: 两态同视框 + 单曲的环与列表逐字节同枚
-  assert.ok(iconSvg("ICON_REPEAT_ONE").startsWith(
-    repeatSvg.slice(0, repeatSvg.indexOf("d="))), "列表/单曲该共用同一视框");
+  // 循环主题重叠门禁: 环逐字节同枚; 1.8.118 起视框各开各的窗口 (单曲的
+  // 右挪 95 让圆片出角), 边长不动 → 环大小不变, 只平移
+  const vb = (s) => s.match(/viewBox="([^"]+)"/)[1].split(/\s+/).map(Number);
+  const vbOne = vb(iconSvg("ICON_REPEAT_ONE")), vbList = vb(repeatSvg);
+  assert.ok(vbOne[2] === 1329.4 && vbOne[3] === 1329.4,
+    "单曲视框该还是 1329.4 方框 (边长不动, 环大小不变)");
+  assert.ok(Math.abs(vbOne[0] - vbList[0] - 95) < 0.01 && vbOne[1] === vbList[1],
+    "单曲视框窗口该右挪 95 (徽章戳出环角, 参照 svg)");
   assert.ok(iconSvg("ICON_REPEAT_ONE").includes(`d="${iconPath("ICON_REPEAT")}`),
     "单曲的环该与列表同枚 (切换只有徽章显隐)");
   // 1.8.115 徽章右上角钉; 1.8.117 整枚徽章按用户参照 logo 等比重定尺寸:
-  // 圆片 Ø 占图宽 47.8% 顶/右沿与环极值齐平, 「1」高占圆片一半
-  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M815.09 15.45C991.36"),
-    "徽章圆片该顶到环顶/右沿 (参照 logo 尺寸)");
-  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M872.86 503.82L872.86 185.95"),
-    "「1」笔画该是参照款 (圆片里镂空, 高占圆片一半)");
+  // 圆片 Ø 占图宽 47.8%, 「1」高占圆片一半; 1.8.118 圆片右移 190 出角
+  // (参照里圆片戳出环外顶到画布右上角): 右沿到视框宽 99.6% (参照 100%),
+  // 左沿 51.8% (参照 52.2%), 顶仍切环顶
+  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M1005.09 15.45C1181.36"),
+    "徽章圆片该顶到环顶/戳出环角 (参照 logo 位)");
+  assert.ok(iconPath("ICON_REPEAT_ONE").includes("M1062.86 503.82L1062.86 185.95"),
+    "「1」笔画该是参照款 (随圆片平移, 高占圆片一半)");
   for (const name of ["ICON_REPEAT", "ICON_REPEAT_ONE", "ICON_SHUFFLE"]) {
     const svg = iconSvg(name);
     assert.ok((svg.match(/<path /g) || []).length === 1,
