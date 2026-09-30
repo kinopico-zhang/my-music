@@ -8,6 +8,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.128", date="2026-09-30", items=[
+    ChangelogItem(kind="改进", text="音质参数行挪到封面正下方居中 —— 原先挤"
+                                   "在艺人名下面跟左对齐文字混在一起, 现在贴"
+                                   "着封面走, 歌词/队列视图里随封面一起退场。"),
+]),
     ChangelogVersion(version="1.8.127", date="2026-09-30", items=[
     ChangelogItem(kind="新增", text="播放页封面下多了一行当前歌曲的音质"
                                    "参数 (格式 · 采样率/位深 · 码率, 比如"
