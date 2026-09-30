@@ -1,17 +1,16 @@
 // music-player-art-stage — My Music 播放页 3D 封面舞台 (1.8.60, 用户点名):
 // 上一首/下一首斜插两侧 (CoverFlow 同款), 左右拖跟手转面, 松手 3D 落定切歌 (1.8.97 起很短的滑行也切)。
-// 姿态 = 各卡槽位 (自身位 -1/0/1 + 拖拽进度) 的横移/纵深/转角/压暗, JS 直落
-// 行内, 松手走原生过渡 (1.8.61)。1.8.66 过场中段扇形张开 (过卡那拍两侧
-// 分最开不叠不穿), 来卡过半浮上旧卡沉底 (翻层藏进最大缝); 交班只留程序切歌。
+// 姿态 = 各卡槽位 (自身位 -1/0/1 + 拖拽进度) 的横移/纵深/转角/压暗, JS 直落行内, 松手走原生过渡 (1.8.61)。
+// 1.8.66 过场中段扇形张开 (过卡那拍两侧分最开不叠不穿), 来卡过半浮上旧卡沉底; 交班只留程序切歌。
 "use strict";
 /* global $, PLACEHOLDER_ARTWORK, currentTrack, onTrackChange, playQueue,
-          playerNext, playerPrevious */
-/* exported initArtStage, stageNeighbors */
+          playerNext, playerPrevious, clearQualityHandoff, handoffQualityStrip,
+          poseQualityStrips */
+/* exported initArtStage, stageNeighbors, poseCard */
 
 const STAGE_SPACING = 0.55;   // 侧卡横移 (自身卡宽的占比)
-const STAGE_ANGLE = 40;       // 侧卡转角 (度)
+const STAGE_ANGLE = 40, STAGE_DIM = 0.42;   // 侧卡转角 (度) / 压暗 (槽位平方, 越偏越暗)
 const STAGE_DEPTH = 150;      // 侧卡后退 (px, 槽位的平方 —— 越偏越退)
-const STAGE_DIM = 0.42;       // 侧卡压暗 (槽位的平方 —— 越偏越暗)
 const STAGE_FAN = 1;          // 过场扇形张开量 (过卡那拍横移 ×(1+此值))
 
 let swayFrom = null;       // 松手余位: 换曲后从余位滑回中间, 不许跳位 (null = 程序切歌按走向猜)
@@ -35,8 +34,7 @@ function stageNeighbors() {
 }
 
 function stageCardSrc(img, track) {
-  img.src = track && track.album_id
-    ? `/music/media/albums/${track.album_id}/artwork` : PLACEHOLDER_ARTWORK;
+  img.src = track && track.album_id ? `/music/media/albums/${track.album_id}/artwork` : PLACEHOLDER_ARTWORK;
 }
 
 /** 扇形倍率: 过卡那拍 (|slot|=0.5) 峰值 1+STAGE_FAN, 静止/越台 (|slot|≥1) 收回 1。 */
@@ -62,6 +60,7 @@ function poseStage(sway, live) {
   poseCard($("#fp-art"), sway);
   poseCard($("#fp-art-prev"), sway - 1);
   poseCard($("#fp-art-next"), sway + 1);
+  poseQualityStrips(sway);   // 音质条跟卡同参摆 (1.8.129 三条跟卡走)
 }
 
 /** 落定动画半路被抓起手: 读当前卡实时横移换算回 sway —— 扇形展开后横移≠sway, 定点迭代反解。 */
@@ -83,6 +82,7 @@ function clearHandoff() {
   if (!handoffCard) return;
   handoffCard.classList.remove("handoff");
   handoffCard.style.opacity = "1"; handoffCard = null;
+  clearQualityHandoff();   // 音质条成对撤 (1.8.129)
 }
 
 /** 换曲后重铺三张卡。start = 拖拽余位 | ±1 (程序切歌) | null 不动画; 程序切歌旧曲卡压顶交班。 */
@@ -116,6 +116,7 @@ function renderArtStage(start) {
       handoffCard = $(stageHandoff === "prev" ? "#fp-art-prev" : "#fp-art-next");
       handoffCard.classList.add("handoff");
       handoffCard.style.opacity = "0";
+      handoffQualityStrip(stageHandoff);   // 旧曲的字同步压顶溶出 (1.8.129)
       handoffTimer = setTimeout(clearHandoff, 420);
     }
   }
@@ -123,8 +124,7 @@ function renderArtStage(start) {
 }
 
 function stageTrackChanged() {
-  const start = swayFrom; swayFrom = null;
-  renderArtStage(start);
+  const start = swayFrom; swayFrom = null; renderArtStage(start);
 }
 
 /** 左右拖跟手 + 松手落定 (竖向让给下拉收起): 认领的横滑松手一律切歌 (1.8.97

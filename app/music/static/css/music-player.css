@@ -77,14 +77,6 @@
 #fp-art-wrap.rise-next #fp-art-next,
 #fp-art-wrap.rise-prev #fp-art-prev { z-index: 4; }   /* 拖过半来卡浮上 (缝最大处翻层看不见) */
 .art-card.off { visibility: hidden; }   /* 队首/队尾没邻居: 侧位空着 */
-/* 音质行 (1.8.127 增于 .fp-now 名下; 1.8.128 挪进封面舞台): 贴封面正下方
-   居中 —— 卡底恰在舞台 90% 高 (top:50%-40%+80%), 绝对定位跟着封面走,
-   歌词/队列视图随舞台一起藏 */
-#fp-quality { position: absolute; top: 90%; margin-top: 10px; left: 0; right: 0;
-              text-align: center; font-size: 10px; color: rgba(255,255,255,.42);
-              white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-              letter-spacing: .02em; font-variant-numeric: tabular-nums; }
-#fp-quality[hidden] { display: none; }   /* 显式藏: 防 display 类规则盖掉 UA 的 hidden */
 #fp-lyrics {
   position: absolute; inset: 0; overflow-y: auto; z-index: 2;
   overscroll-behavior: contain;   /* 滚到顶再往下拖不做橡皮筋, 下拉收起通吃 */

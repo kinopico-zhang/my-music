@@ -77,8 +77,8 @@ def test_music_downloads_wiring():
     # +player-prefetch; 1.8.60 +player-art-stage; 1.8.76 +player-sources
     # +player-slider +downloads-pane; 1.8.77 +autocache +autocache-integration;
     # 1.8.100 +handoff; 1.8.105 +pip; 1.8.103 +dock-volume; 1.8.124
-    # +play-outbox +play-outbox-integration); 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 69 and all("?v=" in src for src in scripts) \
+    # +play-outbox +play-outbox-integration; 1.8.129 +player-quality); 引用一律带版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 70 and all("?v=" in src for src in scripts) \
         and "js/play-outbox.js?v=" in html \
         and "js/music-play-outbox-integration.js?v=" in html  # 1.8.124 补报
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
@@ -104,7 +104,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v118" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v119" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
