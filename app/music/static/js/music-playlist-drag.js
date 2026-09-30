@@ -8,7 +8,8 @@
 // 1.8.108 键鼠端鼠标即按即拖 (用户点名「播放列表要支持鼠标拖拽调整顺
 // 序」): 桌面惯例没有「按住等预备」, 按下就是起拖意图 —— 动够 8px 竖向
 // 就拖; 触摸端照旧按住 ~200ms (得跟滚动/左滑分家)。鼠标路径不亮预备态
-// (点一下就闪一下太吵), 也没动过就不吞 click —— 按下抬手照旧开播。
+// (点一下就闪一下太吵)。没动过就不吞 click —— 按下抬手照旧开播, 两端
+// 同规矩 (1.8.126 前触摸端按住 200ms 就吞, 点得慢=「列表里点不动」)。
 // 行住 .swipe-wrap 里 (与左滑删除同构): 1.8.19 起被拖的/被抬层的都是
 // wrap —— wrap overflow:hidden (左滑删除的裁切), 行在 wrap 里竖移出界会被
 // 裁得只剩一截黑边 (行自己的 z-index 翻不出裁切)。
@@ -17,7 +18,7 @@
 /* exported bindPlaylistDrag */
 
 let playlistDrag = null;
-let playlistDragSwallowClick = false;   // 按住过的那一下, 尾随 click 吞掉 (不开播)
+let playlistDragSwallowClick = false;   // 拖动过/落定过的那一下, 尾随 click 吞掉 (不开播)
 const PLAYLIST_ARM_MS = 200;            // 按住这么久 = 起拖预备 (< 菜单的 500ms)
 
 /** 绑到曲目容器 (#playlist-tracks) 上; reorder(from, to) 由调用方持久化
@@ -37,8 +38,9 @@ function bindPlaylistDrag(container, reorder) {
   };
 
   // 预备落定 (触摸端等满 200ms / 键鼠端鼠标按下即): 抬层挂在 wrap, 让位
-  // 集合记下来。held = 是等出来的预备 —— 亮行板提示「可以拖了」+ 抬手不
-  // 算点击; 鼠标即按即拖没有等待期, 不亮不吞 (点了没动 = 开播)
+  // 集合记下来。held = 是等出来的预备 —— 亮行板提示「可以拖了」
+  // (1.8.126: 抬手照旧开播 —— 按住没动只是点得慢, 吞了它就成了
+  // 「列表里点不动」, 触摸端专属的坑; 鼠标即按即拖没有等待期, 不亮)
   const armDrag = (pointerId, held) => {
     if (!arm) { cancelArm(); return; }
     const wraps = [...container.querySelectorAll(".swipe-wrap")];
@@ -46,7 +48,6 @@ function bindPlaylistDrag(container, reorder) {
     if (index < 0) { cancelArm(); return; }
     arm.armed = true;
     if (held) {
-      playlistDragSwallowClick = true;    // 按住过的抬手不算点击 (不开播)
       arm.wrap.classList.add("drag-armed");
     }
     try { arm.row.setPointerCapture(pointerId); } catch (_error) { }

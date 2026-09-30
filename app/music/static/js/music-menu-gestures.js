@@ -164,8 +164,8 @@ document.addEventListener("pointerdown", (event) => {
   clearTimeout(trackPressTimer);
   trackPressTimer = setTimeout(() => {
     trackPressTimer = 0;
-    suppressTrailingTarget = row;
     openTrackMenu(row, trackPressPoint);
+    if (!$("#track-menu").hidden) suppressTrailingTarget = row;
   }, 500);
 });
 document.addEventListener("pointermove", (event) => {
@@ -181,11 +181,13 @@ document.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   cancelTrackPress();
   if (!$("#track-menu").hidden) return;  // 安卓长按: 计时器可能已经开了
-  suppressTrailingTarget = row;
   openTrackMenu(row, { x: event.clientX, y: event.clientY });
+  if (!$("#track-menu").hidden) suppressTrailingTarget = row;
 });
 // 长按开了菜单, 抬手补发的 click 会落回长按的那个元素上 —— 吞掉;
 // 点了别处 (菜单项/遮罩) 就翻篇。见 suppressTrailingTarget 的说明。
+// 1.8.126: 旗改为菜单真开了才置 —— openTrackMenu 早退 (行禁用/曲目找
+// 不着) 时菜单不现身, 旗先挂上会把这一行的点击无声吞到点别处为止。
 document.addEventListener("click", (event) => {
   if (!suppressTrailingTarget) return;
   if (suppressTrailingTarget.contains(event.target)) {

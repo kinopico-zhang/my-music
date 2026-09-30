@@ -8,6 +8,15 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.126", date="2026-09-30", items=[
+    ChangelogItem(kind="修复", text="修了列表里点歌没反应 —— 手机上点得慢一"
+                                   "点 (按住一小会儿再松手) 会被当成想拖动排"
+                                   "序, 那一下点击就被吃掉不放歌; 现在只有真"
+                                   "的拖动过才不算点歌, 点得再慢也照常开播。"),
+    ChangelogItem(kind="修复", text="个别情况长按菜单没能弹出来时, 那一行的点"
+                                   "击会一直没反应, 直到点一下别处才恢复 —— "
+                                   "一并修了。"),
+]),
     ChangelogVersion(version="1.8.125", date="2026-09-30", items=[
     ChangelogItem(kind="修复", text="修了刚更新后点歌没声音 —— 更新窗口里手机"
                                    "拿到了编到一半的旧脚本, 和新脚本撞了名, "
