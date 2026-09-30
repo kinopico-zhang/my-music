@@ -4,8 +4,8 @@
 // 1.8.72 来源行整行撤了 (用户点名) —— credits 接口还在, 前端没人读了。
 "use strict";
 /* global $, ICON_PAUSE, ICON_PAUSE_BIG, ICON_PLAY, ICON_PLAY_BIG, ICON_REPEAT,
-          ICON_REPEAT_ONE, ICON_SHUFFLE, PLACEHOLDER_ARTWORK,
-          currentTrack, playQueue, playerCurrentTrackId, playerIsPlaying */
+          ICON_REPEAT_ONE, ICON_SHUFFLE, PLACEHOLDER_ARTWORK, currentTrack,
+          fetchJSON, playQueue, playerCurrentTrackId, playerIsPlaying */
 /* exported renderPlayerChrome, updatePlayButtons, updatePlayModeButton */
 
 // ------------------------------------------------------------ 界面渲染
@@ -26,8 +26,39 @@ function renderPlayerChrome() {
   $("#mini-art").src = artwork;
   $("#fp-art").src = artwork;
   $("#fp-bg-img").src = artwork;
+  void renderTrackQuality(track);
   updatePlayButtons();
   updatePlayModeButton();
+}
+
+// 音质行 (1.8.127): 封面下那行 格式·采样率/位深·码率。索引里有走库, 老库
+// 行后端现读文件回填 —— 每首最多读一次。迟到的应答不许盖掉新歌 (拿到时
+// currentTrack 已换就整段丢弃), 取不到就藏行, 不弹错。
+let qualityFetchSeq = 0;
+async function renderTrackQuality(track) {
+  const line = $("#fp-quality");
+  const seq = qualityFetchSeq += 1;
+  try {
+    const quality = await fetchJSON(
+      `/music/api/tracks/${track.track_id}/quality`);
+    if (seq !== qualityFetchSeq || currentTrack !== track) return;
+    const hz = quality.sample_rate >= 1000000
+      ? `${(quality.sample_rate / 1000000).toFixed(1)}MHz`
+      : `${quality.sample_rate % 1000
+           ? (quality.sample_rate / 1000).toFixed(1)
+           : quality.sample_rate / 1000}kHz`;
+    const parts = [];
+    if (quality.file_format) parts.push(quality.file_format.toUpperCase());
+    if (quality.sample_rate) {
+      parts.push(quality.bit_depth ? `${hz} / ${quality.bit_depth}bit` : hz);
+    }
+    if (quality.bitrate) parts.push(`${quality.bitrate}kbps`);
+    if (quality.channels === 1) parts.push("单声道");
+    line.textContent = parts.join(" · ");
+    line.hidden = !parts.length;
+  } catch (_error) {
+    if (seq === qualityFetchSeq) line.hidden = true;
+  }
 }
 
 /** 迷你条一行文字: 放得下静止, 放不下挂 .marquee 来回滚

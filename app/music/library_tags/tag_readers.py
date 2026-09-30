@@ -99,6 +99,11 @@ def _has_embedded_artwork(audio: object) -> bool:
     return False
 
 
+def _int_or_zero(value: object) -> int:
+    """audio.info 的数值属性 → int (缺/None/坏值 = 0)。"""
+    return int(value) if isinstance(value, (int, float)) else 0
+
+
 def _read_tag_fields(audio: FileType) -> TagFields:
     """音频对象的标签/时长/封面一次读全 (read_track_metadata 只管兜底与截断)。"""
     tags = getattr(audio, "tags", None)
@@ -116,7 +121,25 @@ def _read_tag_fields(audio: FileType) -> TagFields:
         embedded_lyrics=_read_tag(tags, "lyrics"),
         duration_seconds=float(getattr(audio.info, "length", 0.0) or 0.0),
         has_artwork=_has_embedded_artwork(audio),
+        sample_rate=_int_or_zero(getattr(audio.info, "sample_rate", 0)),
+        bit_depth=_int_or_zero(getattr(audio.info, "bits_per_sample", 0)),
+        channels=_int_or_zero(getattr(audio.info, "channels", 0)),
     )
+
+
+def read_audio_quality(audio_path: Path) -> tuple[int, int, int] | None:
+    """现读一个文件的 (采样率, 位深, 声道) —— 播放页音质行按需探测用。
+
+    读不出 (文件没了/格式不认识) 返回 None, 调用方保持 0 不落库。"""
+    try:
+        audio = load_audio_file(audio_path)
+    except MutagenError:
+        return None
+    if audio is None:
+        return None
+    return (_int_or_zero(getattr(audio.info, "sample_rate", 0)),
+            _int_or_zero(getattr(audio.info, "bits_per_sample", 0)),
+            _int_or_zero(getattr(audio.info, "channels", 0)))
 
 
 def read_track_credits(audio_path: Path) -> tuple[str, str]:

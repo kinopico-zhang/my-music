@@ -8,6 +8,13 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.127", date="2026-09-30", items=[
+    ChangelogItem(kind="新增", text="播放页封面下多了一行当前歌曲的音质"
+                                   "参数 (格式 · 采样率/位深 · 码率, 比如"
+                                   " FLAC · 44.1kHz / 16bit · 1049kbps),"
+                                   " 音质好坏一眼可辨; 老歌第一次打开时现"
+                                   "场读一次文件, 之后都走库存档。"),
+]),
     ChangelogVersion(version="1.8.126", date="2026-09-30", items=[
     ChangelogItem(kind="修复", text="修了列表里点歌没反应 —— 手机上点得慢一"
                                    "点 (按住一小会儿再松手) 会被当成想拖动排"

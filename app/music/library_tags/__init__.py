@@ -6,13 +6,13 @@ import …, 不感知内部分层)。
 """
 from .artwork_extractors import extract_album_artwork
 from .tag_readers import (_has_embedded_artwork, _read_tag,
-                          read_track_credits)
+                          read_audio_quality, read_track_credits)
 from .track_metadata import (album_title_from_directory,
                              looks_like_synced_lyrics, read_track_metadata,
                              title_from_filename)
 
 __all__ = [
     "_has_embedded_artwork", "_read_tag", "album_title_from_directory",
-    "extract_album_artwork", "looks_like_synced_lyrics",
+    "extract_album_artwork", "looks_like_synced_lyrics", "read_audio_quality",
     "read_track_credits", "read_track_metadata", "title_from_filename",
 ]

@@ -9,7 +9,8 @@ playlist_queries, 歌词在 lyrics_queries, 播放记录在 play_history_queries
 from .browse_queries import (album_card, album_page, artist_page,
                              library_stats, list_albums, list_artists,
                              list_tracks, track_brief)
-from .lyrics_queries import credits_for_track, lyrics_for_track
+from .lyrics_queries import (audio_quality_for_track, credits_for_track,
+                             lyrics_for_track)
 from .play_history_queries import (period_start, recent_plays, record_play,
                                    top_plays)
 from .playlist_queries import (list_playlists, playlist_page,
@@ -18,8 +19,9 @@ from .search_queries import _matching_lyric_line, search_library
 
 __all__ = [
     "_matching_lyric_line", "album_card", "album_page", "artist_page",
-    "credits_for_track", "library_stats", "list_albums", "list_artists",
-    "list_playlists", "list_tracks", "lyrics_for_track", "playlist_page",
-    "period_start", "recent_playlists", "recent_plays", "record_play",
-    "search_library", "top_plays", "track_brief",
+    "audio_quality_for_track", "credits_for_track", "library_stats",
+    "list_albums", "list_artists", "list_playlists", "list_tracks",
+    "lyrics_for_track", "playlist_page", "period_start", "recent_playlists",
+    "recent_plays", "record_play", "search_library", "top_plays",
+    "track_brief",
 ]

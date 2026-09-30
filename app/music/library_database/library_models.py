@@ -75,6 +75,11 @@ class Track(MusicLibraryBase):
     file_size: Mapped[int] = mapped_column(default=0)
     file_mtime: Mapped[float] = mapped_column(default=0.0)
     file_format: Mapped[str] = mapped_column(default="")
+    # 音质参数 (1.8.127, mutagen audio.info): 0 = 没读到/老行没探过 —— 播放页
+    # 按需现读文件回填; 有损格式没有位深, 恒 0
+    sample_rate: Mapped[int] = mapped_column(default=0)
+    bit_depth: Mapped[int] = mapped_column(default=0)
+    channels: Mapped[int] = mapped_column(default=0)
     script: Mapped[str] = mapped_column(default="")      # Latn/Jpan/Hant/Hans/Kore…
     lyrics: Mapped[str] = mapped_column(default="")      # lrc 原文或纯文本
     lyrics_synced: Mapped[bool] = mapped_column(default=False)

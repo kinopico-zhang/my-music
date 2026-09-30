@@ -102,4 +102,7 @@ def read_track_metadata(audio_path: Path, relative_path: str,
         lyrics=lyrics[:20000],
         lyrics_synced=looks_like_synced_lyrics(lyrics),
         has_artwork=fields.has_artwork,
+        sample_rate=fields.sample_rate,
+        bit_depth=fields.bit_depth,
+        channels=fields.channels,
     )
