@@ -69,22 +69,15 @@ def test_music_downloads_wiring():
     html = music_page_shell()
     assert ".dl-stats" in html and ".dl-clear" in html    # 统计行样式
     scripts = re.findall(r'<script src="([^"]+)"', html)
-    # 结构化重构后独立脚本 (1.8.1: +recent-pane; 1.8.3: +search-pages;
-    # 1.8.5: +bubble-swipe; 1.8.6: +downloads-select; 1.8.14:
-    # -viewport-heal; 1.8.17: -cellular-usage, +playlist-drag;
-    # 1.8.23: +root-rubber; 1.8.31: +top-pane 播放排行页; 1.8.34:
-    # +hero-collapse; 1.8.35: +client; 1.8.39: +desktop-keys; 1.8.45:
-    # +hero-bar-actions 收缩顶栏动作条; 1.8.46: +hero-bar-tap 被吞点按
-    # 补发; 1.8.47: +share-links; 1.8.57: +settings-account; 1.8.59:
-    # +player-prefetch 预取拆分; 1.8.60: +player-art-stage 3D 封面舞台;
-    # 1.8.76: +player-sources 源解析/失败兜底拆分, +player-slider 滑杆
-    # 拆分, +downloads-pane 已下载面板拆分; 1.8.77: +autocache 自动缓存
-    # 状态机, +autocache-integration 接线; 1.8.100: +handoff 后台连播
-    # 提前接力裁决; 1.8.105: +pip 画中画小窗; 1.8.103: +dock-volume 船坞音量气泡 (键鼠端专属),
-    # 引用一律带版本参数 (改哪个 bump 哪个)
-    # 1.8.105: +pip 画中画小窗; 1.8.103: +dock-volume 船坞音量气泡 (键鼠端专属),
-    # 1.8.124: +play-outbox 补报队列纯逻辑 +play-outbox-integration 接线;
-    # 引用一律带版本参数 (改哪个 bump 哪个)
+    # 结构化重构后独立脚本 (按加入时间: 1.8.1 +recent-pane; 1.8.3 +search-pages;
+    # 1.8.5 +bubble-swipe; 1.8.6 +downloads-select; 1.8.17 +playlist-drag;
+    # 1.8.23 +root-rubber; 1.8.31 +top-pane; 1.8.34 +hero-collapse; 1.8.35
+    # +client; 1.8.39 +desktop-keys; 1.8.45 +hero-bar-actions; 1.8.46
+    # +hero-bar-tap; 1.8.47 +share-links; 1.8.57 +settings-account; 1.8.59
+    # +player-prefetch; 1.8.60 +player-art-stage; 1.8.76 +player-sources
+    # +player-slider +downloads-pane; 1.8.77 +autocache +autocache-integration;
+    # 1.8.100 +handoff; 1.8.105 +pip; 1.8.103 +dock-volume; 1.8.124
+    # +play-outbox +play-outbox-integration); 引用一律带版本参数 (改哪个 bump 哪个)
     assert len(scripts) == 69 and all("?v=" in src for src in scripts) \
         and "js/play-outbox.js?v=" in html \
         and "js/music-play-outbox-integration.js?v=" in html  # 1.8.124 补报
@@ -111,7 +104,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v115" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v116" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
@@ -163,6 +156,13 @@ def test_music_track_context_menu_wiring():
                  'id="playlist-delete"',           # 列表删除在详情页 (选择单只加歌)
         ]:
         assert frag in js, f"music.js 缺少 {frag}"
+    # 1.8.126 修「列表里点不动」: 吞点旗改为菜单真开了才置 (原本旗在
+    # openTrackMenu 之前挂, 菜单早退不现身时这行点击被无声吞到点别处为止)
+    gest_js = (MUSIC_STATIC / "js" / "music-menu-gestures.js").read_text(encoding="utf-8")
+    assert gest_js.count("suppressTrailingTarget = row;") == 2
+    assert gest_js.count('if (!$("#track-menu").hidden) '
+                         'suppressTrailingTarget = row;') == 2
+    assert 'js/music-menu-gestures.js?v=7"' in html
     # 新版图标/脚本地址随行; Plex 同步全撤了
     assert "js/music-app-boot.js?v=" in html   # 浏览页模块链以 boot 收尾
     # 长歌名不许把菜单撑超宽 (用户报"菜单非常宽, 建议截断"): 固定定位菜单

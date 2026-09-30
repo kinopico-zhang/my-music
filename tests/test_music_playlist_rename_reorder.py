@@ -90,7 +90,16 @@ def test_music_playlist_rename_reorder_wiring():
     assert "function bindPlaylistDrag" in drag_js
     assert "const PLAYLIST_ARM_MS = 200;" in drag_js
     assert "try { arm.row.setPointerCapture(pointerId); }" in drag_js
-    assert "playlistDragSwallowClick" in drag_js   # 按住过的尾随 click 吞掉 (不开播)
+    assert "playlistDragSwallowClick" in drag_js   # 拖动过/落定过的尾随 click 吞掉 (不开播)
+    # 1.8.126 修「列表里点不动」(用户实报 Yashima 行): 触摸按住 200–500ms 的
+    # 慢点按不再被拖拽预备吞掉 —— 预备 (held) 只亮行板, 吞点旗只在真拖动
+    # (位移>8px) 和落定换序两处置真, 按住没动抬手照旧开播 (与键鼠端同规矩;
+    # 老代码预备时就置旗, 点得慢一点整列表像死了一样 —— 触摸端专属)
+    assert 'if (held) {\n      arm.wrap.classList.add("drag-armed");\n    }' \
+        in drag_js
+    assert drag_js.count("playlistDragSwallowClick = true") == 2
+    assert "按住过的抬手不算点击" not in drag_js
+    assert 'js/music-playlist-drag.js?v=7"' in html   # 1.8.126 慢点按改版
     assert 'bindPlaylistDrag(target.querySelector("#playlist-tracks")' in view_js
     # 1.8.108 鼠标拖拽 (用户点名「播放列表要支持鼠标拖拽调整顺序」): 键鼠
     # 端按下即起拖 (没动过不吞 click, 点了照旧开播), 触摸端照旧等 200ms;
