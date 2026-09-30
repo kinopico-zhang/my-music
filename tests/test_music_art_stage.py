@@ -80,8 +80,9 @@ def test_music_art_stage_wiring():
                  "function clearHandoff", "function commitStage",
                  "function bindArtStageDrag", "function initArtStage"]:
         assert frag in stage_js, f"art-stage 缺 {frag}"
-    # 1.8.95 气泡横滑也来取邻居 (拖动中预览邻曲): 跨文件读, exported 挂上
-    assert "/* exported initArtStage, stageNeighbors */" in stage_js
+    # 1.8.95 气泡横滑也来取邻居 (拖动中预览邻曲); 1.8.129 音质条同参摆姿态
+    # (poseQualityStrips 复用 poseCard) —— 跨文件读, exported 挂上
+    assert "/* exported initArtStage, stageNeighbors, poseCard */" in stage_js
     # 落定: 掐过渡先摆起跳位 (一帧内完成不跳位), 再放过渡滑回中间
     assert "poseStage(from !== null ? from : 0);" in stage_js
     # 姿态公式: 横移按卡宽 (槽位×55%)×扇形倍率, 深度/压暗按槽位平方

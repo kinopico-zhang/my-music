@@ -1,0 +1,26 @@
+/* music-player-quality — 播放页封面下的音质行 (1.8.127 增于 .fp-now 名下;
+   1.8.128 挪到封面正下方居中; 1.8.129 拆独立文件并改成每张卡一条, 跟着
+   封面 3D 翻面进出 —— 用户点名「和封面一起 3D 滚动进入退出」; 拆家是因为
+   music-player.css 顶到 200 行上限)。
+   几何 (刚体跟飞的关键): 盒子与卡同宽同左缘 (left:10% + width:80% ——
+   translateX 的 % 按自身宽取值, 同宽才平移同距), 顶边钉在卡底 (top:50% +
+   margin-top:40% = 卡的 90% 高), rotateY 绕自身中心竖轴 —— 与卡的中轴
+   同一条线, 旋转逐点一致 → 文字跟着卡飞、不自转。姿态/压暗/交班由
+   music-player-art-stage 的 poseCard 同参直落 (JS 行内)。 */
+.art-quality { position: absolute; top: 50%; margin-top: 40%; left: 10%; width: 80%;
+               padding-top: 10px; text-align: center; font-size: 10px;
+               color: rgba(255,255,255,.42); white-space: nowrap; overflow: hidden;
+               text-overflow: ellipsis; letter-spacing: .02em;
+               font-variant-numeric: tabular-nums; will-change: transform, filter;
+               transition: transform .36s cubic-bezier(.22,.61,.36,1),
+                           filter .36s cubic-bezier(.22,.61,.36,1),
+                           opacity .3s cubic-bezier(.22,.61,.36,1); }
+#fp-quality { z-index: 3; }   /* 当前曲的字与 #fp-art 同层, 压两侧的字 */
+#fp-quality-prev, #fp-quality-next { z-index: 1; }
+/* 开局兜底 (JS 没跑前侧条别压中间): 与卡的选择器静止姿态同参 */
+#fp-quality-prev { transform: translateX(-55%) translateZ(-150px) rotateY(-40deg); }
+#fp-quality-next { transform: translateX(55%) translateZ(-150px) rotateY(40deg); }
+#fp-art-wrap.dragging .art-quality { transition: none; }  /* 拖动跟手, 松手才交给过渡 */
+.art-quality.off { visibility: hidden; }   /* 没邻居的侧条跟卡一样藏 */
+.art-quality.handoff { z-index: 5; }       /* 交班: 旧曲的字压顶溶出让位 (同卡) */
+.art-quality[hidden] { display: none; }    /* 显式藏: 防 display 类规则盖掉 UA 的 hidden */
