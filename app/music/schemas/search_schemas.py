@@ -70,3 +70,16 @@ class TrackCredits(BaseModel):
 
     lyricist: str = ""
     composer: str = ""
+
+
+class AudioQuality(BaseModel):
+    """单曲音质参数 (全屏播放页封面下那行, 1.8.127)。
+
+    sample_rate/bit_depth/channels 从索引来 (老行没有按需现读文件回填);
+    bitrate 是平均码率 (文件大小/时长算出, 有损无损都适用), kbps。"""
+
+    file_format: str = ""
+    sample_rate: int = 0              # Hz
+    bit_depth: int = 0                # bit, 有损恒 0
+    channels: int = 0
+    bitrate: int = 0                  # kbps, 时长/大小缺一算不出 = 0

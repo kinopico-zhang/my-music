@@ -11,16 +11,17 @@ from .playlist_schemas import (PlaylistBrief, PlaylistCreateRequest,
                                PlaylistOrderRequest, PlaylistPage,
                                PlaylistPageList, PlaylistTrackRequest)
 from .scan_schemas import (ScanStatus, ScanSummary, ScannedTrack, TagFields)
-from .search_schemas import (LyricHit, LyricsResponse, PlayRecordRequest,
-                             RecentPlaysResponse, RecentTrackBrief,
-                             SearchResult, TopPlaysResponse, TrackCredits)
+from .search_schemas import (AudioQuality, LyricHit, LyricsResponse,
+                             PlayRecordRequest, RecentPlaysResponse,
+                             RecentTrackBrief, SearchResult, TopPlaysResponse,
+                             TrackCredits)
 from .settings_schemas import MusicSettingsState, MusicSettingsUpdate
 from .share_schemas import ShareCreated, ShareCreateRequest, SharePageData
 from .viewport_schemas import ViewportEvent, ViewportLogReport
 
 __all__ = [
     "AlbumCard", "AlbumPage", "AlbumPageList", "ArtistBrief", "ArtistPage",
-    "ArtistPageList", "FormatCount",
+    "ArtistPageList", "AudioQuality", "FormatCount",
     "LibraryStats", "LyricHit", "LyricsResponse", "MusicSettingsState",
     "MusicSettingsUpdate", "MusicStatusResponse", "PlayRecordRequest",
     "PlaylistBrief", "PlaylistCreateRequest", "PlaylistOrderRequest",

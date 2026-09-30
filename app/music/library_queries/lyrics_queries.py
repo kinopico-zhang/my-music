@@ -1,4 +1,4 @@
-"""歌词与来源查询: 单曲歌词 (可联网补) + 作词/作曲标签 (现读文件)。"""
+"""歌词与来源查询: 单曲歌词 (可联网补) + 作词/作曲标签 + 音质参数 (现读文件)。"""
 import time
 
 from sqlalchemy import select
@@ -6,8 +6,9 @@ from sqlalchemy.orm import Session
 
 from ..library_database import Album, Track, music_directory
 from ..library_lyrics_api import fetch_lyrics
-from ..library_tags import looks_like_synced_lyrics, read_track_credits
-from ..schemas import LyricsResponse, TrackCredits
+from ..library_tags import (looks_like_synced_lyrics, read_audio_quality,
+                            read_track_credits)
+from ..schemas import AudioQuality, LyricsResponse, TrackCredits
 
 # 求而不得的负缓存: track_id → 上次外网尝试的时刻。换曲预取 (歌词键置灰)
 # 会频繁问没词的曲子, 不拦着就每换一曲打一次外网 (自动模式一miss三四发)。
@@ -54,3 +55,25 @@ def credits_for_track(session: Session, track_id: int) -> TrackCredits | None:
     lyricist, composer = read_track_credits(
         music_directory() / track.file_path)
     return TrackCredits(lyricist=lyricist, composer=composer)
+
+
+def audio_quality_for_track(session: Session, track_id: int) -> AudioQuality | None:
+    """单曲音质参数 (播放页封面下那行, 1.8.127)。
+
+    索引里有 (扫描顺手入库) 直接用; 老行是 0 (1.8.127 前扫的, 增量重扫
+    对没变的文件不读标签) 就现读文件回填 —— 每首最多读一次, 之后走库。
+    读不出 (文件没了/格式不认识) 保持 0 不落库, 前端藏行。"""
+    track = session.get(Track, track_id)
+    if track is None:
+        return None
+    if not track.sample_rate:
+        quality = read_audio_quality(music_directory() / track.file_path)
+        if quality is not None:
+            track.sample_rate, track.bit_depth, track.channels = quality
+            session.commit()
+    bitrate = (round(track.file_size * 8 / track.duration_seconds / 1000)
+               if track.duration_seconds > 0 and track.file_size > 0 else 0)
+    return AudioQuality(file_format=track.file_format,
+                        sample_rate=track.sample_rate,
+                        bit_depth=track.bit_depth, channels=track.channels,
+                        bitrate=bitrate)

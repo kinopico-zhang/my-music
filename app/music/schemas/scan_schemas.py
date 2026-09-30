@@ -24,6 +24,9 @@ class ScannedTrack(BaseModel):
     lyrics: str = ""                   # lrc 原文或纯文本
     lyrics_synced: bool = False        # 有 [mm:ss.xx] 时间轴
     has_artwork: bool = False          # 内嵌封面
+    sample_rate: int = 0               # Hz (1.8.127 音质行)
+    bit_depth: int = 0                 # bit, 有损恒 0
+    channels: int = 0
 
 
 class TagFields(BaseModel):
@@ -41,6 +44,9 @@ class TagFields(BaseModel):
     duration_seconds: float = 0.0
     embedded_lyrics: str = ""
     has_artwork: bool = False
+    sample_rate: int = 0
+    bit_depth: int = 0
+    channels: int = 0
 
 
 class ScanStatus(BaseModel):

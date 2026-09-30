@@ -1,9 +1,9 @@
-"""My Music 标签读取测试: vorbis/ID3/MP4/APE 各形状 + 封面抽取。"""
+"""My Music 标签读取测试: vorbis/ID3/MP4/APE 各形状 + 封面抽取 + 音质探针。"""
 from typing import Callable
 
 
 from app.music.library_tags import (extract_album_artwork,
-                                    read_track_metadata)
+                                    read_audio_quality, read_track_metadata)
 from tests.music_audio_seed import (PICTURE_BYTES, _flac_bytes,
                                     _write_audio, _write_dsf_audio)
 
@@ -32,6 +32,8 @@ def test_read_track_metadata_full_tags(tmp_path):
     assert track.has_artwork
     assert track.lyrics_synced
     assert track.file_format == "flac"
+    assert (track.sample_rate, track.bit_depth, track.channels) \
+        == (44100, 16, 2)                # 1.8.127 音质参数随标签一起读
 
 
 def test_read_track_metadata_fallbacks_and_sidecar(tmp_path):
@@ -110,6 +112,19 @@ def test_read_dsf_id3_frames(tmp_path):
     assert track.lyrics == "DSDの歌詞"             # USLT
     assert track.has_artwork                       # APIC
     assert track.duration_seconds == 1.0
+
+
+def test_read_audio_quality(tmp_path):
+    """音质探针 (1.8.127): FLAC 从 STREAMINFO, DSF 从 fmt 块; 非音频/
+    文件没了返回 None 不抛 (调用方保持 0 不落库)。"""
+    flac = _write_audio(tmp_path, "A/01 a.flac")
+    assert read_audio_quality(flac) == (44100, 16, 2)
+    dsf = _write_dsf_audio(tmp_path, "A/02 b.dsf")
+    assert read_audio_quality(dsf) == (2822400, 1, 2)
+    plain = tmp_path / "c.txt"
+    plain.write_bytes(b"not audio")
+    assert read_audio_quality(plain) is None
+    assert read_audio_quality(tmp_path / "no-such.flac") is None
 
 
 class _StubTags:

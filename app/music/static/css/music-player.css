@@ -127,6 +127,11 @@
 .fp-now small { display: block; font-size: 12px; color: rgba(255,255,255,.62);
                 margin-top: 2px; overflow: hidden; white-space: nowrap;
                 text-overflow: ellipsis; }
+/* 音质行 (1.8.127): 格式·采样率/位深·码率, 小字弱色; .fp-now small 的
+   display:block 会盖掉 hidden, 得显式藏 */
+#fp-quality { font-size: 10px; color: rgba(255,255,255,.42); margin-top: 3px;
+              letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+#fp-quality[hidden] { display: none; }
 #fp-menu-btn { color: #fff; opacity: .9; padding: 12px; flex-shrink: 0; }
 /* 传输三键: 站进度条正上方居中 (用户点名: 在上面, 不是旁边);
    三键一般大 —— 播放键不再大一号 (用户: 中间的播放键过于巨大) */

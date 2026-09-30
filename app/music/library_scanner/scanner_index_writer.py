@@ -111,12 +111,12 @@ def upsert_track(session: Session, track: ScannedTrack,
     """曲目行 (路径幂等: 有则改, 无则插)。"""
     album_id = album_ids[album_directory_of(track.relative_path)]
     values = {
-        "album_id": album_id,
-        "title": track.title, "artist": track.artist,
-        "track_number": track.track_number,
-        "disc_number": track.disc_number,
+        "album_id": album_id, "title": track.title, "artist": track.artist,
+        "track_number": track.track_number, "disc_number": track.disc_number,
         "duration_seconds": track.duration_seconds,
         "file_size": track.file_size, "file_mtime": track.file_mtime,
+        "sample_rate": track.sample_rate,
+        "bit_depth": track.bit_depth, "channels": track.channels,
         "file_format": track.file_format, "script": track.script,
         "lyrics": track.lyrics, "lyrics_synced": track.lyrics_synced,
         "has_artwork": track.has_artwork,

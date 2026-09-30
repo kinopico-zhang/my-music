@@ -12,7 +12,10 @@ from .library_engine import engine
 # 列名 → 列定义
 _COLUMN_MIGRATIONS: Final[dict[str, dict[str, str]]] = {
     "tracks": {"added_at": "REAL NOT NULL DEFAULT 0",
-               "search_keys": "TEXT NOT NULL DEFAULT ''"},
+               "search_keys": "TEXT NOT NULL DEFAULT ''",
+               "sample_rate": "INTEGER NOT NULL DEFAULT 0",
+               "bit_depth": "INTEGER NOT NULL DEFAULT 0",
+               "channels": "INTEGER NOT NULL DEFAULT 0"},
     "albums": {"search_keys": "TEXT NOT NULL DEFAULT ''"},
     "artists": {"search_keys": "TEXT NOT NULL DEFAULT ''"},
     "playlists": {"is_local": "BOOLEAN NOT NULL DEFAULT 0",
