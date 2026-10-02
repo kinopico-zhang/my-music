@@ -67,4 +67,4 @@ def test_music_quality_line_wiring():
         encoding="utf-8")
     assert "#fp-quality" not in player_css
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
-    assert "music-shell-v121" in sw
+    assert "music-shell-v122" in sw
