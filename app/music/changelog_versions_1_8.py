@@ -8,6 +8,11 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.131", date="2026-10-02", items=[
+    ChangelogItem(kind="改进", text="更新日志页也禁了双击和两指捏合放大 ——"
+                                   " 全应用 1.8.6 起就有的禁缩放唯独这页"
+                                   " 漏了网, 现在补齐。"),
+]),
     ChangelogVersion(version="1.8.130", date="2026-10-01", items=[
     ChangelogItem(kind="改进", text="分享出去的链接, 播放页和应用里的长一样了"
                                    " —— 封面左右滑 3D 切歌、传输键站进度条上"

@@ -8,8 +8,8 @@ from app.music import changelog
 def test_versions_wellformed():
     """独立版本线从 1.0.0 起; 每版字段齐全, 文案是用户视角的一句话。"""
     vs = changelog.entries()
-    assert [v.version for v in vs] == ["1.8.130", "1.8.129", "1.8.128",
-                                       "1.8.127",
+    assert [v.version for v in vs] == ["1.8.131", "1.8.130", "1.8.129",
+                                       "1.8.128", "1.8.127",
                                        "1.8.126", "1.8.125",
                                        "1.8.124", "1.8.123",
                                        "1.8.122",
@@ -67,7 +67,7 @@ def test_versions_wellformed():
                                        "1.5.1", "1.5.0", "1.4.1", "1.4.0",
                                        "1.3.0", "1.2.1", "1.2.0", "1.1.0",
                                        "1.0.0"]
-    assert vs[0].date == "2026-10-01"
+    assert vs[0].date == "2026-10-02"
     kinds = {it.kind for it in vs[0].items}
     assert kinds <= {"新增", "改进", "修复"}   # 合并批次 (单功能批次不硬凑别的类)
     for v in vs:
@@ -115,9 +115,20 @@ def test_music_changelog_page_skeleton(auth):
         'href="/music/static/manifest.json"',                  # 独立 PWA 身份
         'const KIND_CLS = { "新增": "add", "改进": "imp", "修复": "fix" };',
         "更新日志 · My Music",
+        'changelog-page.css?v=2',                              # 1.8.131 收口后进新缓存
     ]:
         assert frag in html, f"更新日志页缺少 {frag}"
     assert "lastpage.js" not in html    # 上次停留页是 Tesla 应用的概念
+    # 1.8.131 禁缩放 (全应用 1.8.6 起就有, 这页漏网): meta 掐双击/聚焦放大,
+    # no-zoom.js 是 body 后第一条脚本 (拦 iOS 捏合的非标准 gesture 事件),
+    # 页 css 的 body 收口 pan-y (Chrome/Android 捏合)
+    assert "maximum-scale=1, user-scalable=no" in html
+    body_at = html.index("<body")
+    assert html.index("<script", body_at + 1) == \
+        html.index('<script src="/static/no-zoom.js?v=1"></script>')
+    assert "gesturestart" in auth.get("/static/no-zoom.js?v=1").text
+    assert "touch-action: pan-y;" in \
+        auth.get("/music/static/css/changelog-page.css?v=2").text
 
 
 def test_changelog_link_in_music_menu(auth):

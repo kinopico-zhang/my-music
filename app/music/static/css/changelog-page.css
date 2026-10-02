@@ -22,6 +22,7 @@ body {
   font-size: 14px; line-height: 1.45;
   min-height: 100vh; min-height: 100dvh;
   display: flex; flex-direction: column;
+  touch-action: pan-y;   /* Chrome/Android 捏合收口 (1.8.131; iOS 捏合走 no-zoom.js) */
 }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 /* 触屏双击控件不再触发整页放大 (manipulation 保留平移/捏合, 只去掉双击缩放) */
