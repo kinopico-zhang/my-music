@@ -13,8 +13,8 @@ from ... import database
 from .. import (library_media, library_queries, library_settings,
                 library_shares)
 from ..library_database import get_db
-from ..schemas import (LyricsResponse, ShareCreateRequest, ShareCreated,
-                       SharePageData)
+from ..schemas import (AudioQuality, LyricsResponse, ShareCreateRequest,
+                       ShareCreated, SharePageData)
 from .common import STATIC_DIR, _require_user
 
 # 挂应用根: /share/{token} 本来就在根, /api/shares 用绝对路径搭车
@@ -160,3 +160,21 @@ def music_share_lyrics(token: str, track_id: int,
     if lyrics is None:
         raise HTTPException(404, "曲目不存在")
     return lyrics
+
+
+@router.get("/share/{token}/quality/{track_id}",
+            response_model=AudioQuality)
+def music_share_quality(token: str, track_id: int,
+                        library: Session = Depends(get_db)) -> AudioQuality:
+    """分享页的音质参数 (免登录, 1.8.130): 应用的 /api/tracks/{id}/quality
+    要登录会话, 访客没有 —— 这里同一条取数通道 (索引里有走库, 老行现读
+    文件回填), 只放行这份分享里确实有的。"""
+    scope = library_shares.share_scope(library, token)
+    if scope is None:
+        raise HTTPException(410, "链接不存在或已过期")
+    if track_id not in scope.track_ids:
+        raise HTTPException(404, "这首不在这份分享里")
+    quality = library_queries.audio_quality_for_track(library, track_id)
+    if quality is None:
+        raise HTTPException(404, "曲目不存在")
+    return quality

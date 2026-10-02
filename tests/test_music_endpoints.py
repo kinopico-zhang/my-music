@@ -106,6 +106,36 @@ def test_music_track_quality_endpoint(auth, tmp_path):
     assert auth.get("/music/api/tracks/99999/quality").status_code == 404
 
 
+def test_music_share_quality_endpoint(auth, tmp_path):
+    """分享页取质口 (1.8.130): 应用的 /api/tracks/{id}/quality 要登录,
+    访客没有会话 —— /share/{token}/quality/{id} 免登录走同一条取数通道
+    (走库/现读回填), 只放行这份分享里确实有的; 死链 410。"""
+    _make_library(tmp_path / "music-library")
+    assert auth.post("/music/api/rescan").json() == {"started": True}
+    _wait_scan_done(auth)
+    with session_factory()() as session:
+        track_id = session.execute(select(Track.id).where(
+            Track.file_path.endswith("01 曲A.flac"))).scalar_one()
+        other_id = session.execute(select(Track.id).where(
+            Track.id != track_id).order_by(Track.id)).scalars().first()
+    made = auth.post("/music/api/shares",
+                     json={"kind": "track", "id": track_id}).json()
+
+    anon = TestClient(m.app)          # 不带 cookie: 分享面免登录
+    data = anon.get(f"/music/share/{made['token']}/quality/{track_id}").json()
+    assert data["file_format"] == "flac"
+    assert (data["sample_rate"], data["bit_depth"], data["channels"]) \
+        == (44100, 16, 2)
+    assert data["bitrate"] > 0
+    # 库里另一首不在这份分享里 / 死链 / 匿名问应用的口 (所以才有这条公开口)
+    assert anon.get(
+        f"/music/share/{made['token']}/quality/{other_id}").status_code == 404
+    assert anon.get(
+        f"/music/share/{'0' * 32}/quality/{track_id}").status_code == 410
+    assert anon.get(
+        f"/music/api/tracks/{track_id}/quality").status_code == 401
+
+
 def test_music_service_worker_endpoint(client):
     """SW 脚本: 无需登录 200 (SW 更新检查不带 cookie), JS 类型, 可缓存校验。"""
     response = client.get("/music/sw.js")

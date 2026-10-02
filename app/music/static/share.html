@@ -10,7 +10,13 @@
 <!--og-->
 <title>分享 · My Music</title>
 <link rel="stylesheet" href="/music/static/css/share-viewer-page.css?v=5">
-<link rel="stylesheet" href="/music/static/css/share-viewer-player.css?v=10">
+<link rel="stylesheet" href="/music/static/css/share-viewer-player.css?v=11">
+<!-- 1.8.130 全屏播放页样式直接用应用那份 (用户点名「样式和普通播放页面
+     一样」): 不再自己 fork 一整份, 应用改版分享页自动跟上; 分享侧小补丁
+     (迷你条/氛围底占位/队列行封面条/toast) 在 share-viewer-player.css -->
+<link rel="stylesheet" href="/music/static/css/music-player.css?v=26">
+<link rel="stylesheet" href="/music/static/css/music-player-quality.css?v=1">
+<link rel="stylesheet" href="/music/static/css/music-queue.css?v=6">
 </head>
 <body>
 
@@ -68,56 +74,73 @@
   </div>
 </div>
 
-<div id="fp" hidden>
+<!-- 1.8.130 全屏播放页 (用户点名「样式和普通播放页面一样, 3d切换封面,
+     按钮也跟普通播放界面保持一致」): 结构成应用 music.html #full-player
+     同款 —— 封面舞台三张卡 (上一首/当前/下一首, 左右滑跟手切歌, 摆姿的
+     JS 整用 music-player-art-stage, 取址在 share-viewer-stage 换成走
+     分享 token 的公开路由), 传输三键站进度条上方, 底排 循环/歌词/队列
+     三键 (三态循环: 列表→单曲→随机); 待播队列翻开占封面区 (分享清单即
+     队列, 点行跳播)。封面下的音质行也有 (music-player-quality 整用,
+     取址同样在 share-viewer-stage 改写走 /share/{token}/quality 公开
+     路由 —— 应用的取数口要登录会话, 访客没有)。没带的: 菜单键 (动作
+     都要登录) / 音量条 (键鼠端专属)。 -->
+<div id="full-player" hidden>
   <div class="fp-bg ph" id="fp-bg" aria-hidden="true"><img id="fp-bg-img" alt=""></div>
   <div class="fp-sheet">
     <button type="button" id="fp-grab" aria-label="收起播放页"><span></span></button>
     <div class="fp-body">
-      <div id="fp-art-wrap"><img id="fp-art" alt=""></div>
+      <div id="fp-art-wrap"><img id="fp-art-prev" class="art-card" alt="">
+        <img id="fp-art-next" class="art-card" alt="">
+        <img id="fp-art" class="art-card" alt=""><small id="fp-quality-prev" class="art-quality" hidden></small><small id="fp-quality-next" class="art-quality" hidden></small><small id="fp-quality" class="art-quality" hidden></small></div>
       <div id="fp-lyrics" hidden></div>
+      <div id="fp-queue" hidden>
+        <div class="fq-head">
+          <div class="fq-head-txt"><b>继续播放</b><small id="fq-count"></small></div>
+        </div>
+        <div id="queue-list"></div>
+      </div>
+      <button type="button" id="lyrics-resume" hidden>回到当前句</button>
     </div>
     <div class="fp-meta">
-      <img id="fp-artist-art" alt="" hidden>
       <div class="fp-now"><b id="fp-title"></b><small id="fp-artist"></small></div>
     </div>
-    <!-- 1.8.37 中排键 (用户点名「歌词按钮放在标题和进度条中间, 旁边还有
-         随机播放和循环播放」): 歌词键从标题行挪下来独占一排, 随机/循环
-         与 app 播放队列头同款; 循环三态 关→列表→单曲 (单曲时图标带 "1",
-         .one 组切换) -->
-    <div class="fp-mid">
-      <button type="button" id="fp-lyrics-btn" aria-label="歌词" disabled>
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.049 7.801L11.049 13.662Q11.406 15.378 10.242 16.689Q9.078 18 7.332 17.848Q7.244 17.9 7.146 17.87Q7.049 17.84 7.005 17.748Q6.9 17.71 6.858 17.608Q6.815 17.505 6.863 17.404L6.863 15.73Q6.83 15.576 6.931 15.454Q7.032 15.333 7.189 15.336Q7.857 15.352 8.276 14.832Q8.695 14.311 8.537 13.662L8.537 12.825L6.026 12.825Q5.286 12.952 4.755 12.421Q4.224 11.89 4.351 11.15L4.351 7.801Q4.224 7.062 4.755 6.531Q5.286 6 6.026 6.127L9.375 6.127Q10.114 6 10.645 6.531Q11.176 7.062 11.049 7.801L11.049 7.801M17.747 6.127L14.398 6.127Q13.658 6 13.127 6.531Q12.597 7.062 12.723 7.801L12.723 11.15Q12.597 11.89 13.127 12.421Q13.658 12.952 14.398 12.825L16.91 12.825L16.91 13.662Q17.068 14.311 16.649 14.832Q16.23 15.352 15.562 15.336Q15.399 15.335 15.298 15.462Q15.197 15.589 15.235 15.747L15.235 17.421Q15.194 17.517 15.236 17.611Q15.279 17.706 15.377 17.739Q15.421 17.832 15.518 17.862Q15.616 17.892 15.704 17.84Q17.448 17.992 18.612 16.684Q19.776 15.376 19.421 13.662L19.421 7.801Q19.548 7.062 19.017 6.531Q18.487 6 17.747 6.127L17.747 6.127" fill="currentColor"/></svg>
-      </button>
-      <button type="button" id="fp-shuffle" aria-label="随机播放">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M16.5 3q0.31 0 0.533 0.223l3 3q0.217 0.217 0.217 0.527q0 0.316-0.217 0.533l-3 3q-0.217 0.217-0.533 0.217q-0.31 0-0.53-0.22t-0.22-0.53q0-0.299 0.217-0.527l1.723-1.723l-1.19 0q-1.055 0-1.981 0.46t-1.552 1.257q-0.967 1.231-0.967 2.783q0 1.564-0.75 2.906q-0.398 0.721-0.967 1.295q-0.832 0.85-1.94 1.325t-2.344 0.475l-1.5 0q-0.31 0-0.53-0.22t-0.22-0.53t0.22-0.53t0.53-0.22l1.5 0q1.061 0 1.984-0.457t1.55-1.254q0.967-1.231 0.967-2.789q0-1.564 0.75-2.906q0.404-0.727 0.967-1.289q0.832-0.85 1.94-1.327t2.344-0.478l1.19 0l-1.723-1.717q-0.217-0.229-0.217-0.533q0-0.31 0.22-0.53t0.53-0.22zM16.5 13.5q0.31 0 0.533 0.223l3 3q0.217 0.217 0.217 0.533q0 0.31-0.217 0.527l-3 3q-0.217 0.217-0.533 0.217q-0.31 0-0.53-0.217t-0.22-0.527q0-0.305 0.217-0.533l1.723-1.723l-1.19 0q-1.236 0-2.344-0.475t-1.94-1.325q0.451-0.662 0.75-1.412q0.627 0.796 1.55 1.254t1.984 0.457l1.19 0l-1.723-1.717q-0.217-0.229-0.217-0.533q0-0.31 0.22-0.53t0.53-0.22zM4.5 6l1.5 0q1.236 0 2.344 0.478t1.94 1.327q-0.457 0.673-0.75 1.412q-0.627-0.796-1.552-1.257t-1.981-0.46l-1.5 0q-0.31 0-0.53-0.22t-0.22-0.53t0.22-0.53t0.53-0.22z" fill="currentColor"/></svg>
-      </button>
-      <button type="button" id="fp-repeat" aria-label="循环模式">
-        <svg viewBox="0 0 1024 1024" width="18" height="18" aria-hidden="true"><path d="M640 810.666667H341.333333C187.733333 810.666667 64 686.933333 64 533.333333s123.733333-277.333333 277.333333-277.333333h597.333334c12.8 0 21.333333 8.533333 21.333333 21.333333s-8.533333 21.333333-21.333333 21.333334H341.333333C211.2 298.666667 106.666667 403.2 106.666667 533.333333s104.533333 234.666667 234.666666 234.666667h298.666667c85.333333 0 164.266667-38.4 217.6-104.533333 19.2-25.6 36.266667-53.333333 44.8-83.2 4.266667-14.933333 8.533333-29.866667 10.666667-42.666667 2.133333-10.666667 12.8-19.2 23.466666-17.066667 10.666667 2.133333 19.2 12.8 17.066667 23.466667-2.133333 17.066667-6.4 34.133333-12.8 51.2-12.8 34.133333-29.866667 68.266667-53.333333 96-57.6 74.666667-149.333333 119.466667-247.466667 119.466667z" fill="currentColor"/><path d="M810.666667 426.666667c-6.4 0-10.666667-2.133333-14.933334-6.4-8.533333-8.533333-8.533333-21.333333 0-29.866667l113.066667-113.066667-113.066667-113.066666c-8.533333-8.533333-8.533333-21.333333 0-29.866667s21.333333-8.533333 29.866667 0l128 128c8.533333 8.533333 8.533333 21.333333 0 29.866667l-128 128c-4.266667 4.266667-8.533333 6.4-14.933333 6.4z" fill="currentColor"/><g class="one"><path d="M512 682.666667c-12.8 0-21.333333-8.533333-21.333333-21.333334V405.333333c0-12.8 8.533333-21.333333 21.333333-21.333333s21.333333 8.533333 21.333333 21.333333v256c0 12.8-8.533333 21.333333-21.333333 21.333334z" fill="currentColor"/><path d="M416 522.666667c-6.4 0-10.666667-2.133333-14.933333-6.4-8.533333-8.533333-8.533333-21.333333 0-29.866667l96-96c8.533333-8.533333 21.333333-8.533333 29.866666 0s8.533333 21.333333 0 29.866667l-96 96c-4.266667 4.266667-8.533333 6.4-14.933333 6.4z" fill="currentColor"/></g></svg>
-      </button>
+    <div class="fp-controls">
+      <button type="button" id="fp-prev" aria-label="上一首"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M21.981 6.098L14.6 10.949Q13 12 14.6 13.051L21.981 17.902Q23.5 18.9 23.5 17.082L23.5 6.918Q23.5 5.1 21.981 6.098M9.481 6.098L2.1 10.949Q0.5 12 2.1 13.051L9.481 17.902Q11 18.9 11 17.082L11 6.918Q11 5.1 9.481 6.098" fill="currentColor"/></svg></button>
+      <button type="button" id="fp-play" aria-label="播放/暂停"></button>
+      <button type="button" id="fp-next" aria-label="下一首"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M2.019 6.098L9.4 10.949Q11 12 9.4 13.051L2.019 17.902Q0.5 18.9 0.5 17.082L0.5 6.918Q0.5 5.1 2.019 6.098zM14.519 6.098L21.9 10.949Q23.5 12 21.9 13.051L14.519 17.902Q13 18.9 13 17.082L13 6.918Q13 5.1 14.519 6.098z" fill="currentColor"/></svg></button>
     </div>
     <div class="fp-transport">
-      <div class="fp-scrub-row">
-        <span class="fp-time" id="fp-time-cur">-0:00</span>
-        <div class="fp-scrub"><input id="fp-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="进度"></div>
-        <span class="fp-time" id="fp-time-total">-0:00</span>
-      </div>
-      <div class="fp-keys">
-        <button type="button" id="fp-prev" aria-label="上一首"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M21.981 6.098L14.6 10.949Q13 12 14.6 13.051L21.981 17.902Q23.5 18.9 23.5 17.082L23.5 6.918Q23.5 5.1 21.981 6.098M9.481 6.098L2.1 10.949Q0.5 12 2.1 13.051L9.481 17.902Q11 18.9 11 17.082L11 6.918Q11 5.1 9.481 6.098" fill="currentColor"/></svg></button>
-        <button type="button" id="fp-play" aria-label="播放/暂停"></button>
-        <button type="button" id="fp-next" aria-label="下一首"><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M2.019 6.098L9.4 10.949Q11 12 9.4 13.051L2.019 17.902Q0.5 18.9 0.5 17.082L0.5 6.918Q0.5 5.1 2.019 6.098zM14.519 6.098L21.9 10.949Q23.5 12 21.9 13.051L14.519 17.902Q13 18.9 13 17.082L13 6.918Q13 5.1 14.519 6.098z" fill="currentColor"/></svg></button>
-      </div>
+      <span class="fp-time" id="fp-time-cur">-0:00</span>
+      <div class="fp-scrub"><input id="fp-scrub" type="range" min="0" max="1000" step="1" value="0" aria-label="进度"></div>
+      <span class="fp-time" id="fp-time-total">-0:00</span>
+    </div>
+    <div class="fp-actions">
+      <button type="button" id="fp-mode-btn" aria-label="循环模式"><svg viewBox="-1.72 -154.37 1329.4 1329.4" width="24" height="24" aria-hidden="true"><path d="M73.44 667.21a44.45 44.45 0 0 1 -12.12 1.64c-20.72 0 -38.18 -13.89 -43.62 -32.86c-9.37 -32.57 -14.71 -69.64 -14.71 -107.94v-0.42c0 -107.44 41.81 -208.46 117.8 -284.45C193.18 170.41 293.39 125.38 404.12 125.38h423.25V44.7c0 -25.71 17.68 -35.37 39.37 -21.36l194.36 125.48c21.64 14.01 21.41 36.56 -0.51 50.11L867.2 318.72c-21.92 13.61 -39.9 3.68 -39.9 -22.15V216.23h-422.04c-172.1 0.19 -311.55 139.75 -311.55 311.87c0 29.62 4.13 58.28 11.84 85.43c0.51 1.43 1.11 5.6 1.11 9.91a45.38 45.38 0 0 1 -32.91 43.63l-0.32 0.14zm1044.89 -282.16q14.66 52.96 14.63 107.91c0 107.4 -41.81 208.42 -117.8 284.42c-72.4 72.77 -172.6 117.8 -283.33 117.8H308.59v80.79c0 25.71 -17.68 35.37 -39.38 21.42l-194.3 -125.55c-21.64 -14.01 -21.47 -36.56 0.45 -50.11l193.45 -119.78c21.87 -13.62 39.83 -3.68 39.83 22.14v80.34h422.05c172.09 -0.18 311.54 -139.75 311.54 -311.87c0 -29.62 -4.12 -58.28 -11.84 -85.42c-0.36 -1.17 -0.88 -5.04 -0.88 -9.03a45.37 45.37 0 0 1 88.73 -13.38l0.09 0.32z" fill="currentColor"/></svg></button>
+      <button type="button" id="fp-lyrics-btn" aria-label="歌词" disabled><svg viewBox="0 0 24 24" width="36" height="36" aria-hidden="true"><path d="M11.049 7.801L11.049 13.662Q11.406 15.378 10.242 16.689Q9.078 18 7.332 17.848Q7.244 17.9 7.146 17.87Q7.049 17.84 7.005 17.748Q6.9 17.71 6.858 17.608Q6.815 17.505 6.863 17.404L6.863 15.73Q6.83 15.576 6.931 15.454Q7.032 15.333 7.189 15.336Q7.857 15.352 8.276 14.832Q8.695 14.311 8.537 13.662L8.537 12.825L6.026 12.825Q5.286 12.952 4.755 12.421Q4.224 11.89 4.351 11.15L4.351 7.801Q4.224 7.062 4.755 6.531Q5.286 6 6.026 6.127L9.375 6.127Q10.114 6 10.645 6.531Q11.176 7.062 11.049 7.801L11.049 7.801M17.747 6.127L14.398 6.127Q13.658 6 13.127 6.531Q12.597 7.062 12.723 7.801L12.723 11.15Q12.597 11.89 13.127 12.421Q13.658 12.952 14.398 12.825L16.91 12.825L16.91 13.662Q17.068 14.311 16.649 14.832Q16.23 15.352 15.562 15.336Q15.399 15.335 15.298 15.462Q15.197 15.589 15.235 15.747L15.235 17.421Q15.194 17.517 15.236 17.611Q15.279 17.706 15.377 17.739Q15.421 17.832 15.518 17.862Q15.616 17.892 15.704 17.84Q17.448 17.992 18.612 16.684Q19.776 15.376 19.421 13.662L19.421 7.801Q19.548 7.062 19.017 6.531Q18.487 6 17.747 6.127L17.747 6.127" fill="currentColor"/></svg></button>
+      <button type="button" id="fp-queue-btn" aria-label="播放队列"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M3.0005 5.016H17.9995Q18.984 5.016 18.984 6.0005Q18.984 6.985 17.9995 6.985H3.0005Q2.016 6.985 2.016 6.0005Q2.016 5.016 3.0005 5.016zM3.024 9H17.976Q18.984 9 18.984 10.008Q18.984 11.016 17.976 11.016H3.024Q2.016 11.016 2.016 10.008Q2.016 9 3.024 9zM3.0315 12.969H13.9845Q15 12.969 15 13.9845Q15 15 13.9845 15H3.0315Q2.016 15 2.016 13.9845Q2.016 12.969 3.0315 12.969zM17.801 13.445L21.185 15.499Q21.984 15.984 21.183 16.467L17.802 18.509Q17.016 18.984 17.016 18.065L17.016 13.887Q17.016 12.969 17.801 13.445z" fill="currentColor"/></svg></button>
     </div>
     <div class="fp-pad"></div>
   </div>
 </div>
 
+<div id="toast" hidden></div>
+
 <audio id="audio" playsinline></audio>
 
 <script src="/music/static/js/lyrics-parser.js?v=1"></script>
-<script src="/music/static/js/share/share-viewer-data.js?v=5"></script>
-<script src="/music/static/js/share/share-viewer-playback.js?v=7"></script>
-<script src="/music/static/js/share/share-viewer-fullpage.js?v=4"></script>
-<script src="/music/static/js/share/share-viewer-lyrics.js?v=9"></script>
-<script src="/music/static/js/share/share-viewer-events.js?v=6"></script>
+<!-- 队列模型/通用件/舞台摆姿/进度条命中垫 全用应用那份 (纯逻辑, 页面
+     无关): 排在最前 —— share-viewer-data 起要使它们的 $ / 图标常量 -->
+<script src="/music/static/js/player-queue.js?v=4"></script>
+<script src="/music/static/js/music-common.js?v=23"></script>
+<script src="/music/static/js/music-player-art-stage.js?v=9"></script>
+<script src="/music/static/js/music-player-quality.js?v=2"></script>
+<script src="/music/static/js/music-player-slider.js?v=1"></script>
+<script src="/music/static/js/share/share-viewer-data.js?v=6"></script>
+<script src="/music/static/js/share/share-viewer-stage.js?v=2"></script>
+<script src="/music/static/js/share/share-viewer-playback.js?v=9"></script>
+<script src="/music/static/js/share/share-viewer-queue.js?v=1"></script>
+<script src="/music/static/js/share/share-viewer-fullpage.js?v=5"></script>
+<script src="/music/static/js/share/share-viewer-lyrics.js?v=10"></script>
+<script src="/music/static/js/share/share-viewer-events.js?v=7"></script>
 </body>
 </html>

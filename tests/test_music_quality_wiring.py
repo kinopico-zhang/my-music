@@ -1,5 +1,6 @@
 """My Music 播放页音质行接线测试 (1.8.127 增; 1.8.128 封面正下方居中; 1.8.129
-三条跟封面 3D 翻面进出): 每张卡一条 格式·采样率/位深·码率。
+三条跟封面 3D 翻面进出; 1.8.130 抽 qualityURL 全局供分享页覆盖取址): 每张卡
+一条 格式·采样率/位深·码率。
 
 后端 /api/tracks/{id}/quality 的扫描入库/按需回填路径在
 test_music_endpoints 与 test_music_tags; 这里只钉页面接线。"""
@@ -16,7 +17,7 @@ def test_music_quality_line_wiring():
             '<small id="fp-quality" class="art-quality" hidden></small>') in html
     assert ('<div class="fp-now"><b id="fp-title"></b>'
             '<small id="fp-artist"></small></div>') in html
-    assert 'js/music-player-quality.js?v=1"' in html   # 1.8.129 拆独立模块
+    assert 'js/music-player-quality.js?v=2"' in html   # 1.8.129 拆独立模块; 1.8.130 抽 qualityURL
     assert 'css/music-player-quality.css?v=1"' in html
     assert 'css/music-player.css?v=26"' in html        # 1.8.129 撤旧单条规则
     assert 'js/music-player-chrome.js?v=10"' in html   # 1.8.129 挪出音质逻辑
@@ -24,9 +25,11 @@ def test_music_quality_line_wiring():
         encoding="utf-8")
     for frag in ["function fillStageQuality", "function poseQualityStrips",
                  "function handoffQualityStrip", "function clearQualityHandoff",
-                 "function fillStrip", "function qualityText",
-                 "function formatQuality", "const qualityCache = new Map()",
+                 "function qualityURL", "function fillStrip",
+                 "function qualityText", "function formatQuality",
+                 "const qualityCache = new Map()",
                  "`/music/api/tracks/${track.track_id}/quality`",
+                 "await fetchJSON(qualityURL(track))",
                  "quality.sample_rate >= 1000000", "kbps", "单声道",
                  "line.classList.toggle(\"off\", !track)",
                  "if (seq !== qualityFetchSeq) return;"]:
@@ -64,4 +67,4 @@ def test_music_quality_line_wiring():
         encoding="utf-8")
     assert "#fp-quality" not in player_css
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
-    assert "music-shell-v119" in sw
+    assert "music-shell-v121" in sw
