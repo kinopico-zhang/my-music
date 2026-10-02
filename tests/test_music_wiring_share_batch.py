@@ -28,16 +28,16 @@ def test_music_186_share_batch():
     assert '$("#hero-play").addEventListener("click", () => {' in share_all
     assert "togglePlay();\n  openFullPlayer();" in share_all
     # 封面修复: #fp-art 本尊是 <img>, 直接挂 src (app 同款), 不再走
-    # 给容器 div 用的 setArt
-    assert '$("#fp-art").src = artURL(track);' in share_all
-    # 1.8.19 切歌封面方向滑入 (用户问「滑动封面切歌怎么没有动画」):
-    # 下一首从右进/上一首从左进, 顺着滑的方向 —— 滑封面/上下曲键/点行通吃
-    assert 'artWrap.classList.add(pos > prevPos ? "art-in-next" : "art-in-prev");' \
-        in share_all
-    assert "@keyframes fp-art-next { from { transform: translateX(52px); opacity: 0; } }" \
-        in share
-    assert "@keyframes fp-art-prev { from { transform: translateX(-52px); opacity: 0; } }" \
-        in share
+    # 给容器 div 用的 setArt; 1.8.130 起裂图退应用的占位图, 邻卡归舞台
+    assert 'const art = $("#fp-art");' in share_all
+    assert "art.src = artURL(track);" in share_all
+    # 1.8.19 切歌封面方向滑入 → 1.8.130 退役 (用户点名「3d切换封面」):
+    # 切歌动画整块归 3D 舞台 (起跳位/交班溶解在 music-player-art-stage),
+    # 平面 keyframes 那套撤净
+    assert "art-in-next" not in share_all
+    assert "art-in-prev" not in share_all
+    assert "@keyframes fp-art-next" not in share
+    assert "@keyframes fp-art-prev" not in share
     # 1.8.20 改回原样 (用户点名「歌词页不要封面缩略图」, app 同款): 歌词
     # 页罩满封面区, 封面整块藏掉 (缩略图那套 #fp.lyrics CSS 撤净)
     assert '$("#fp-art-wrap").hidden = open;' in share_all

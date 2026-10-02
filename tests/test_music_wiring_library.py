@@ -5,14 +5,17 @@ import re
 from pathlib import Path
 
 from tests.music_static_files import (MUSIC_STATIC, music_browser_js,
-                                      music_page_shell, share_page_js,
-                                      share_page_shell)
+                                      music_page_shell, page_script_paths,
+                                      share_page_js, share_page_shell)
 
 
 def test_music_share_link_wiring():
     """分享改链接制 (1.7.0, 用户点名"单独生成一个 uuid 的 url, 有效期 1 天,
     不用鉴权"): 开 24 小时免登录链接, 系统分享面板优先、复制回落;
-    公开页 share.html 自包含 (不引应用 JS —— 访客没有会话)。"""
+    公开页 share.html 半自包含 —— 页面逻辑全在自己的 js/share/ 里, 只借
+    应用的纯逻辑件 (无会话依赖): 1.8.130 (用户点名「样式和普通播放界面
+    保持一致」) 起播放器样式与舞台直接复用应用那份, 不再 fork;
+    播放器接线细节在 test_music_share_player_wiring。"""
     js = music_browser_js()
     share = share_page_shell()
     share_all = share + share_page_js()   # markup+css+脚本, 拆分前的整页口径
@@ -33,77 +36,27 @@ def test_music_share_link_wiring():
     html = music_page_shell()
     assert html.count("M769.714 589.547c-51.754 0-97.702 24.851-126.571 63.269") == 1
     assert "M12 3.5v11M" not in html
-    # 公开页: 拿 uuid 换数据 → 流地址播放, 失效态/滑进度/iOS 兜底都在
+    # 公开页: 拿 uuid 换数据 → 流地址播放, 失效态/iOS 兜底都在
     for frag in ["/music/share/${token}/api",
                  "/music/share/${token}/stream/${track.track_id}",
                  "链接不存在或已过期", "playsinline",
-                 "fmtDateTime", "playQueue", "togglePlay"]:
+                 "fmtDateTime", "togglePlay"]:
         assert frag in share_all, f"share.html 缺 {frag}"
-    assert "js/music-" not in share    # 自包含, 不引应用模块 (只带自己的 share 脚本)
+    # 半自包含: 借的应用脚本只有这六枚纯逻辑件 (会话无关, 页面无副作用),
+    # 其余全在自己的 js/share/ 里 —— 新借一枚要在这里挂上号
+    allowed = {"lyrics-parser.js", "player-queue.js", "music-common.js",
+               "music-player-art-stage.js", "music-player-quality.js",
+               "music-player-slider.js"}
+    for path in page_script_paths("share.html"):
+        assert path.parent.name == "share" or path.name in allowed, \
+            f"share 引了未批准的应用模块 {path.name}"
     # 整页不画滚动条 (与应用同款: 星规则 + 伪元素)
     assert "scrollbar-width: none;" in share
     assert "::-webkit-scrollbar { display: none; }" in share
-    # 全屏播放页 1.8.5 与 app 一致 (用户点名): 大封面 + 标题/作者·专辑行;
-    # 1.8.17 播放区改版 (用户点的布局): 传输区两行 —— 细进度条 (无旋钮,
-    # 填充走 --fill) 一行, 上一首/播放/下一首三键站进度条上一行;
-    # 标题行旁边的键改成歌词键 (歌词只走它, 封面点开不再切歌词), 歌词
-    # 视图罩住封面区 (app 同款距离模糊/当前句放大), 歌词解析借公开的
-    # lyrics-parser.js
-    for frag in ['id="fp"', 'id="fp-play"', 'id="fp-prev"', 'id="fp-next"',
-                 'id="fp-lyrics"', 'id="fp-lyrics-btn"', 'id="fp-scrub"',
-                 'id="fp-grab"', 'id="fp-bg"', "openFullPlayer",
-                 "closeFullPlayer", "bindPullClose", "updateMediaSession",
-                 "/music/share/${token}/lyrics/${track.track_id}",
-                 'src="/music/static/js/lyrics-parser.js',
-                 ".lyrics-line.upnext", ".lyrics-line.active"]:
-        assert frag in share_all, f"share.html 缺 {frag}"
-    # 1.8.17 结构: 进度行 (.fp-scrub-row) 在上, 三键行 (.fp-keys) 在下
-    assert '<div class="fp-transport">' in share_all
-    assert share_all.index('<div class="fp-scrub-row">') < share_all.index('<div class="fp-keys">')
-    assert "fp-controls" not in share_all      # 旧键行 (键在进度条旁) 撤了
-    # 1.8.37 中排键 (用户点名): 标题和进度条之间 歌词/随机/循环 三键并排;
-    # 循环三态 关→列表→单曲 (单曲带 "1" 角标), 播完单曲重播本首
-    assert '<div class="fp-mid">' in share_all
-    assert share_all.index('id="fp-lyrics-btn"') < share_all.index('<div class="fp-transport">')
-    for frag in ['id="fp-shuffle"', 'id="fp-repeat"', "function toggleShuffle",
-                 "function cycleRepeat",
-                 '$("#fp-repeat").classList.toggle("one", repeatMode === 2);',
-                 "if (repeatMode === 2) { playQueue(queuePos); return; }"]:
-        assert frag in share_all, f"分享页中排键缺 {frag}"
-    # 作者行并专辑名 (「下面是标题和作者专辑名称」)
-    assert '[track.artist, track.album_title].filter(Boolean).join(" | ")' in share_all
-    # 歌词视图开关 (1.8.17 只走标题行的歌词键): 开着封面让位, 键点亮;
-    # 视图关着时没词键灰掉; 开着保持可点好关回封面
-    assert "lyricsViewOpen" in share_all
-    assert "function toggleLyricsView" in share_all
-    assert '$("#fp-art-wrap").hidden = open;' in share_all
-    assert 'lyricsButton.disabled = !lyrics && !lyricsViewOpen;' in share_all
-    assert 'lyricsButton.classList.toggle("on", open);' in share_all
-    # 切歌后视图跟上一首保持一致 (1.8.17 用户点名): 开合只听用户的态,
-    # 不随有没有词翻面 —— 没词不强关, 空态垫着 (还在取词时空白, 不闪
-    # 「没有歌词」的错话)
-    assert "const open = lyricsViewOpen;" in share_all
-    assert "lyricsSettled" in share_all
-    assert '<div class="lyrics-empty">这首歌没有歌词</div>' in share_all
-    # 封面左右滑切歌 (左滑下一首, 右滑上一首): 横向显著位移才认
-    # (竖向下拉归收起, 互不抢)
-    assert "bindCoverSwipe" in share_all
-    assert "if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {" in share_all
-    # 队列两头切歌键灰掉点不动 (1.8.17 用户点名); 1.8.37 起循环/随机
-    # 开着时两头放行 (随机永远有下一首, 循环队尾回绕)
-    assert '$("#fp-prev").disabled = repeatMode === 0 && queuePos <= 0;' in share_all
-    assert '$("#fp-next").disabled = repeatMode === 0 && !shuffleOn' in share_all
-    assert ".fp-keys > button:disabled { opacity: .3; pointer-events: none; }" in share_all
     # 播放列表行歌名/艺人分两行 (1.8.18 用户点名): 行内 span 挤一行不吃省略号, block 化才各行其道
     assert ".row .t { display: block;" in share_all \
         and ".row .a { display: block;" in share_all
     assert "with-lyrics" not in share_all   # 常驻封面下面那套 (1.8.2) 撤了
-    # 下拉收起扩到整页: 传输区/歌词键照常点, 词滚到中间先归滚词
-    assert 'const sheet = $("#fp .fp-sheet");' in share_all
-    assert 'if (event.target.closest("button, input")) return;' in share_all
-    assert 'if (scroller && scroller.scrollTop > 0) return;' in share_all
-    # 细进度条填充: 播/拖都更新 --fill
-    assert "function setScrubFill" in share_all
     # 微信卡片: <head> 留 og 占位注释, 服务端换掉 (占位符漏替换卡片就漏空)
     assert "<!--og-->" in share
     share_routes = (Path(__file__).parent.parent / "app" / "music"

@@ -64,11 +64,13 @@ def test_play_endpoint_accepts_played_at(auth):
     with session_factory()() as session:
         times = session.execute(select(PlayEvent.track_id, PlayEvent.played_at)
                                 ).all()
-        assert dict(times)[2] == yesterday        # 真实时刻原样落流水
+        played = {r[0]: r[1] for r in times}   # Row 不是键值对 (mypy 不认 dict(Row))
+        assert played[2] == yesterday          # 真实时刻原样落流水
         user_uuid = session.execute(
             select(PlayEvent.user_uuid)).scalars().first()
+        assert user_uuid is not None           # 刚落了两笔流水, 记账人必有
         top = library_queries.top_plays(session, user_uuid,
-                                       since=time.time() - 3600)
+                                        since=time.time() - 3600)
     assert [t.title for t in top] == ["曲A"]      # 昨天那笔不进近一小时榜
 
 

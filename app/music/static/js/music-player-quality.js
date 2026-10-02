@@ -30,11 +30,16 @@ function formatQuality(quality) {
   return parts.join(" · ");
 }
 
+/** 取数地址: 应用侧默认走会话接口; 分享页 (share-viewer-stage) 改写走
+ *  token 公开路由 (stageCardSrc 同款覆盖法, 只写不读全靠运行时按名调用)。 */
+function qualityURL(track) {
+  return `/music/api/tracks/${track.track_id}/quality`;
+}
+
 /** 取一首的文案: 取成功才进缓存, 失败回空串不缓存 (下次铺场再试, 不弹错)。 */
 async function qualityText(track) {
   try {
-    const text = formatQuality(await fetchJSON(
-      `/music/api/tracks/${track.track_id}/quality`));
+    const text = formatQuality(await fetchJSON(qualityURL(track)));
     qualityCache.set(track.track_id, text);
     return text;
   } catch (_error) {

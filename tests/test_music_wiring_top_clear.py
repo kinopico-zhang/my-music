@@ -29,7 +29,9 @@ def test_music_top_clear_boundary():
     # 固定控件挨个验钉
     assert "padding: var(--top-clear) 16px 0;" in css["music-search"]
     assert "margin-top: var(--top-clear);" in css["music-player"]
-    assert "padding: var(--top-clear) 0 0;" in css["share-viewer-player"]
+    # 分享页全屏播放页 1.8.130 起样式直引 music-player.css (上一行那钉
+    # 连分享页一起管), share-viewer-player.css 不再有播放页规则 —— 抓手
+    # 的验钉挪去 test_music_share_player_wiring (钉 css 引用)
     # 视口体检红框 1.8.43 撤了 (用户点名), HUD 不再是钉顶控件 —— 它在
     # --top-clear 之下的样式挂靠一并消失, 这里不再有它的验钉
     # 长按菜单的竖向下限: 隐形量尺钉在边界上, JS 读 offsetTop 当下限

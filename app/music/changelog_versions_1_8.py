@@ -8,6 +8,13 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.130", date="2026-10-01", items=[
+    ChangelogItem(kind="改进", text="分享出去的链接, 播放页和应用里的长一样了"
+                                   " —— 封面左右滑 3D 切歌、传输键站进度条上"
+                                   "方、底排 循环/歌词/队列 三键同款, 封面下"
+                                   "的音质行也有, 还能翻开待播队列点歌跳播、"
+                                   "滚词时点「回到当前句」。"),
+]),
     ChangelogVersion(version="1.8.129", date="2026-09-30", items=[
     ChangelogItem(kind="改进", text="封面下的音质行跟着封面一起 3D 翻面进"
                                    "出 —— 左右滑切歌时三行小字各随各的封面"

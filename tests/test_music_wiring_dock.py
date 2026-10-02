@@ -162,8 +162,8 @@ def test_music_top_fallback_removed():
     # 1.8.45: +hero-bar-actions 收缩顶栏动作条; 1.8.46: +hero-bar-tap
     # 被吞点按补发; 1.8.47: +share-links 分享链接拆分; 1.8.59:
     # +player-prefetch 下一曲预取拆分; 1.8.60: +player-art-stage 3D 封面;
-    # 1.8.76: +player-sources/+player-slider/+downloads-pane 拆分;
-    # 1.8.77: +autocache 自动缓存; 1.8.100: +handoff 接力; 1.8.103: +dock-volume 音量气泡; 1.8.105: +pip 画中画小窗; 1.8.129: +player-quality 音质条
+    # 1.8.76: +player-sources/+player-slider/+downloads-pane 拆分; 1.8.77: +autocache 自动缓存;
+    # 1.8.100: +handoff 接力; 1.8.103: +dock-volume; 1.8.105: +pip; 1.8.129: +player-quality 音质条
     scripts = re.findall(r'<script src="([^"]+)"', html)
     assert len(scripts) == 70 and all("?v=" in src for src in scripts)
     assert "js/music-dock-menu.js?v=" in html
