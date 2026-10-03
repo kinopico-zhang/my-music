@@ -8,11 +8,11 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from ... import account_store
+from ...home.staticfiles import VersionedStaticFiles
 from ...models import User
 from ..library_languages import LANGUAGE_FILTERS
 
@@ -21,7 +21,8 @@ HOME_STATIC_DIR = Path(__file__).resolve().parents[2] / "home" / "static"
 
 music_app = FastAPI(title="My Music", docs_url=None, redoc_url=None,
                     openapi_url=None)
-music_app.mount("/static", StaticFiles(directory=STATIC_DIR),
+# 听歌应用静态: 带 ?v= 的一年 immutable (?v= 家规配套 — 手机公网导航提速)
+music_app.mount("/static", VersionedStaticFiles(directory=STATIC_DIR),
                 name="music-static")
 
 
