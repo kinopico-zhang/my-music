@@ -8,6 +8,21 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.132", date="2026-10-03", items=[
+    ChangelogItem(kind="修复", text="手机上更新日志页的禁缩放其实没装上 ——"
+                                   " 负责的共享脚本此前在服务器上缺席过"
+                                   " (地址 404), 浏览器把「不存在」当成了"
+                                   " 可长期缓存的结果, 补上文件也不再来取;"
+                                   " 换了新版本号的地址后手机重新拿到, 恢复"
+                                   " 正常。"),
+    ChangelogItem(kind="改进", text="带版本号的页面资源一律许缓存一整年、不再"
+                                   " 逐个回服务器核对 —— 手机走公网访问时翻页"
+                                   " 快了 (线上服务 9 月底已先行, 这回钉进本仓"
+                                   " 和测试, 应用单独跑也齐)。"),
+    ChangelogItem(kind="改进", text="登录/注册/账号三张门厅页也补齐了禁缩放 ——"
+                                   " 全应用 1.8.6 起就有的防放大唯独这三页"
+                                   " 漏了网, 现在跟齐。"),
+]),
     ChangelogVersion(version="1.8.131", date="2026-10-02", items=[
     ChangelogItem(kind="改进", text="更新日志页也禁了双击和两指捏合放大 ——"
                                    " 全应用 1.8.6 起就有的禁缩放唯独这页"

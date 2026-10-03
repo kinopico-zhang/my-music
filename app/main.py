@@ -17,13 +17,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 from sqlalchemy.exc import SQLAlchemyError
 
 from . import account_store, config, database
 from .home import STATIC_DIR as HOME_STATIC_DIR
 from .home import accounts_api, middleware as home_middleware
 from .home import pages as home_pages, session_api
+from .home.staticfiles import VersionedStaticFiles
 from .models import UsersBase
 from .music import service as music_service, webapp as music_webapp
 
@@ -61,6 +61,7 @@ async def sqlalchemy_error_handler(
 app.include_router(home_pages.router)
 app.include_router(session_api.api)
 app.include_router(accounts_api.accounts)
-app.mount("/static", StaticFiles(directory=HOME_STATIC_DIR), name="home-static")
+# 门厅静态 (独立仓副本; 带 ?v= 的回一年 immutable — 手机公网导航提速)
+app.mount("/static", VersionedStaticFiles(directory=HOME_STATIC_DIR), name="home-static")
 # 听歌应用本体: 路由与页面都在 music 包 (URL 前缀与组合部署一致)
 app.mount("/music", music_webapp.music_app)

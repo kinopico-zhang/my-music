@@ -8,8 +8,8 @@ from app.music import changelog
 def test_versions_wellformed():
     """独立版本线从 1.0.0 起; 每版字段齐全, 文案是用户视角的一句话。"""
     vs = changelog.entries()
-    assert [v.version for v in vs] == ["1.8.131", "1.8.130", "1.8.129",
-                                       "1.8.128", "1.8.127",
+    assert [v.version for v in vs] == ["1.8.132", "1.8.131", "1.8.130",
+                                       "1.8.129", "1.8.128", "1.8.127",
                                        "1.8.126", "1.8.125",
                                        "1.8.124", "1.8.123",
                                        "1.8.122",
@@ -67,7 +67,7 @@ def test_versions_wellformed():
                                        "1.5.1", "1.5.0", "1.4.1", "1.4.0",
                                        "1.3.0", "1.2.1", "1.2.0", "1.1.0",
                                        "1.0.0"]
-    assert vs[0].date == "2026-10-02"
+    assert vs[0].date == "2026-10-03"
     kinds = {it.kind for it in vs[0].items}
     assert kinds <= {"新增", "改进", "修复"}   # 合并批次 (单功能批次不硬凑别的类)
     for v in vs:
@@ -125,8 +125,8 @@ def test_music_changelog_page_skeleton(auth):
     assert "maximum-scale=1, user-scalable=no" in html
     body_at = html.index("<body")
     assert html.index("<script", body_at + 1) == \
-        html.index('<script src="/static/no-zoom.js?v=1"></script>')
-    assert "gesturestart" in auth.get("/static/no-zoom.js?v=1").text
+        html.index('<script src="/static/no-zoom.js?v=2"></script>')
+    assert "gesturestart" in auth.get("/static/no-zoom.js?v=2").text
     assert "touch-action: pan-y;" in \
         auth.get("/music/static/css/changelog-page.css?v=2").text
 
