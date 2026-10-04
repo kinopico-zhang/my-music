@@ -17,6 +17,10 @@
 
 let lyricsViewOpen = false;   // 歌词键掀开的歌词视图 (换曲不自动关, app 同款)
 let lyricsSettled = false;    // 取词落定 (false = 还在取, 别急着说「没有歌词」)
+// 对齐微调 (1.8.133, 跟 app 同一口径): 正 = 词整体延后, 高亮拿 播放进度
+// − offset 对轴; 分享访客改不了, 但主人调好的对齐跟着这份分享走
+let lyricsOffsetMs = 0;
+const shareLyricsOffsets = new Map();   // track_id → 毫秒 (与取词同缓存)
 
 /** 歌词键点按开合。 */
 function toggleLyricsView() {
@@ -41,6 +45,7 @@ async function loadLyrics(track) {
   renderLyricsView();
   if (lyricsCache.has(track.track_id)) {
     lyrics = lyricsCache.get(track.track_id);
+    lyricsOffsetMs = shareLyricsOffsets.get(track.track_id) || 0;
     lyricsSettled = true;
     renderLyricsView();
     return;
@@ -49,11 +54,16 @@ async function loadLyrics(track) {
   try {
     const resp = await fetch(`/music/share/${token}/lyrics/${track.track_id}`,
                              {cache: "no-store"});
-    if (resp.ok) parsed = parseLyrics((await resp.json()).lyrics);
+    if (resp.ok) {
+      const body = await resp.json();
+      parsed = parseLyrics(body.lyrics);
+      shareLyricsOffsets.set(track.track_id, body.lyrics_offset_ms || 0);
+    }
   } catch { /* 网络挂了当没词 */ }
   lyricsCache.set(track.track_id, parsed);
   if (!currentTrack || currentTrack.track_id !== track.track_id) return;   // 换曲了
   lyrics = parsed;
+  lyricsOffsetMs = shareLyricsOffsets.get(track.track_id) || 0;
   lyricsSettled = true;
   renderLyricsView();
 }
@@ -95,7 +105,9 @@ function renderLyricsView() {
     其余模糊), 顺带把当前句滚到视线中央。 */
 function syncLyricHighlight(force) {
   if (!lyrics || !lyrics.synced) return;
-  const index = activeLyricIndex(lyrics.lines, audio.currentTime);
+  // 微调对轴: 正 = 词延后 (app 高亮同一式)
+  const index = activeLyricIndex(lyrics.lines,
+                                 audio.currentTime - lyricsOffsetMs / 1000);
   if (index === lyricIndex && !force) return;
   lyricIndex = index;
   const lines = $("#fp-lyrics").querySelectorAll(".lyrics-line");
@@ -154,7 +166,7 @@ $("#fp-lyrics").addEventListener("click", (event) => {
   const line = event.target.closest(".lyrics-line");
   if (!line || !lyrics || !lyrics.synced) return;
   const time = Number(line.dataset.time);
-  if (time >= 0) audio.currentTime = time;
+  if (time >= 0) audio.currentTime = time + lyricsOffsetMs / 1000;   // 微调对轴
   resumeLyricsFollow(false);
   syncLyricHighlight(true);
 });

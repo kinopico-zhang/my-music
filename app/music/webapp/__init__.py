@@ -7,8 +7,9 @@
 在 /music/media (自带长缓存头: 封面带版本号可 immutable)。
 """
 from .common import music_app
-from . import (library_routes, media_routes, page_routes, playlist_routes,
-               quality_routes, settings_routes, share_routes, viewport_routes)
+from . import (library_routes, lyrics_edit_routes, media_routes, page_routes,
+               playlist_routes, quality_routes, settings_routes, share_routes,
+               viewport_routes)
 
 music_app.include_router(page_routes.router)      # / /login /sw.js /changelog
 music_app.include_router(page_routes.api_router)  # /api/logout
@@ -18,6 +19,7 @@ music_app.include_router(settings_routes.router)  # /api: 设置 + 蜂窝流量
 music_app.include_router(playlist_routes.router)  # /api: 播放列表
 music_app.include_router(viewport_routes.router)  # /api: 视口体检回传 (1.8.10)
 music_app.include_router(quality_routes.router)   # /api: 单曲音质参数 (1.8.127)
+music_app.include_router(lyrics_edit_routes.router)   # /api: 调整歌词 (1.8.133)
 music_app.include_router(media_routes.router)     # /media: 音频流与封面
 
 __all__ = ["music_app"]

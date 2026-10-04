@@ -34,7 +34,8 @@ def test_lyrics_fetched_from_api_and_persisted(auth, tmp_path):
         lyrics = auth.get(f"/music/api/tracks/{tracks['曲A']}/lyrics").json()
     assert lyrics == {"track_id": tracks["曲A"],
                       "lyrics": "[00:10.00]从API求来的",
-                      "lyrics_synced": True}
+                      "lyrics_synced": True,
+                      "lyrics_offset_ms": 0}   # 1.8.133 起应答带对齐微调
     assert calls == [("", library_settings.LYRICS_API_DEFAULT,
                       "曲A", "A乐队", "曲A的专辑")]
 
@@ -51,7 +52,7 @@ def test_lyrics_fetched_from_api_and_persisted(auth, tmp_path):
         patcher.setattr(library_queries.lyrics_queries, "fetch_lyrics", lambda *a: "")
         empty = auth.get(f"/music/api/tracks/{tracks['曲B']}/lyrics").json()
     assert empty == {"track_id": tracks["曲B"], "lyrics": "",
-                     "lyrics_synced": False}
+                     "lyrics_synced": False, "lyrics_offset_ms": 0}
 
     # 设置里关掉歌词 API: 连求都不求
     assert auth.post("/music/api/settings",

@@ -71,6 +71,7 @@ function openTrackMenu(row, point) {
   $("#track-menu-album").hidden = !track.album_id;     // 同理 (1.8.2 加的键)
   hideDownloadMenuItem(track);
   $("#track-menu").querySelector('[data-track-action="play"]').hidden = false;
+  $("#track-menu-lyrics").hidden = true;   // 调整面板对着正在播的那首, 行菜单不带
   const menu = $("#track-menu");
   menu.hidden = false;
   $("#track-menu-mask").hidden = false;
@@ -87,6 +88,7 @@ function openTrackMenuForTrack(track, point) {
   $("#track-menu-album").hidden = !track.album_id;
   hideDownloadMenuItem(track);
   $("#track-menu").querySelector('[data-track-action="play"]').hidden = true;
+  $("#track-menu-lyrics").hidden = false;  // 1.8.133 调整歌词 (仅 ⋯ 变体有)
   const menu = $("#track-menu");
   menu.hidden = false;
   $("#track-menu-mask").hidden = false;

@@ -4,7 +4,8 @@
 /* global $ */
 /* exported LYRICS_FOLLOW_RESUME_MS, PLAYER_STATE_KEY, audioElement, currentTrack,
             lyricsActiveIndex, lyricsAutoScrolling, lyricsCache, lyricsFollowPaused,
-            lyricsLastScrollAt, lyricsViewOpen, playQueue, playRecorded, prefetchSequence,
+            lyricsLastScrollAt, lyricsOffsets, lyricsViewOpen, playQueue,
+            playRecorded, prefetchSequence,
             prefetched, queueDrag, queueViewOpen, scrubbing, trackChangeListeners,
             playbackDuration */
 
@@ -18,6 +19,7 @@ const LYRICS_FOLLOW_RESUME_MS = 4000;
 let playQueue = null;
 let currentTrack = null;
 let lyricsCache = new Map();       // track_id → {synced, lines} | null (没歌词)
+let lyricsOffsets = new Map();     // track_id → 对齐微调毫秒 (正 = 词延后; 1.8.133)
 let lyricsActiveIndex = -1;
 let lyricsViewOpen = false;
 let queueViewOpen = false;           // 封面区翻开成队列视图 (与歌词视图二选一)

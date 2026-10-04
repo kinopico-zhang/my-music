@@ -3,8 +3,8 @@
 "use strict";
 /* global $, LYRICS_FOLLOW_RESUME_MS, activeLyricIndex, audioElement, currentTrack,
           escapeHTML, fetchJSON, lyricsActiveIndex: writable, lyricsAutoScrolling: writable,
-          lyricsCache, lyricsFollowPaused: writable, lyricsLastScrollAt, lyricsViewOpen,
-          parseLyrics, syncLyricsButton */
+          lyricsCache, lyricsFollowPaused: writable, lyricsLastScrollAt, lyricsOffsets,
+          lyricsViewOpen, parseLyrics, syncLyricsButton */
 /* exported cancelLyricsScroll, highlightActiveLyric, loadLyrics, lyricsAutoScrolling,
             resumeLyricsFollow */
 
@@ -18,6 +18,7 @@ async function loadLyrics() {
       const response = await fetchJSON(
         `/music/api/tracks/${track.track_id}/lyrics`);
       lyricsCache.set(track.track_id, response.lyrics ? parseLyrics(response.lyrics) : null);
+      lyricsOffsets.set(track.track_id, response.lyrics_offset_ms || 0);
     } catch (_error) {
       lyricsCache.set(track.track_id, null);
     }
@@ -53,7 +54,11 @@ function highlightActiveLyric() {
   if (!lyricsViewOpen || !currentTrack) return;
   const lyricsDocument = lyricsCache.get(currentTrack.track_id);
   if (!lyricsDocument || !lyricsDocument.synced) return;
-  const index = activeLyricIndex(lyricsDocument.lines, audioElement().currentTime);
+  // 对齐微调 (1.8.133): 正 = 词整体延后 —— 拿 播放进度 − offset 去对
+  // 时间轴, 微调当场生效 (调整面板改完 Map 就地重算这一拍)
+  const offsetSeconds = (lyricsOffsets.get(currentTrack.track_id) || 0) / 1000;
+  const index = activeLyricIndex(
+    lyricsDocument.lines, audioElement().currentTime - offsetSeconds);
   if (index !== lyricsActiveIndex) {
     lyricsActiveIndex = index;
     const container = $("#fp-lyrics");

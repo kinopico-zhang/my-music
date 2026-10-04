@@ -10,7 +10,8 @@ from .browse_queries import (album_card, album_page, artist_page,
                              library_stats, list_albums, list_artists,
                              list_tracks, track_brief)
 from .lyrics_queries import (audio_quality_for_track, credits_for_track,
-                             lyrics_for_track)
+                             lyrics_for_track, replace_track_lyrics,
+                             set_lyrics_offset)
 from .play_history_queries import (period_start, recent_plays, record_play,
                                    top_plays)
 from .playlist_queries import (list_playlists, playlist_page,
@@ -22,6 +23,6 @@ __all__ = [
     "audio_quality_for_track", "credits_for_track", "library_stats",
     "list_albums", "list_artists", "list_playlists", "list_tracks",
     "lyrics_for_track", "playlist_page", "period_start", "recent_playlists",
-    "recent_plays", "record_play", "search_library", "top_plays",
-    "track_brief",
+    "recent_plays", "record_play", "replace_track_lyrics", "search_library",
+    "set_lyrics_offset", "top_plays", "track_brief",
 ]

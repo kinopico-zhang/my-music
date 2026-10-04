@@ -11,7 +11,9 @@ from .playlist_schemas import (PlaylistBrief, PlaylistCreateRequest,
                                PlaylistOrderRequest, PlaylistPage,
                                PlaylistPageList, PlaylistTrackRequest)
 from .scan_schemas import (ScanStatus, ScanSummary, ScannedTrack, TagFields)
-from .search_schemas import (AudioQuality, LyricHit, LyricsResponse,
+from .search_schemas import (AudioQuality, LyricHit, LyricsApplyRequest,
+                             LyricsCandidate, LyricsOffsetRequest,
+                             LyricsResponse, LyricsSearchResponse,
                              PlayRecordRequest, RecentPlaysResponse,
                              RecentTrackBrief, SearchResult, TopPlaysResponse,
                              TrackCredits)
@@ -22,8 +24,10 @@ from .viewport_schemas import ViewportEvent, ViewportLogReport
 __all__ = [
     "AlbumCard", "AlbumPage", "AlbumPageList", "ArtistBrief", "ArtistPage",
     "ArtistPageList", "AudioQuality", "FormatCount",
-    "LibraryStats", "LyricHit", "LyricsResponse", "MusicSettingsState",
-    "MusicSettingsUpdate", "MusicStatusResponse", "PlayRecordRequest",
+    "LibraryStats", "LyricHit", "LyricsApplyRequest", "LyricsCandidate",
+    "LyricsOffsetRequest", "LyricsResponse", "LyricsSearchResponse",
+    "MusicSettingsState", "MusicSettingsUpdate", "MusicStatusResponse",
+    "PlayRecordRequest",
     "PlaylistBrief", "PlaylistCreateRequest", "PlaylistOrderRequest",
     "PlaylistPage", "PlaylistPageList", "PlaylistTrackRequest",
     "RecentPlaysResponse",

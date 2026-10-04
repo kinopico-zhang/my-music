@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..library_database import Album, Track, music_directory
-from ..library_lyrics_api import fetch_lyrics
+from ..library_lyrics_api import _MAX_LYRICS_BYTES, fetch_lyrics
 from ..library_tags import (looks_like_synced_lyrics, read_audio_quality,
                             read_track_credits)
 from ..schemas import AudioQuality, LyricsResponse, TrackCredits
@@ -14,6 +14,15 @@ from ..schemas import AudioQuality, LyricsResponse, TrackCredits
 # 会频繁问没词的曲子, 不拦着就每换一曲打一次外网 (自动模式一miss三四发)。
 _lyrics_fetch_misses: dict[int, float] = {}
 _LYRICS_MISS_TTL = 24 * 3600
+# 词的对齐微调钳制 (1.8.133): ±30 秒, 再大就该换一套词了
+_OFFSET_LIMIT_MS = 30000
+
+
+def _lyrics_snapshot(track: Track) -> LyricsResponse:
+    """一首的词 + 对齐微调 (不触发联网补词)。"""
+    return LyricsResponse(track_id=track.id, lyrics=track.lyrics,
+                          lyrics_synced=track.lyrics_synced,
+                          lyrics_offset_ms=track.lyrics_offset_ms)
 
 
 def lyrics_for_track(session: Session, track_id: int,
@@ -43,8 +52,33 @@ def lyrics_for_track(session: Session, track_id: int,
                 _lyrics_fetch_misses.pop(track.id, None)
             else:
                 _lyrics_fetch_misses[track.id] = time.monotonic()
-    return LyricsResponse(track_id=track.id, lyrics=track.lyrics,
-                          lyrics_synced=track.lyrics_synced)
+    return _lyrics_snapshot(track)
+
+
+def set_lyrics_offset(session: Session, track_id: int,
+                      offset_ms: int) -> LyricsResponse | None:
+    """词的对齐微调落库 (±30 秒钳制), 回这首的词快照 (不联网补词)。"""
+    track = session.get(Track, track_id)
+    if track is None:
+        return None
+    track.lyrics_offset_ms = max(-_OFFSET_LIMIT_MS,
+                                 min(_OFFSET_LIMIT_MS, offset_ms))
+    session.commit()
+    return _lyrics_snapshot(track)
+
+
+def replace_track_lyrics(session: Session, track_id: int,
+                         text: str) -> LyricsResponse | None:
+    """把选中的候选词写进这首 (调整歌词 1.8.133): 换一套词 = 换时间轴,
+    旧的对齐微调清零。"""
+    track = session.get(Track, track_id)
+    if track is None:
+        return None
+    track.lyrics = text[:_MAX_LYRICS_BYTES]
+    track.lyrics_synced = looks_like_synced_lyrics(text)
+    track.lyrics_offset_ms = 0
+    session.commit()
+    return _lyrics_snapshot(track)
 
 
 def credits_for_track(session: Session, track_id: int) -> TrackCredits | None:

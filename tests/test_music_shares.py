@@ -181,7 +181,7 @@ def test_share_lyrics_scoped(auth):
     assert lyrics.status_code == 200
     assert lyrics.json() == {"track_id": 1,
                              "lyrics": "[00:01.00]第一句\n[00:05.00]第二句",
-                             "lyrics_synced": True}
+                             "lyrics_synced": True, "lyrics_offset_ms": 0}
     assert anon.get(f"/music/share/{made['token']}/lyrics/2").status_code == 404
     assert anon.get(f"/music/share/{'0' * 32}/lyrics/1").status_code == 410
 

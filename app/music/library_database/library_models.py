@@ -83,6 +83,9 @@ class Track(MusicLibraryBase):
     script: Mapped[str] = mapped_column(default="")      # Latn/Jpan/Hant/Hans/Kore…
     lyrics: Mapped[str] = mapped_column(default="")      # lrc 原文或纯文本
     lyrics_synced: Mapped[bool] = mapped_column(default=False)
+    # 词与唱的对齐微调 (1.8.133 调整歌词): 毫秒, 正 = 词整体延后 (词快了往前
+    # 挪是负) —— 前端拿 播放进度 − offset 去对时间轴; 换一套词就清零
+    lyrics_offset_ms: Mapped[int] = mapped_column(default=0)
     has_artwork: Mapped[bool] = mapped_column(default=False)  # 内嵌封面 (专辑封面取材)
     added_at: Mapped[float] = mapped_column(default=0.0)      # 入库时刻 (首插记, 重扫不改)
     search_keys: Mapped[str] = mapped_column(default="")      # 拼音/简繁检索键

@@ -78,7 +78,7 @@ def test_music_downloads_wiring():
     # +player-slider +downloads-pane; 1.8.77 +autocache +autocache-integration;
     # 1.8.100 +handoff; 1.8.105 +pip; 1.8.103 +dock-volume; 1.8.124
     # +play-outbox +play-outbox-integration; 1.8.129 +player-quality); 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 70 and all("?v=" in src for src in scripts) \
+    assert len(scripts) == 71 and all("?v=" in src for src in scripts) \
         and "js/play-outbox.js?v=" in html \
         and "js/music-play-outbox-integration.js?v=" in html  # 1.8.124 补报
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
@@ -104,7 +104,7 @@ def test_music_downloads_wiring():
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     assert "TRACK_URL_PATTERN" in sw               # 曲目流: 缓存回源 + Range 切片
     assert "caches.open" in sw and "206" in sw
-    assert "music-shell-v123" in sw                  # 应用壳也进缓存 (断网打得开)
+    assert "music-shell-v124" in sw                  # 应用壳也进缓存 (断网打得开)
     assert 'url.searchParams.has("direct")' in sw   # 1.8.59 流媒体直连放行
     assert "clients.claim" in sw                   # 装完立刻接管已开的页面
 
@@ -162,7 +162,7 @@ def test_music_track_context_menu_wiring():
     assert gest_js.count("suppressTrailingTarget = row;") == 2
     assert gest_js.count('if (!$("#track-menu").hidden) '
                          'suppressTrailingTarget = row;') == 2
-    assert 'js/music-menu-gestures.js?v=7"' in html
+    assert 'js/music-menu-gestures.js?v=8"' in html
     # 新版图标/脚本地址随行; Plex 同步全撤了
     assert "js/music-app-boot.js?v=" in html   # 浏览页模块链以 boot 收尾
     # 长歌名不许把菜单撑超宽 (用户报"菜单非常宽, 建议截断"): 固定定位菜单

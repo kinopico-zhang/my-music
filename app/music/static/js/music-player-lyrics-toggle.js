@@ -3,7 +3,7 @@
 "use strict";
 /* global $, cancelLyricsScroll, closeQueueView, currentTrack, fetchJSON, loadLyrics,
           lyricsActiveIndex: writable, lyricsCache, lyricsFollowPaused: writable,
-          lyricsViewOpen: writable, parseLyrics, queueViewOpen */
+          lyricsOffsets, lyricsViewOpen: writable, parseLyrics, queueViewOpen */
 /* exported lyricsActiveIndex, lyricsFollowPaused, openLyricsView, prefetchLyrics,
             syncLyricsButton, toggleLyricsView */
 
@@ -30,6 +30,7 @@ function prefetchLyrics(track) {
     .then((response) => {
       lyricsCache.set(track.track_id,
         response.lyrics ? parseLyrics(response.lyrics) : null);
+      lyricsOffsets.set(track.track_id, response.lyrics_offset_ms || 0);
     })
     .catch(() => { /* 探不到: 默认灰着 (当没词), 开视图时 loadLyrics 再试 */ })
     .finally(() => {

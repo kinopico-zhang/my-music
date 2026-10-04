@@ -22,7 +22,9 @@ def test_music_186_share_batch():
     # 进度并退出"暂停跟唱", 紧跟的 timeupdate 把新当前句滚回中央
     assert 'data-time="${line.timeSeconds}"' in share_all
     assert 'const line = event.target.closest(".lyrics-line");' in share_all
-    assert "if (time >= 0) audio.currentTime = time;" in share_all
+    # 1.8.133 起点句定位带上微调对轴 (主人调好的 offset 跟着分享走)
+    assert "if (time >= 0) audio.currentTime = time + lyricsOffsetMs / 1000;" \
+        in share_all
     assert "lyricsFollowPaused = false;" in share_all
     # 红键一按掀全屏页 (迷你条的播键不掀)
     assert '$("#hero-play").addEventListener("click", () => {' in share_all

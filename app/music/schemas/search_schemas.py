@@ -63,6 +63,36 @@ class LyricsResponse(BaseModel):
     track_id: int
     lyrics: str
     lyrics_synced: bool
+    lyrics_offset_ms: int = 0   # 词的对齐微调 (毫秒, 正 = 整体延后; 1.8.133)
+
+
+class LyricsCandidate(BaseModel):
+    """搜索到的候选词: 哪家厂商的哪首 (ref 是厂商内的歌标识)。"""
+
+    source: str                 # netease | qq | lrclib
+    ref: str
+    title: str = ""
+    artist: str = ""
+    synced: bool | None = None  # 带不带时间轴 (LRCLIB 搜索即知, 网易/QQ 取词才知)
+
+
+class LyricsSearchResponse(BaseModel):
+    """GET /api/tracks/{id}/lyrics/candidates 的应答: 关键词搜来的候选。"""
+
+    candidates: list[LyricsCandidate] = Field(default_factory=list)
+
+
+class LyricsApplyRequest(BaseModel):
+    """POST /api/tracks/{id}/lyrics/apply 的请求体: 把选中的候选套上这首。"""
+
+    source: str
+    ref: str
+
+
+class LyricsOffsetRequest(BaseModel):
+    """POST /api/tracks/{id}/lyrics/offset 的请求体: 词的对齐微调 (毫秒)。"""
+
+    offset_ms: int
 
 
 class TrackCredits(BaseModel):

@@ -8,6 +8,13 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.133", date="2026-10-04", items=[
+    ChangelogItem(kind="新增", text="播放页的 ⋯ 菜单多了「调整歌词」—— 弹出"
+                                   "的面板盖在歌词页上, 歌照常放着: 搜一下"
+                                   "换个词 (网易云/QQ/LRCLIB 三家候选点一下"
+                                   "就换上), 词快了慢了还能 ±0.5 秒微调, 点"
+                                   "一下当场见效。"),
+]),
     ChangelogVersion(version="1.8.132", date="2026-10-03", items=[
     ChangelogItem(kind="修复", text="手机上更新日志页的禁缩放其实没装上 ——"
                                    " 负责的共享脚本此前在服务器上缺席过"

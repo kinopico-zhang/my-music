@@ -4,7 +4,8 @@
 // 不收的话页面在底下开了也看不见 —— 表现就是「点了没反应」)。
 "use strict";
 /* global $, closeFullPlayer, closeTrackMenu, downloadTrackFromUI, fetchJSON,
-          menuTrackDirect, navigate, onTrackChange, openPlaylistPicker, openTrackMenu,
+          menuTrackDirect, navigate, onTrackChange, openLyricsEditSheet,
+          openPlaylistPicker, openTrackMenu,
           openTrackMenuForTrack, placeMenuAt, playTrackFromMenu, playerCurrentTrack,
           playerOpen, refreshPlaylistCoverIcons, renderPlaylistView, rowForTrackMenu,
           shareTrack, toast,
@@ -119,8 +120,7 @@ $("#track-menu").addEventListener("click", async (event) => {
   if (action.dataset.trackAction === "play") playTrackFromMenu(track, row);
   else if (action.dataset.trackAction === "artist"
            || action.dataset.trackAction === "album") {
-    // 1.8.2 修: 全屏页 (z90) 盖着推入层 (z44), 不先收播放页的话
-    // 艺人/专辑页在底下开了也看不见 —— 表现就是「点了没反应」
+    // 1.8.2 修: 全屏页 (z90) 盖着推入层 (z44), 不先收的话底下开了也看不见
     if (playerOpen) closeFullPlayer("morph");   // 1.8.63 水滴收回 (层滑入与收拢同场)
     navigate(action.dataset.trackAction === "artist"
              ? `artist/${track.artist_id}` : `album/${track.album_id}`);
@@ -128,6 +128,7 @@ $("#track-menu").addEventListener("click", async (event) => {
   else if (action.dataset.trackAction === "share") shareTrack(track);
   else if (action.dataset.trackAction === "download") downloadTrackFromUI(track);
   else if (action.dataset.trackAction === "playlist") openPlaylistPicker(track);
+  else if (action.dataset.trackAction === "lyrics") openLyricsEditSheet(track);
 });
 
 // 全屏页 ⋯: 开长按菜单 (没有"播放"项; 加列表也在菜单里 —— 1.8.89 底行的

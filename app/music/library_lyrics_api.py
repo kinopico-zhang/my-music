@@ -67,6 +67,16 @@ def _lrclib(api_base: str, title: str, artist: str, album_title: str) -> str:
     return str(payload.get("syncedLyrics") or payload.get("plainLyrics") or "")
 
 
+def _netease_lyric_by_id(song_id: str) -> str:
+    """按歌曲 id 取网易云 lrc (带时间轴的原文歌词)。"""
+    payload = _http_json(
+        "https://music.163.com/api/song/lyric?"
+        + urlencode({"id": song_id, "lv": 1, "kv": 1, "tv": -1}),
+        referer="https://music.163.com")
+    lrc = payload.get("lrc") if isinstance(payload, dict) else None
+    return str(lrc.get("lyric") or "") if isinstance(lrc, dict) else ""
+
+
 def _netease(_api_base: str, title: str, artist: str,
              _album_title: str) -> str:
     """网易云: 搜歌拿 id, 再取 lrc (带时间轴的原文歌词)。"""
@@ -84,12 +94,21 @@ def _netease(_api_base: str, title: str, artist: str,
     song_id = _pick_song(songs, title, artist)
     if not song_id:
         return ""
-    payload = _http_json(
-        "https://music.163.com/api/song/lyric?"
-        + urlencode({"id": song_id, "lv": 1, "kv": 1, "tv": -1}),
-        referer="https://music.163.com")
-    lrc = payload.get("lrc") if isinstance(payload, dict) else None
-    return str(lrc.get("lyric") or "") if isinstance(lrc, dict) else ""
+    return _netease_lyric_by_id(song_id)
+
+
+def _qq_lyric_by_mid(songmid: str) -> str:
+    """按 songmid 取 QQ 音乐歌词: 应答里是 base64(utf-8) 的 lrc。"""
+    lyric = _http_json(
+        "https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?"
+        + urlencode({"songmid": songmid, "format": "json", "g_tk": 5381}),
+        referer="https://y.qq.com/")
+    encoded = lyric.get("lyric") if isinstance(lyric, dict) else None
+    try:
+        return html.unescape(
+            base64.b64decode(str(encoded or "")).decode("utf-8", "replace"))
+    except (ValueError, TypeError):     # 坏 base64: 当求不到
+        return ""
 
 
 def _qq(_api_base: str, title: str, artist: str, _album_title: str) -> str:
@@ -111,16 +130,7 @@ def _qq(_api_base: str, title: str, artist: str, _album_title: str) -> str:
     songmid = _pick_song(songs, title, artist)
     if not songmid:
         return ""
-    lyric = _http_json(
-        "https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?"
-        + urlencode({"songmid": songmid, "format": "json", "g_tk": 5381}),
-        referer="https://y.qq.com/")
-    encoded = lyric.get("lyric") if isinstance(lyric, dict) else None
-    try:
-        return html.unescape(
-            base64.b64decode(str(encoded or "")).decode("utf-8", "replace"))
-    except (ValueError, TypeError):     # 坏 base64: 当求不到
-        return ""
+    return _qq_lyric_by_mid(songmid)
 
 
 # 厂商注册表: 设置页的选择键 → 取词函数 (自定义地址只 LRCLIB 用得上)
