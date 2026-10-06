@@ -46,19 +46,11 @@ FRONT="node node_modules/eslint/bin/eslint.js app/home/static app/music/static t
    && node node_modules/stylelint/bin/stylelint.mjs 'app/*/static/css/*.css' \
    && node node_modules/html-validate/bin/html-validate.mjs 'app/*/static/*.html'"
 
-DOCKER=/share/CACHEDEV1_DATA/.qpkg/container-station/bin/docker
-if $DOCKER exec mytesla-debug true 2>/dev/null; then
-  # QNAP 部署: 宿主 node 缺 ICU, 工具链在调试容器里跑 (本仓 = /repo/apps/my-music,
-  # 软链的 node_modules 在容器内解析到 /repo/node_modules)
-  if ! $DOCKER exec mytesla-debug sh -c "cd /repo/apps/my-music && $FRONT"; then
-    echo "前端静态检查失败 (或调试容器 mytesla-debug 未运行)" >&2
-    rc=1
-  fi
-else
-  sh -c "$FRONT" || rc=1
-fi
+sh -c "$FRONT" || rc=1
 
-# 单元测试 + 覆盖率门禁: 只统计纯逻辑模块 (页面脚本由 E2E 覆盖)
+# 单元测试 + 覆盖率门禁: 只统计纯逻辑模块 (页面脚本由 E2E 覆盖)。
+# 测试文件用 shell 通配展开 (node 22 起 --test 不再认裸目录参数, 传文件
+# 清单则新旧 node 都吃 —— 2026-10-05 WSL 迁移后本机 node 22 踩过)
 node node_modules/c8/bin/c8.js \
   --include 'app/music/static/js/lyrics-parser.js' \
   --include 'app/music/static/js/player-queue.js' \
@@ -67,6 +59,6 @@ node node_modules/c8/bin/c8.js \
   --include 'app/music/static/js/handoff.js' \
   --include 'app/music/static/js/downloads-capability.js' \
   --check-coverage --lines 95 --branches 95 --functions 95 \
-  --reporter text node --test tests/js/ || rc=1
+  --reporter text node --test tests/js/*.test.mjs || rc=1
 
 exit $rc
