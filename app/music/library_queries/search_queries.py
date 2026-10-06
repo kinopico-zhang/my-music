@@ -23,7 +23,7 @@ SEARCH_ARTIST_LIMIT = 50
 SEARCH_LYRICS_LIMIT = 100
 
 
-def _total(session: Session, statement: Select[Any]) -> int:
+def _total(session: Session, statement: Select[*tuple[Any, ...]]) -> int:
     """同条件不截断的命中总数 (子查询套一层 COUNT, 条件与取数零重复)。"""
     return session.execute(
         select(func.count()).select_from(statement.subquery())).scalar_one()
