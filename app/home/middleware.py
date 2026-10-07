@@ -23,7 +23,9 @@ _PUBLIC_PATHS = frozenset((
     "/music/sw.js",
     "/api/login", "/api/logout",
     "/api/register", "/api/invite-status",
-    "/music/api/logout"))
+    "/music/api/logout",
+    # 首启引导: 真开口的判据 (无管理员) 在页面/接口内部自验, 中间件不碰库
+    "/setup", "/api/setup-status", "/api/setup-admin"))
 _STATIC_PREFIXES = ("/static/", "/music/static/")
 # 分享链接面 (My Music): uuid 即凭证, 页面/数据/流/封面全免登录,
 # 24 小时过期由各路由自己验 (中间件只管放行前缀)
