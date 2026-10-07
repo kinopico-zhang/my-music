@@ -40,6 +40,11 @@
 > 账号体系 (登录/注册/账号管理) 内嵌在 `app/home/`, 单独 clone 本仓即可部署,
 > 不需要组合仓。
 
+<p align="center">
+<img src="docs/screenshot-library.png" width="300" alt="曲库浏览 · My Music (演示数据)">
+<img src="docs/screenshot-player.png" width="300" alt="播放器与歌词 · My Music (演示数据)">
+</p>
+
 ## ✨ 功能
 
 - 🎵 **曲库扫描** — 扫描 NAS 音乐目录, FLAC / DSF / MP3 等多格式
