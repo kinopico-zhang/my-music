@@ -36,6 +36,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: pip install -r requirements.txt -r requirements-dev.txt
+      # tests 含 e2e 冒烟 (test_e2e.py): 起真 uvicorn 子进程打真 HTTP,
+      # 数据全落临时目录 —— 本矩阵即三大 OS 的 e2e
       - run: python -m pytest tests -q
 
   # 后端静态检查: pylint (app 严检 / tests 放宽仪式告警) + mypy 严格
