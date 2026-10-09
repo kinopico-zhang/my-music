@@ -118,7 +118,7 @@ tests/        pytest (真实 ORM + SQLite 临时库) + node --test (纯逻辑模
 | 仓 | 说明 |
 |---|---|
 | [My Home](https://github.com/kinopico-zhang/my-home) | 组合仓: 三应用 + 共享账号层, 单点登录 |
-| [My Tesla](https://github.com/kinopico-zhang/my-tesla) | TeslaMate 行车数据展示 |
+| [My Tesla](https://github.com/kinopico-zhang/my-tesla) | TeslaMate 可视化工具 |
 | [My Money](https://github.com/kinopico-zhang/my-money) | 家庭记账 (离线 LWW 同步) |
 
 ## 📄 许可证
