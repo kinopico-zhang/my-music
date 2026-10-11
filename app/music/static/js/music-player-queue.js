@@ -7,7 +7,7 @@
 "use strict";
 /* global audioElement, createPlayQueue,
           currentTrack: writable, directStreamURL, discardNetworkRetry,
-          discardPrefetch, loadLyrics, lyricsActiveIndex: writable,
+          discardPrefetch, heroSnapHold, loadLyrics, lyricsActiveIndex: writable,
           lyricsCache, lyricsViewOpen, noteAudioSourceChanged, pauseAudio,
           playQueue: writable, playbackDuration, playRecorded: writable,
           playerUpgradeDownloadedSource, playingObjectURL: writable,
@@ -98,6 +98,7 @@ function advanceToPlayable() {
 
 async function loadTrack(track, autoplay, startTime = 0) {
   currentTrack = track;
+  heroSnapHold();    // 1.8.140 点歌这拍撤补程: 列表别在切歌后自己滑走 (车机实报)
   playRecorded = false;
   lyricsCache.delete(track.track_id);      // 每次换曲重取 (歌词可能刚扫描进来)
   syncLyricsButton();    // 1.8.20 键默认灰 (当没词), 探明有词才亮 (视图开着保持可点)

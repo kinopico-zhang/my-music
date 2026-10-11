@@ -77,10 +77,12 @@ def test_music_downloads_wiring():
     # +player-prefetch; 1.8.60 +player-art-stage; 1.8.76 +player-sources
     # +player-slider +downloads-pane; 1.8.77 +autocache +autocache-integration;
     # 1.8.100 +handoff; 1.8.105 +pip; 1.8.103 +dock-volume; 1.8.124
-    # +play-outbox +play-outbox-integration; 1.8.129 +player-quality); 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 71 and all("?v=" in src for src in scripts) \
+    # +play-outbox +play-outbox-integration; 1.8.129 +player-quality; 1.8.140
+    # +hero-snap 补程拆分); 引用一律带版本参数 (改哪个 bump 哪个)
+    assert len(scripts) == 72 and all("?v=" in src for src in scripts) \
         and "js/play-outbox.js?v=" in html \
         and "js/music-play-outbox-integration.js?v=" in html  # 1.8.124 补报
+    assert "js/music-hero-snap.js?v=1" in html               # 1.8.140 补程拆分
     assert "js/downloads.js?v=" in html and "js/music-app-boot.js?v=" in html
     assert "js/autocache.js?v=" in html                  # 1.8.77 自动缓存状态机
     assert "js/music-autocache-integration.js?v=" in html  # 1.8.77 自动缓存接线

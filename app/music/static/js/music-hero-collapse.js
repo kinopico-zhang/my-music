@@ -2,18 +2,18 @@
 // 挪向左上角, 按钮挪到右上角, 到位钉成顶栏, 列表从底下滚过; 下滑对称还
 // 原; 动画要细腻」): 专辑/播放列表/艺人页头包进 .hero-head 钉在推入层顶。
 // 版式沿革: 1.8.40 两行 → 1.8.42 左对齐 → 1.8.45 单行 → 1.8.46 换岗补程
-// → 1.8.55 只收第一行 → 1.8.112 宽度退出缩放 → 1.8.113 并齐收紧 → 1.8.114 墨迹对齐。
+// → 1.8.55 只收第一行 → 1.8.112 宽度退出缩放 → 1.8.113 并齐收紧 → 1.8.114 墨迹对齐
+// → 1.8.140 停稳补程拆去 music-hero-snap (拆分随点歌撤补程的修复一起落)。
 // (细腻的根): sticky 钉住 + 布局恒高, 全程只写 transform/opacity/clip-path
 // (零重排), 滚动位置线性直驱; 行程 = 页头自然高 − 顶栏高; 全按 padTop 量。
 "use strict";
-/* global heroBarMeasure, heroBarTick, heroBarTravel */
+/* global heroBarMeasure, heroBarTick, heroBarTravel, heroSnapArm */
 /* exported bindHeroCollapse */
 
 const HERO_MINI = 44;      // 收缩后封面边长 (标题文字跟在右边)
 const HERO_BAR = 52;       // 顶栏内容高 = 封面 44 + 呼吸 8 (与 CSS 的 52 同源)
 const heroCtrls = new WeakMap();   // 滚动器 → 控制器 (重铺换元素, 监听只绑一次)
 const heroPending = new Set();     // 每帧最多一次重绘 (滚动事件按帧节流)
-const heroSnapTimers = new WeakMap();   // 滚动器 → 停稳补程的计时器 (七改)
 const heroTouching = new WeakSet();     // 手指还按着的滚动器 (长按不动别补程)
 const heroReset = (els) => {   // 摘净行内样式 (重测量前/回自然位共用, 1.8.113)
   for (const el of els) {
@@ -41,8 +41,7 @@ function bindHeroCollapse(scroller) {
   heroApply(scroller);
 }
 
-/** 滚动事件 → 每帧一次重绘 (passive); 停稳 (160ms) 自动补程 (七改): 过半
-    滑到底收齐、不到半弹回 (九改只管行程中间); 手指按着不补。 */
+/** 滚动事件 → 每帧一次重绘 (passive); 停稳补程挂窗在 music-hero-snap。 */
 function heroSchedule(scroller) {
   if (heroPending.has(scroller)) return;
   heroPending.add(scroller);
@@ -50,18 +49,7 @@ function heroSchedule(scroller) {
     heroPending.delete(scroller);
     heroApply(scroller);
   });
-  clearTimeout(heroSnapTimers.get(scroller));
-  heroSnapTimers.set(scroller, setTimeout(() => {
-    heroSnapTimers.delete(scroller);
-    const ctrl = heroCtrls.get(scroller);
-    if (heroTouching.has(scroller) || !ctrl || !ctrl.head.isConnected) return;
-    const t = scroller.scrollTop;         // 九改: 已收齐 (≥dist) = 人在翻列
-    const target = t >= ctrl.dist - 2 ? t // 表, 不拽回列表顶; 只管行程中间
-      : t > ctrl.dist / 2 ? ctrl.dist : 0;
-    if (Math.abs(t - target) > 2) {
-      scroller.scrollTo({ top: target, behavior: "smooth" });
-    }
-  }, 160));
+  heroSnapArm(scroller);   // 每个滚动事件刷新 160ms 停稳窗口 (1.8.140 拆出)
 }
 
 /** 收集页头元素 + 量自然位 (FLIP: 按滚动进度插值); 量前先摘行内样式。 */

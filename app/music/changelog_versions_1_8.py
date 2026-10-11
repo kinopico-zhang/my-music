@@ -8,6 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.140", date="2026-10-11", items=[
+    ChangelogItem(kind="修复", text="特斯拉车机的音乐控制界面能显示当前歌曲"
+                                   "的封面了, 不再只是浏览器的图标。"),
+    ChangelogItem(kind="修复", text="特斯拉车机的浏览器里切歌, 列表不再自己"
+                                   "上下跳动。"),
+]),
     ChangelogVersion(version="1.8.133", date="2026-10-04", items=[
     ChangelogItem(kind="新增", text="播放页的 ⋯ 菜单多了「调整歌词」—— 弹出"
                                    "的面板盖在歌词页上, 歌照常放着: 搜一下"

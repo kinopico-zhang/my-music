@@ -156,7 +156,7 @@ def test_music_1846_bar_path_travel():
     # 七改 (你报的「…要点第二下才行」): 收拢靠惯性滚完, iOS 把惯性中的
     # 头一下点按吞成「停滚」。停稳 (160ms 无滚动事件) 自动补程 —— 过半滑
     # 到底收齐、不到半弹回; 手指按着不补, … 开着照补 (顶栏钉死)
-    for frag in ["const heroSnapTimers = new WeakMap();",
+    for frag in ["const heroSnapTimers = new Map();",   # 1.8.140 WeakMap→Map (撤补程要遍历)
                  "const heroTouching = new WeakSet();",
                  'scroller.scrollTo({ top: target, behavior: "smooth" });',
                  "if (heroTouching.has(scroller) || !ctrl || !ctrl.head.isConnected) return;",

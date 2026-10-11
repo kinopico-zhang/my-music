@@ -4,7 +4,8 @@
 播放 + … 两颗键从操作行的键位沿路径平移进来接班 (1.8.46, 见
 test_music_hero_bar), 列表继续上滑从顶栏底下滚过, 下划对称还原。
 静态文本断言, 不碰数据库 (插值是纯几何, 手感真机眼验)。"""
-from tests.music_static_files import music_browser_js, music_page_shell
+from tests.music_static_files import (music_browser_js, music_page_shell,
+                                       music_player_js)
 
 
 def test_music_1834_hero_collapse_wiring():
@@ -182,3 +183,17 @@ def test_music_1834_hero_collapse_css():
     # 三个详情层各自的滚器撤掉顶部留白 (顶栏从层顶就位)
     for view in ["album", "playlist", "artist"]:
         assert f'.push-pane[data-view="{view}"] .pane-scroll' in html
+
+
+def test_music_18140_snap_hold_on_track_load():
+    """1.8.140 点歌那拍撤补程 (特斯拉车机实报「切歌时界面上下跳动」):
+    车机上「轻拨列表就点歌」正中补程窗口 —— 落指点歌后 160ms 补程落闸,
+    列表自己滑走半程。heroSnapTimers 由 WeakMap 改 Map (要能一次撤光),
+    loadTrack 开头把挂着的补程全撤, 列表停在用户放的地方; 下次滚动照旧
+    停稳补程。"""
+    js = music_browser_js()
+    assert "const heroSnapTimers = new Map();" in js
+    assert "function heroSnapHold() {" in js
+    assert "for (const timer of heroSnapTimers.values()) clearTimeout(timer);" in js
+    assert "heroSnapHold();    // 1.8.140" in music_player_js()  # loadTrack 开头
+    assert "music-hero-collapse.js?v=19" in music_page_shell()
