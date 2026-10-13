@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎵 My Music
+# My Music
 
 **家庭自用 NAS 曲库听歌应用** — 浏览 · 播放 · 歌词 · 离线
 
@@ -31,7 +31,7 @@
 <img src="docs/screenshot-player.png" width="300" alt="播放器与歌词 · My Music (演示数据)">
 </p>
 
-## ✨ 功能
+## 功能
 
 - 🎵 **曲库扫描** — 扫描 NAS 音乐目录, FLAC / DSF / MP3 等多格式
 - 📚 **浏览** — 专辑 / 艺术家视图 · 搜索 · 分页
@@ -43,7 +43,7 @@
 - 📊 **统计** — 曲库统计视图
 - 📱 **移动手势** — 面板横划 · 气泡滑动 · 菜单手势
 
-## 🚀 快速开始
+## 快速开始
 
 需要 Python 3.13+ (venv):
 
@@ -69,7 +69,7 @@ HMAC 签名, 两个口通用。
 `music-art/` 封面缓存。音乐目录默认 `/share/Media/Music`, 用
 `MYTESLA_MUSIC_DIR` 或设置页改。
 
-## ⚙️ 环境变量
+## 环境变量
 
 完整清单见 [.env.example](.env.example), 常用项:
 
@@ -81,7 +81,7 @@ HMAC 签名, 两个口通用。
 | `MYTESLA_MUSIC_DIR` | `/share/Media/Music` | 音乐目录 (设置页里改的优先) |
 | `MYHOME_USERS_DB` / `MYHOME_SECRET_FILE` | `data/users.db` / `.session_secret` | 账号库与会话密钥 (组合部署指到共享文件) |
 
-## 🧪 测试与质量门禁
+## 测试与质量门禁
 
 ```sh
 npm install               # 前端工具链 (eslint/tsc/stylelint/html-validate/c8)
@@ -97,7 +97,7 @@ stylelint / html-validate / node --test · c8 覆盖率 ≥95% (歌词解析 /
 从 My Home 组合仓的 `apps/my-music` 下跑时不用 npm install —— 脚本会
 软链组合仓根的 node_modules。
 
-## 📁 项目结构
+## 项目结构
 
 ```
 app/
@@ -113,7 +113,7 @@ tests/        pytest (真实 ORM + SQLite 临时库) + node --test (纯逻辑模
 `/api/me`…): 组合部署时外层把 `MYHOME_USERS_DB` / `MYHOME_SECRET_FILE`
 指到共享的账号库与密钥文件, 三个应用就共用同一批账号单点登录。
 
-## 🔗 相关项目
+## 相关项目
 
 | 仓 | 说明 |
 |---|---|
@@ -121,6 +121,6 @@ tests/        pytest (真实 ORM + SQLite 临时库) + node --test (纯逻辑模
 | [My Tesla](https://github.com/kinopico-zhang/my-tesla) | TeslaMate 可视化工具 |
 | [My Money](https://github.com/kinopico-zhang/my-money) | 家庭记账 (离线 LWW 同步) |
 
-## 📄 许可证
+## 许可证
 
 [MIT](./LICENSE) © 2026 kinopico
