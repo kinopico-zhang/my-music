@@ -26,22 +26,53 @@
 > 账号体系 (登录/注册/账号管理) 内嵌在 `app/home/`, 单独 clone 本仓即可部署,
 > 不需要组合仓。
 
-<p align="center">
-<img src="docs/screenshot-library.png" width="300" alt="曲库浏览 · My Music (演示数据)">
-<img src="docs/screenshot-player.png" width="300" alt="播放器与歌词 · My Music (演示数据)">
-</p>
-
 ## 功能
 
-- 🎵 **曲库扫描** — 扫描 NAS 音乐目录, FLAC / DSF / MP3 等多格式
-- 📚 **浏览** — 专辑 / 艺术家视图 · 搜索 · 分页
-- ▶️ **播放器** — 播放队列 · 音质选择 · 预取 · MediaSession · 桌面端键盘快捷键 · 画中画
-- 🎤 **歌词** — LRC 解析 + 逐行高亮, 可编辑
-- 📋 **歌单** — 建歌单, 拖拽排序
-- 🔗 **分享** — 歌曲分享链接
-- ⬇️ **离线** — Service Worker 离线回源 + 自动缓存 (LRU 2GB, 播放预取顺手落盘) + 手动下载 (带用量统计)
-- 📊 **统计** — 曲库统计视图
-- 📱 **移动手势** — 面板横划 · 气泡滑动 · 菜单手势
+<p align="center">
+<a name="shot-home"><img src="docs/screenshot-home.png?v=1" width="280" alt="主页 · My Music (真实数据)"></a>
+<br><b>主页</b> — 上次听过的歌、新进的专辑打开就在眼前, 接着听不用找
+</p>
+
+<p align="center">
+<a name="shot-albums"><img src="docs/screenshot-albums.png?v=1" width="280" alt="曲库浏览 · My Music (真实数据)"></a>
+<br><b>曲库浏览</b> — 全部专辑封面墙一屏铺开, 翻着找歌比翻文件夹快
+</p>
+
+<p align="center">
+<a name="shot-album"><img src="docs/screenshot-album.png?v=1" width="280" alt="专辑页 · My Music (真实数据)"></a>
+<br><b>专辑页</b> — 点开是大图封面和整张曲目, 想听哪首点哪首
+</p>
+
+<p align="center">
+<a name="shot-player"><img src="docs/screenshot-player.png?v=1" width="280" alt="播放器与歌词 · My Music (真实数据)"></a>
+<br><b>播放器与歌词</b> — 歌词逐行点亮跟唱, 正在唱的那句自动放大; 播放队列、音质随选, 锁屏线控都听使唤
+</p>
+
+<p align="center">
+<a name="shot-artists"><img src="docs/screenshot-artists.png?v=1" width="280" alt="艺人视图 · My Music (真实数据)"></a>
+<br><b>艺人视图</b> — 想听谁的歌, 从艺人页把他的专辑一次翻全
+</p>
+
+<p align="center">
+<a name="shot-playlists"><img src="docs/screenshot-playlists.png?v=1" width="280" alt="歌单 · My Music (真实数据)"></a>
+<br><b>歌单</b> — 自己攒歌单, 拖拽排序随心排
+</p>
+
+<p align="center">
+<a name="shot-top"><img src="docs/screenshot-top.png?v=1" width="280" alt="播放排行 · My Music (真实数据)"></a>
+<br><b>播放排行</b> — 最近在听什么、哪首听了最多, 榜单替你记着
+</p>
+
+<p align="center">
+<a name="shot-stats"><img src="docs/screenshot-stats.png?v=1" width="280" alt="曲库统计 · My Music (真实数据)"></a>
+<br><b>曲库统计</b> — 多少艺人、多少专辑、什么格式占多少, 家底一页看清
+</p>
+
+截图为真实曲库与真实收听记录。此外还有: 曲库扫描 (FLAC / DSF / MP3
+等多格式) · 搜索直达歌曲/专辑/艺人 · Service Worker 离线回源 + LRU 2GB
+自动缓存, 播放预取顺手落盘 · 手动下载带走 (带用量统计) · 歌曲分享链接 ·
+歌词可编辑 · 桌面端键盘快捷键 · 画中画 · MediaSession (锁屏/耳机线控) ·
+面板横划与菜单手势。
 
 ## 快速开始
 
