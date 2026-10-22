@@ -29,42 +29,42 @@
 ## 功能
 
 <p align="center">
-<a name="shot-home"><img src="docs/screenshot-home.png?v=2" width="280" alt="主页 · My Music (真实数据)"></a>
+<a name="shot-home"><img src="docs/screenshot-home.png?v=3" width="280" alt="主页 · My Music (真实数据)"></a>
 <br><b>主页</b> — 上次听过的歌、新进的专辑打开就在眼前, 接着听不用找
 </p>
 
 <p align="center">
-<a name="shot-albums"><img src="docs/screenshot-albums.png?v=2" width="280" alt="曲库浏览 · My Music (真实数据)"></a>
+<a name="shot-albums"><img src="docs/screenshot-albums.png?v=3" width="280" alt="曲库浏览 · My Music (真实数据)"></a>
 <br><b>曲库浏览</b> — 全部专辑封面墙一屏铺开, 翻着找歌比翻文件夹快
 </p>
 
 <p align="center">
-<a name="shot-album"><img src="docs/screenshot-album.png?v=2" width="280" alt="专辑页 · My Music (真实数据)"></a>
+<a name="shot-album"><img src="docs/screenshot-album.png?v=3" width="280" alt="专辑页 · My Music (真实数据)"></a>
 <br><b>专辑页</b> — 点开是大图封面和整张曲目, 想听哪首点哪首
 </p>
 
 <p align="center">
-<a name="shot-player"><img src="docs/screenshot-player.png?v=2" width="280" alt="播放器与歌词 · My Music (真实数据)"></a>
+<a name="shot-player"><img src="docs/screenshot-player.png?v=3" width="280" alt="播放器与歌词 · My Music (真实数据)"></a>
 <br><b>播放器与歌词</b> — 歌词逐行点亮跟唱, 正在唱的那句自动放大; 播放队列、音质随选, 锁屏线控都听使唤
 </p>
 
 <p align="center">
-<a name="shot-artists"><img src="docs/screenshot-artists.png?v=2" width="280" alt="艺人视图 · My Music (真实数据)"></a>
+<a name="shot-artists"><img src="docs/screenshot-artists.png?v=3" width="280" alt="艺人视图 · My Music (真实数据)"></a>
 <br><b>艺人视图</b> — 想听谁的歌, 从艺人页把他的专辑一次翻全
 </p>
 
 <p align="center">
-<a name="shot-playlists"><img src="docs/screenshot-playlists.png?v=2" width="280" alt="歌单 · My Music (真实数据)"></a>
+<a name="shot-playlists"><img src="docs/screenshot-playlists.png?v=3" width="280" alt="歌单 · My Music (真实数据)"></a>
 <br><b>歌单</b> — 自己攒歌单, 拖拽排序随心排
 </p>
 
 <p align="center">
-<a name="shot-top"><img src="docs/screenshot-top.png?v=2" width="280" alt="播放排行 · My Music (真实数据)"></a>
+<a name="shot-top"><img src="docs/screenshot-top.png?v=3" width="280" alt="播放排行 · My Music (真实数据)"></a>
 <br><b>播放排行</b> — 最近在听什么、哪首听了最多, 榜单替你记着
 </p>
 
 <p align="center">
-<a name="shot-stats"><img src="docs/screenshot-stats.png?v=2" width="280" alt="曲库统计 · My Music (真实数据)"></a>
+<a name="shot-stats"><img src="docs/screenshot-stats.png?v=3" width="280" alt="曲库统计 · My Music (真实数据)"></a>
 <br><b>曲库统计</b> — 多少艺人、多少专辑、什么格式占多少, 家底一页看清
 </p>
 

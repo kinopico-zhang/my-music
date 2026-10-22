@@ -19,6 +19,10 @@ music.lastRoute (开局回跳会跟射手抢导航)。
 .session_secret 的 sha256) —— 收听史是真实数据, 不是射手账号的空榜。
 导航走页面自己的 navigate() 全局函数 (应用内路由, 地址栏全程不动),
 不点菜单按钮 —— 与真实用户路径等价但不依赖弹层几何。
+播放: 每个视图截前都先起播 (start_playing) —— 船坞播放胶囊全应用
+常驻 (dock z50 盖过推入层 z44), 8 张截图张张带胶囊, 也是「听着歌
+逛列表」的日常形态 (2026-10-22 用户点名); 专辑页例外走 hero 大播放
+键播本碟; 播放器页全屏盖顶, 胶囊本来就不见。
 封面: real_server 只快照曲库库, 生产封面缓存 (music-art/) 不跟库走 ——
 首次跑截图前先拷一份到 $SHOTLAB/music-real/music-art/ (real_server
 起服时会自动补拷), 不然每张封面都要 sshfs 现提取, 视口内大量超时
@@ -164,9 +168,25 @@ async def open_app(browser):
     return page, errors
 
 
+async def start_playing(page, click_js="#home-recent [data-track-row]"):
+    """起播一首歌 → 船坞变成播放胶囊 (封面/歌名/播放键)。胶囊全应用
+    常驻 (dock z50 盖过推入层 z44), 播着歌逛任何列表页它都在 ——
+    2026-10-22 用户点名「所有的界面都需要播放按钮 (播放胶囊)」。
+    点完把主页滚回顶部: 目标行在首屏之下, Playwright 点击会自动把它
+    滚进视口, 不滚回去截到的就是半山腰 (专辑墙出画)。"""
+    await page.click(click_js)
+    await page.wait_for_selector("#mini-player:not([hidden])", timeout=15000)
+    await page.wait_for_function(
+        "document.querySelector('#mini-title .mq-run')"
+        ".textContent.trim() !== ''", timeout=15000)
+    await page.evaluate("document.querySelector('main').scrollTop = 0")
+
+
 async def shoot_pane(browser, name, route, ready_js, last_ms=1200):
-    """通用推入层射手: 冷启主页 → navigate() 推层 → 等数据锚点 → settle。"""
+    """通用推入层射手: 冷启主页 → 起播 (胶囊常驻) → navigate() 推层
+    → 等数据锚点 → settle。"""
     page, errors = await open_app(browser)
+    await start_playing(page)
     await page.evaluate(f"navigate('{route}')")
     await page.wait_for_function(ready_js, timeout=30000)
     await settle(page, last_ms)
@@ -203,18 +223,11 @@ READY = {
 
 
 async def music_home(browser):
-    """主页: 「正在听歌」形态 —— 点开最近播放的第一首, 船坞变成迷你条
+    """主页: 「正在听歌」形态 —— 点开最近播放的第一首, 船坞变成播放胶囊
     (封面/歌名/播放键), 这是日常开着 app 的真实样子; 冷启空船坞反而
-    是没人用的新装机。点完把主页滚回顶部: 「最近播放」的行在首屏
-    之下, Playwright 点击会自动把它滚进视口, 不滚回去截到的就是
-    半山腰 (专辑墙出画, 满屏占位观感)。"""
+    是没人用的新装机。"""
     page, errors = await open_app(browser)
-    await page.click("#home-recent [data-track-row]")
-    await page.wait_for_selector("#mini-player:not([hidden])", timeout=15000)
-    await page.wait_for_function(
-        "document.querySelector('#mini-title .mq-run')"
-        ".textContent.trim() !== ''", timeout=15000)
-    await page.evaluate("document.querySelector('main').scrollTop = 0")
+    await start_playing(page)
     await settle(page, 1200)
     await images_settled(page)
     await page.screenshot(path=f"{OUT}/music-home.png")
@@ -224,10 +237,21 @@ async def music_home(browser):
 
 
 async def music_album(browser):
-    """专辑页 (默认孙燕姿《风筝》): hero 封面 + 全碟曲目。"""
+    """专辑页 (默认孙燕姿《风筝》): hero 封面 + 全碟曲目。hero 大播放键
+    起播这张专辑 —— 胶囊里放的就是本碟第一首, 与页面同源 (顺手也演示
+    了「整碟播放」这条主路径)。键上的图标是静态 SVG 不随播放切换,
+    就绪锚点看胶囊: mini-player 亮 + 歌名落位。"""
     page, errors = await open_app(browser)
     await page.evaluate(f"navigate('album/{ALBUM_ID}')")
     await page.wait_for_function(ALBUM_READY, timeout=30000)
+    await page.click("#album-play")
+    await page.wait_for_selector("#mini-player:not([hidden])", timeout=15000)
+    await page.wait_for_function(
+        "document.querySelector('#mini-title .mq-run')"
+        ".textContent.trim() !== ''", timeout=15000)
+    await page.evaluate(
+        "document.querySelector('.push-pane[data-view=album] .pane-scroll')"
+        ".scrollTop = 0")
     await settle(page, 1500)
     await images_settled(page)
     await page.screenshot(path=f"{OUT}/music-album.png")
