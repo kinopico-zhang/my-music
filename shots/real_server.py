@@ -96,6 +96,26 @@ if not SECRET.exists():
     shutil.copyfile(_need("会话密钥", SOURCE_SECRET), SECRET)
 print(f"users copy {USERS_DB} ({USERS_DB.stat().st_size} bytes)", flush=True)
 
+# ---- 封面缓存补拷: music-art 不跟库走, 空着的话每张封面都要从音频文件
+# 现提取 (sshfs 直读 NAS 很慢), 截图视口内大量超时 404 = 成片占位灰块
+# (2026-10-22 用户点名「很多截图都没有专辑封面」)。生产侧一份 ~630MB,
+# 一次性 copytree 几十秒; 已有副本则跳过 (想重拷删掉目录即可)。 ----
+ART_DIR = WORK / "music-art"
+SOURCE_ART = os.environ.get(
+    "SHOT_SOURCE_ART",
+    str(pathlib.Path(_need("生产库", SOURCE_DB)).parent / "music-art"))
+_cache_hit = ART_DIR.exists() and any(ART_DIR.iterdir())
+if not _cache_hit and pathlib.Path(SOURCE_ART).is_dir():
+    shutil.copytree(SOURCE_ART, ART_DIR, dirs_exist_ok=True)
+    print(f"art cache copied {ART_DIR} "
+          f"({sum(1 for _ in ART_DIR.iterdir())} files)", flush=True)
+elif _cache_hit:
+    print(f"art cache reused {ART_DIR} "
+          f"({sum(1 for _ in ART_DIR.iterdir())} files)", flush=True)
+else:
+    print(f"warn: 生产封面缓存不存在 ({SOURCE_ART}), "
+          f"截图可能出现大量占位灰块", flush=True)
+
 os.environ.update({
     "MYHOME_USERS_DB": str(USERS_DB),
     "MYHOME_SECRET_FILE": str(SECRET),

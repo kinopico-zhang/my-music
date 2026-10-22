@@ -13,7 +13,10 @@ undmg.py 纯 python 解 UDIF 后 carve 出 PNG) 只含边框环 + 灵动岛, 屏
 外扩 4px (MaxFilter), 内容伸进边框内唇的软过渡之下, 内缘亮线也一并压掉。
 角出框的洞形蒙版 (对缩放后 bezel 的透明区从外部洪泛, 包不进来的透明区
 = 屏幕洞) 贴内容, 方角内容永远出不了圆角开窗。
-页高按 pages/*.png 实际尺寸自适应 (764 视口 + 34px 底条拉伸补齐安全区)。
+页高按 pages/*.png 实际尺寸自适应。my-music 的原图是 852 全屏
+(射手注入 safe-area, 应用自画两带), 页高 852 → botbar 分支走不到,
+只叠状态栏图标 —— 不做任何拉伸补条 (与 my-tesla 的 764+拉伸口径
+不同, 本仓列表页底常切在文字上, 拉伸会出条纹)。
 
 2026-10-09 白边收紧 (用户点名「截图白边太多, 与下方文字间距大」): 原来
 资产透明留白 + MARGIN 24, 白底 README 上每边 ~10 CSS px 死白边。收的是
@@ -83,7 +86,7 @@ body {background:transparent}
   font-size:17px;font-weight:600;color:#fff}
 .sicons {position:absolute;right:30px;top:24.2px;width:80px;height:14px}
 .sicons img {width:100%;height:100%;display:block}
-.page {position:absolute;left:0;top:54px;width:393px;height:__H__px}
+.page {position:absolute;left:0;top:0;width:393px;height:__H__px}
 .page img {width:100%;height:100%;display:block}
 .botbar {position:absolute;left:0;top:__BOT__px;width:393px;height:__BH__px}
 .botbar img {width:100%;height:100%;display:block}
@@ -99,6 +102,11 @@ body {background:transparent}
   <div class="homebar"><img src="data:image/png;base64,__HOME__"></div>
 </div>
 </body></html>"""
+# my-music 原图是 852 全屏 (射手注入 safe-area CSS, 应用自己让位画
+# 状态栏带与底部安全带): .page 贴 top:0 整幅上屏, botbar 逻辑走不到
+# (798-852 < 0), 不拉伸补任何条 —— tesla 那套「764 内容 + 顶/底拉伸
+# 补条」的口径在本仓会出拉伸条纹 (列表页底常切在文字上), 不用。
+# topbar 保留: 万一某页顶带非纯黑, 同色垫底无害。
 
 # ---- 官方 bezel: 一次缩放, 全部页共用 ----
 WIN = (72, 69, 1278, 2691)              # 开窗 @3x = 402×874pt (实测 flood-fill)

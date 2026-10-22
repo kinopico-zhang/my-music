@@ -1,4 +1,4 @@
-"""My Music 全页截图射手: 8 个视图各一张, iPhone 视口 (内容区 393x764) dsf=2。
+"""My Music 全页截图射手: 8 个视图各一张, iPhone 视口 (393x852 全屏) dsf=2。
 
 用法: /tmp/pw-verify/bin/python shots/shoot.py [名字过滤词]
 依赖: 真实数据实例已起 (shots/real_server.py, 默认 127.0.0.1:8906)。
@@ -7,15 +7,22 @@
       SHOTLAB 工作目录 (默认 ~/shotlab; 账号副本在 $SHOTLAB/music-real/)
       SHOT_ALBUM_ID 专辑页/播放器用的专辑 (默认 250 = 孙燕姿《风筝》,
       封面 + 全碟逐行歌词; 播放器放它的同名曲第 2 首)
-口径与 my-tesla shots/shoot.py 同源: 视口 764 (底部 34px iOS 安全区由
-合成补齐); 开场/推入动画等收完 (settle 等动画清零, 循环动画超时放行);
-每视图独立 context, localStorage 清掉 music.lastRoute (开局回跳会跟
-射手抢导航)。
+口径与 my-tesla shots/shoot.py 同源, 但安全区处理相反: tesla 视口 764
+(内容区), 合成拉伸补条; 本仓视口 852 全屏 + 注入 safe-area CSS
+(顶 54 / 底 34, 见 SAFE_AREA_CSS), 应用自己让位画两带 —— 原图即完整
+真机截图, 合成不拉伸补任何条 (my-music 的列表页底常切在文字上, 拉伸
+会出条纹, dock 也会被撕)。开场/推入动画等收完 (settle 等动画清零,
+循环动画超时放行); 每视图独立 context, localStorage 清掉
+music.lastRoute (开局回跳会跟射手抢导航)。
 会话: 最近播放/播放排行按账号记, 用真实账号的 uuid 签 cookie
 (与 /api/login 同配方: exp.uuid.HMAC, 密钥 = 账号副本那份
 .session_secret 的 sha256) —— 收听史是真实数据, 不是射手账号的空榜。
 导航走页面自己的 navigate() 全局函数 (应用内路由, 地址栏全程不动),
 不点菜单按钮 —— 与真实用户路径等价但不依赖弹层几何。
+封面: real_server 只快照曲库库, 生产封面缓存 (music-art/) 不跟库走 ——
+首次跑截图前先拷一份到 $SHOTLAB/music-real/music-art/ (real_server
+起服时会自动补拷), 不然每张封面都要 sshfs 现提取, 视口内大量超时
+404, 截图上就是成片的占位灰块。
 """
 import asyncio
 import hashlib
@@ -36,7 +43,32 @@ OUT = os.environ.get("SHOT_PAGES",
 ALBUM_ID = os.environ.get("SHOT_ALBUM_ID", "250")
 os.makedirs(OUT, exist_ok=True)
 
-VIEWPORT = {"width": 393, "height": 764}   # 852-54 状态栏-34 底部安全区
+VIEWPORT = {"width": 393, "height": 852}   # iPhone 全屏 (含状态栏 54 + 安全区 34)
+
+# 桌面 chromium 的 env(safe-area-inset-*) 恒为 0, 应用认不到真机的安全区
+# —— 页面会画到屏幕边缘, 合成只能拿底 2 行像素硬拉伸补条 (列表页底正好
+# 切在文字上 = 拉伸条纹, dock 下半也被撕掉)。改从 CSS 侧注入真机等效值
+# (viewport-fit=cover 的独立模式): 顶 54 / 底 34, 让应用自己让位、自己画
+# 两带 —— 原图即是完整真机截图, 合成只叠状态栏图标, 不再拉伸补任何条。
+# 注入在应用样式表之后 append (同特异性后来居上); 用点清单与
+# app/music/static/css/ 的 env() 用点一一对应 (share/搜索/设置等
+# 不入镜的页面不管)。
+SAFE_AREA_CSS = """
+:root { --top-clear: max(90px, var(--top-floor)); }
+:root { --dock-clear: calc(var(--dock-h) + 48px); }
+main { margin-top: 54px; }
+#dock { padding-bottom: 38px; }
+.push-pane .pane-scroll { padding-top: 68px; }
+.push-pane[data-view="top"] .pane-scroll { padding-top: 68px; }
+"""
+SAFE_AREA_INIT = """
+document.addEventListener('DOMContentLoaded', () => {
+  const s = document.createElement('style');
+  s.textContent = %s;
+  document.head.appendChild(s);
+});
+""" % repr(SAFE_AREA_CSS)
+
 UA = ("Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) "
       "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 "
       "Safari/604.1")
@@ -85,6 +117,7 @@ async def ctx_new(browser):
         timezone_id="Asia/Shanghai")
     await ctx.add_init_script(
         "try{localStorage.removeItem('music.lastRoute')}catch(e){}")
+    await ctx.add_init_script(SAFE_AREA_INIT)
     await ctx.add_cookies([{"name": "auth", "value": TOKEN, "url": BASE}])
     return ctx
 
@@ -170,7 +203,18 @@ READY = {
 
 
 async def music_home(browser):
+    """主页: 「正在听歌」形态 —— 点开最近播放的第一首, 船坞变成迷你条
+    (封面/歌名/播放键), 这是日常开着 app 的真实样子; 冷启空船坞反而
+    是没人用的新装机。点完把主页滚回顶部: 「最近播放」的行在首屏
+    之下, Playwright 点击会自动把它滚进视口, 不滚回去截到的就是
+    半山腰 (专辑墙出画, 满屏占位观感)。"""
     page, errors = await open_app(browser)
+    await page.click("#home-recent [data-track-row]")
+    await page.wait_for_selector("#mini-player:not([hidden])", timeout=15000)
+    await page.wait_for_function(
+        "document.querySelector('#mini-title .mq-run')"
+        ".textContent.trim() !== ''", timeout=15000)
+    await page.evaluate("document.querySelector('main').scrollTop = 0")
     await settle(page, 1200)
     await images_settled(page)
     await page.screenshot(path=f"{OUT}/music-home.png")
