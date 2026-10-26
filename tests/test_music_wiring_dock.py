@@ -21,8 +21,7 @@ def test_music_dock_wiring():
     player = music_player_js()
     # 旧页签栏死透
     assert "<nav id=\"tabbar\">" not in html and "data-view-tab" not in html
-    assert "--tabbar-h" not in html and "tab-row" not in html
-    assert "syncViewTabs" not in js
+    assert "--tabbar-h" not in html and "tab-row" not in html and "syncViewTabs" not in js
     # 三件套从左到右: 菜单键 / 气泡 / 搜索键 (markup 顺序即视觉顺序)
     dock_html = html[html.index('<div id="dock">'):html.index("<!-- 菜单键的上弹菜单")]
     assert dock_html.index('id="dock-menu"') < dock_html.index('id="mini-player"') \

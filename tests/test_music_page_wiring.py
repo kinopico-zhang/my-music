@@ -32,8 +32,7 @@ def test_music_downloads_wiring():
     assert "data-download-track" in js             # 曲目行下载标
     assert "storageUsage" in js and "formatBytes" in js    # 下载管理: 量大小并显示
     # 1.8.17 改版 (用户点名): 行尾删除键换成左滑出删除 (与列表内曲目同一颗
-    # bindSwipeDelete), 「全部删除」撤掉只留右上角多选 —— 删除只动下载缓存,
-    # 曲库只读, 碰不到库里一个字节
+    # bindSwipeDelete), 「全部删除」撤掉只留右上角多选 —— 删除只动下载缓存, 曲库只读
     assert "dl-clear-all" not in js and "removeAll" not in js
     assert "bindSwipeDelete(target, async (wrap) => {" in js   # 左滑删除挂下载行
     assert "await downloads.removeDownload(trackId);" in js    # 左滑/多选同一条删径
@@ -57,8 +56,7 @@ def test_music_downloads_wiring():
     assert "stroke-dasharray" in js and "stroke-dashoffset" in js
     # 1.8.5 修「下载中已下载页封面闪烁」: 进度回调不再整页重铺 —— 行级
     # 就地补 (同一行只换圆环, 状态翻转才换行), 全清了才补统计行
-    assert "function refreshDownloadsBody" in js
-    assert "function downloadRowHTML" in js
+    assert "function refreshDownloadsBody" in js and "function downloadRowHTML" in js
     assert 'body.querySelectorAll("[data-dl-wrap]")' in js   # 行集合对照在 wrap 一级
     assert "ring.outerHTML = downloadRingHTML" in js
     # 已下载行也带封面: 曲目封面接口 + 裂图退音符 (和播放列表行同款)
