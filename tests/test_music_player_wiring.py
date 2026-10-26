@@ -70,6 +70,12 @@ def test_music_lyrics_animation_wiring():
                  "function cancelLyricsScroll", "lyricsScrollRaf",
                  '"pointerdown", cancelLyricsScroll']:   # 手动滚动优先于动画
         assert frag in player, f"music-player.js 缺少 {frag}"
+    # 1.8.141 滚动目标钳可达区间 + 步长地板: scrollTop 取整环境里 <1px
+    # 步子原地踏步, 短词/负目标时终点不可达 — 缓动尾巴迈不过收敛门槛,
+    # 跟唱每换一行 rAF 空转 (移动端必中)
+    assert "Math.max(0, Math.min(" in player
+    assert "container.scrollHeight - container.clientHeight" in player
+    assert "Math.abs(step) < 1 ? (step < 0 ? -1 : 1) : step" in player
 
 
 def test_music_click_play_starts_from_beginning():

@@ -21,7 +21,7 @@ def test_music_lyrics_edit_menu_wiring():
                  'js/music-lyrics-edit.js?v=1',
                  'js/music-player-state.js?v=4',      # lyricsOffsets 缓存
                  'js/music-player-lyrics-toggle.js?v=6',   # 预取记 offset
-                 'js/music-player-lyrics.js?v=5',      # 高亮减 offset
+                 'js/music-player-lyrics.js?v=6',      # 高亮减 offset
                  'js/music-track-menus.js?v=10',       # ⋯ 变体亮出该项
                  'js/music-menu-gestures.js?v=8']:     # 派发分支
         assert frag in html, f"页面缺 {frag}"

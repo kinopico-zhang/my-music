@@ -1,8 +1,12 @@
 /* music-pip — 画中画小窗的样式 (1.8.105, JS 同名模块): 只被画中画文档
    加载 (music-pip.js 往 pip 窗里挂 <link>, 主页不挂它) —— PiP 文档不吃
    主页样式, 调色板照抄 music-base.css 的 :root 一份 (纯黑底/白字/苹果红
-   进度), 黑底小窗浮在别的应用上不突兀。横条布局: 封面 / 文字+进度 /
-   三键, 一行装下 400×112。 */
+   进度), 黑底小窗浮在别的应用上不突兀。
+   1.8.141 方形跟唱重排 (用户点名「当前界面沉在下面, 上面显示滚动歌词,
+   整体是个方形的界面」): 窗 360 方, 上半屏歌词跟唱滚动 (清晰度分工照
+   播放页那套 —— 正唱的清晰放大、下一句清晰、其余微模糊, 上下渐隐),
+   底部沉一条原来的封面/文字/进度/三键横条, 血线分隔 —— 遥控器还在
+   老位置, 肌肉记忆不搬家。 */
 html, body {
   height: 100%;
   margin: 0;
@@ -17,9 +21,51 @@ html, body {
 
 body {
   display: flex;
+  flex-direction: column;
+}
+
+/* ---- 上半屏: 歌词 (flex 长大, 滚动收口在这层) ---- */
+#pip-lyrics {
+  flex: 1;
+  min-height: 0;                /* flex 子项不收口就撑破窗 */
+  overflow-y: auto;
+  overscroll-behavior: contain; /* 滚到头不做橡皮筋 */
+  scrollbar-width: none;        /* 小窗藏滚动条: 跟唱自动滚, 手动滑也干净 */
+  -webkit-mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+  mask-image: linear-gradient(transparent, #000 14%, #000 86%, transparent);
+  padding: 56px 22px 48px;      /* 上下留呼吸: 亮行居中, 首尾句也有落位 */
+}
+#pip-lyrics::-webkit-scrollbar { display: none; }
+/* 行宽与放大同播放页的数学: 84% × 1.15 ≈ 97% 装得下, 溢出落进行距 */
+.lyrics-line {
+  max-width: 84%;
+  font-size: 17px; font-weight: 700; color: rgba(255, 255, 255, .34);
+  padding: 8px 0; line-height: 1.4; text-align: left;
+  filter: blur(2px); will-change: filter, transform;
+  transform-origin: left center;
+  transition: filter .5s cubic-bezier(.22,.61,.36,1),
+              color .5s cubic-bezier(.22,.61,.36,1),
+              transform .5s cubic-bezier(.22,.61,.36,1);
+}
+/* 清晰度分工 (播放页同款): 正唱的清晰放大, 下一句清晰不放大, 其余模糊 */
+.lyrics-line.upnext { color: rgba(255, 255, 255, .64); filter: blur(0); }
+.lyrics-line.active { color: #fff; filter: blur(0); transform: scale(1.15); }
+/* 无时间轴的词没有"当前句"可模糊 → 整页清晰 (手动滑着读) */
+#pip-lyrics.static .lyrics-line { filter: blur(0); }
+.lyrics-empty {
+  height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(235, 235, 245, .4);
+}
+
+/* ---- 窗底: 原来的遥控横条 (1.8.105 布局原样沉底) ---- */
+.pip-bar {
+  display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 14px;
+  flex-shrink: 0;
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, .09);
 }
 
 #pip-art {

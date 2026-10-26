@@ -79,7 +79,7 @@ def test_music_downloads_wiring():
     # 1.8.100 +handoff; 1.8.105 +pip; 1.8.103 +dock-volume; 1.8.124
     # +play-outbox +play-outbox-integration; 1.8.129 +player-quality; 1.8.140
     # +hero-snap 补程拆分); 引用一律带版本参数 (改哪个 bump 哪个)
-    assert len(scripts) == 72 and all("?v=" in src for src in scripts) \
+    assert len(scripts) == 73 and all("?v=" in src for src in scripts) \
         and "js/play-outbox.js?v=" in html \
         and "js/music-play-outbox-integration.js?v=" in html  # 1.8.124 补报
     assert "js/music-hero-snap.js?v=1" in html               # 1.8.140 补程拆分

@@ -1,15 +1,21 @@
-// music-pip — 画中画迷你播放窗 (1.8.105 上桌; 1.8.106 改失焦自动开/回焦收;
-// 1.8.107 修用户实报「来回切换页面, 画中画就没了」: Chrome 只许赶在最近的
-// 用户手势 (~5 秒) 里 requestWindow, 回焦即关的小窗再想弹开时手势早过期,
-// 被 NotAllowedError 拦下 —— 小窗改长驻: 失焦时 (还没开过) 自动弹, 回到
-// 播放页不收, 用户亲手 ✕ 过的这页会话不再自动弹): Chrome 的 Document
-// Picture-in-Picture API 开一枚总在最前的小窗, 里面封面/歌名/进度线/
-// 上一首·播停·下一首 —— 音频照旧留在主页的 #audio 里播 (PiP 窗只是遥控器
-// +显示器, 主页最小化、切去别的应用都不断音), 控制键回连主页的播放函数
-// (监听器闭包在 opener 一侧, 主页的全局都拿得到)。探测不到这 API 的浏览器
-// (Firefox/Safari) 整个模块歇着。窗内文档不吃主页样式, 自带 music-pip.css。
+// music-pip — 画中画跟唱窗 · 窗体与遥控 (1.8.105 上桌; 1.8.106 改失焦自动
+// 开/回焦收; 1.8.107 修用户实报「来回切换页面, 画中画就没了」: Chrome 只许
+// 赶在最近的用户手势 (~5 秒) 里 requestWindow, 回焦即关的小窗再想弹开时
+// 手势早过期, 被 NotAllowedError 拦下 —— 小窗改长驻: 失焦时 (还没开过)
+// 自动弹, 回到播放页不收, 用户亲手 ✕ 过的这页会话不再自动弹; 1.8.141
+// 方形跟唱重排, 用户点名「画中画里当前界面沉在下面, 上面显示滚动歌词,
+// 整体方形」: 窗 400×112 横条改 360×360 方窗, 上半屏歌词跟唱滚动点亮
+// (歌词机器拆在 music-pip-lyrics.js, 与播放页同一份缓存/解析/对齐微调),
+// 原来的封面/歌名/进度线/上一首·播停·下一首横条沉到窗底 (遥控器还在老
+// 位置, 肌肉记忆不搬家): Chrome 的 Document Picture-in-Picture API 开
+// 一枚总在最前的小窗, 音频照旧留在主页的 #audio 里播 (PiP 窗只是遥控器
+// + 显示器, 主页最小化、切去别的应用都不断音), 控制键回连主页的播放函数
+// (监听器闭包在 opener 一侧, 主页的全局都拿得到)。探测不到这 API 的
+// 浏览器 (Firefox/Safari) 整个模块歇着。窗内文档不吃主页样式, 自带
+// music-pip.css。
 "use strict";
-/* global $, ICON_PAUSE, ICON_PLAY, PLACEHOLDER_ARTWORK, currentTrack,
+/* global $, ICON_PAUSE, ICON_PLAY, PLACEHOLDER_ARTWORK, bindPipLyrics,
+          currentTrack, pipHighlightLyrics, pipLoadLyrics, pipResetLyrics,
           playerIsPlaying, playerNext, playerPrevious, playerToggle */
 
 let pipWindow = null;       // 开着的画中画窗 (null = 没开, pagehide 时清)
@@ -58,24 +64,27 @@ function updatePipProgress() {
 async function openPipWindow() {
   if (pipWindow && !pipWindow.closed) return;
   pipWindow = await documentPictureInPicture.requestWindow(
-    { width: 400, height: 112 });
+    { width: 360, height: 360 });
   const doc = pipWindow.document;
   doc.title = "My Music";
   const link = doc.createElement("link");
   link.rel = "stylesheet";
-  link.href = "/music/static/css/music-pip.css?v=1";
+  link.href = "/music/static/css/music-pip.css?v=2";
   doc.head.appendChild(link);
   doc.body.innerHTML = `
-    <img id="pip-art" alt="">
-    <div class="pip-info">
-      <b id="pip-title"></b>
-      <small id="pip-artist"></small>
-      <div class="pip-track"><i id="pip-progress"></i></div>
-    </div>
-    <div class="pip-keys">
-      <button type="button" id="pip-prev" aria-label="上一首"></button>
-      <button type="button" id="pip-play" aria-label="播放/暂停"></button>
-      <button type="button" id="pip-next" aria-label="下一首"></button>
+    <div id="pip-lyrics"><div class="lyrics-empty">这首歌没有歌词</div></div>
+    <div class="pip-bar">
+      <img id="pip-art" alt="">
+      <div class="pip-info">
+        <b id="pip-title"></b>
+        <small id="pip-artist"></small>
+        <div class="pip-track"><i id="pip-progress"></i></div>
+      </div>
+      <div class="pip-keys">
+        <button type="button" id="pip-prev" aria-label="上一首"></button>
+        <button type="button" id="pip-play" aria-label="播放/暂停"></button>
+        <button type="button" id="pip-next" aria-label="下一首"></button>
+      </div>
     </div>`;
   doc.getElementById("pip-prev").innerHTML = PIP_PREV;
   doc.getElementById("pip-next").innerHTML = PIP_NEXT;
@@ -84,15 +93,19 @@ async function openPipWindow() {
   doc.getElementById("pip-prev").addEventListener("click", playerPrevious);
   doc.getElementById("pip-play").addEventListener("click", playerToggle);
   doc.getElementById("pip-next").addEventListener("click", () => playerNext());
+  // 歌词容器的手动滑词监听在歌词模块里 (跟唱状态都在那侧)
+  bindPipLyrics(doc.getElementById("pip-lyrics"));
   // 窗关了收尾; pagehide 比 unload 可靠。谁关的要分清: 我们代关的 (主页
   // 收页) 不算嫌弃, 用户自己 ✕ 的记下 —— 这一页会话别再自动弹回来烦人
   pipWindow.addEventListener("pagehide", () => {
+    pipResetLyrics();
     pipWindow = null;
     if (!pipClosingByApp) pipDismissed = true;
     pipClosingByApp = false;
   });
   updatePipChrome();
   updatePipProgress();
+  pipLoadLyrics();
 }
 
 /** 关画中画窗 (主页收页时, 别留孤儿窗); pagehide 会跟着清引用。 */
@@ -127,12 +140,15 @@ function bindPip() {
   // 主页整个收掉 (关标签/跳走): 小窗别成孤儿
   window.addEventListener("pagehide", closePipWindow);
   // 主页播放器的动静带进小窗: 起播刷文案+键, 暂停刷键, 换曲 (loadedmetadata)
-  // 刷整套, timeupdate 刷进度 —— 全从主 #audio 的原生事件取, 窗没开时早退
+  // 刷整套+重铺词, timeupdate 刷进度+驱动歌词亮行 —— 全从主 #audio 的原生
+  // 事件取, 窗没开时早退
   const audio = $("#audio");
   audio.addEventListener("play", updatePipChrome);
   audio.addEventListener("pause", updatePipPlayButton);
   audio.addEventListener("loadedmetadata", updatePipChrome);
+  audio.addEventListener("loadedmetadata", pipLoadLyrics);
   audio.addEventListener("timeupdate", updatePipProgress);
+  audio.addEventListener("timeupdate", pipHighlightLyrics);
 }
 
 bindPip();

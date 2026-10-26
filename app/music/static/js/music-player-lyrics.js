@@ -106,15 +106,24 @@ function lyricsScrollFrame(now) {
   }
   const dt = Math.min(Math.max(now - lyricsScrollLastTime, 0), 40) / 1000;
   lyricsScrollLastTime = now;
-  const target = line.offsetTop - container.clientHeight / 2
-    + line.offsetHeight / 2;
+  // 目标钳到可达区间 (1.8.141): 头几行居中的目标在容器顶之上 (负),
+  // 短词/高屏时深行的目标又可能超过最大可滚距离 — 两头都钳, 缓动必有
+  // 可达终点, 不然 rAF 每换一行就空转
+  const target = Math.max(0, Math.min(
+    container.scrollHeight - container.clientHeight,
+    line.offsetTop - container.clientHeight / 2 + line.offsetHeight / 2));
   const remaining = target - container.scrollTop;
   if (Math.abs(remaining) < 1) {
     container.scrollTop = target;
     endLyricsScroll();
     return;
   }
-  container.scrollTop += remaining * Math.min(1, dt * 10);   // 指数缓出
+  const step = remaining * Math.min(1, dt * 10);   // 指数缓出
+  // 步长地板 1px (1.8.141): scrollTop 会被取整的环境 (移动端/浏览器缩放
+  // ≠100%) 里不足 1px 的步子整型化后原地踏步, 缓动尾巴永远迈不过上面的
+  // 收敛门槛 — 跟唱每换一行 rAF 就空转 (CPU 白烧, 浏览态也被宽限期
+  // 盖住); 地板保证每帧至少挪 1px, 尾巴必能走完
+  container.scrollTop += Math.abs(step) < 1 ? (step < 0 ? -1 : 1) : step;
   lyricsScrollRaf = requestAnimationFrame(lyricsScrollFrame);
 }
 
