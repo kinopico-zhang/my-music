@@ -115,4 +115,4 @@ def test_play_outbox_wiring():
     # playOutbox, 版本号钉 v18/v2 (改这俩文件必须 bump, 旧 URL 手机拉不回新的)
     assert "const playOutbox" not in events_js
     assert 'js/play-outbox.js?v=2"' in html
-    assert 'js/music-player-audio-events.js?v=18"' in html
+    assert 'js/music-player-audio-events.js?v=19"' in html

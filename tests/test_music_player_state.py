@@ -150,11 +150,11 @@ def test_player_state_client_wiring():
         encoding="utf-8")
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
     # ?v= 换内容必换址 (1.8.125 中间态缓存事故的教训)
-    assert 'js/music-player-persistence.js?v=6"' in html
-    assert 'js/music-player-audio-events.js?v=18"' in html
+    assert 'js/music-player-persistence.js?v=7"' in html
+    assert 'js/music-player-audio-events.js?v=19"' in html
     assert 'js/music-player-boot.js?v=3"' in html
     assert 'js/music-player-state.js?v=5"' in html
-    assert "music-shell-v126" in sw
+    assert "music-shell-v127" in sw
     # 1.8.143: hero-snap 必须先于 player-queue 加载 —— 开局恢复现场在页面
     # 装配期调 loadTrack, 定义晚于调用方 = boot 当场 ReferenceError 断链
     assert html.index("js/music-hero-snap.js") < html.index(
@@ -165,9 +165,13 @@ def test_player_state_client_wiring():
     for frag in ["function syncPlayerState", "function sendPlayerState",
                  "function playerStateServerBackfill",
                  "function applySavedState", "syncPlayerState();",
-                 "if (currentTrack) return;", "keepalive"]:
+                 "if (currentTrack) return;", "keepalive",
+                 "function savePlayerStateThrottled"]:
         assert frag in persistence, f"现场镜像缺 {frag}"
     assert "playerStateServerBackfill();" in boot
+    # 1.8.144: 存档挂 timeupdate (后台定时器冻结也丢不了), setInterval 退役
+    assert "savePlayerStateThrottled();" in audio
+    assert "setInterval" not in audio
     assert "localStorage.setItem(PLAYER_STATE_KEY, JSON.stringify(saved))" \
         in persistence      # 回填结果写回本地, 下次开局秒回
     # 单曲循环每圈重报: 重置旗在回开头重播之前 (代码序, 别咬注释)

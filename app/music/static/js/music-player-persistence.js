@@ -5,7 +5,8 @@
 "use strict";
 /* global PLAYER_STATE_KEY, audioElement, createPlayQueue, currentTrack,
           fetchJSON, loadTrack, playQueue: writable, queueCurrent */
-/* exported playerRestore, playerStateServerBackfill, savePlayerState */
+/* exported playerRestore, playerStateServerBackfill, savePlayerState,
+            savePlayerStateThrottled */
 
 // ------------------------------------------------------------ 持久化
 function savePlayerState() {
@@ -23,6 +24,18 @@ function savePlayerState() {
     }));
   } catch (_error) { /* 存储满了就算了, 不影响听歌 */ }
   syncPlayerState();
+}
+
+let lastLiveSaveAt = 0;
+/** 出声路上的节流存档 (1.8.144): 后台播放时页面定时器会被 iOS 冻结,
+    进度停在按播放那一刻 (用户实报「杀掉重启进度不见了」); 但音频还在
+    响的时候 timeupdate 事件照常发 (1.8.100 后台接力依赖同一事实) ——
+    存档挂在声音上不挂在定时器上, 锁屏/切走听, 进度也跟着走。 */
+function savePlayerStateThrottled() {
+  const now = Date.now();
+  if (now - lastLiveSaveAt < 4000) return;   // timeupdate ~4 次/秒, 4 秒一档
+  lastLiveSaveAt = now;
+  savePlayerState();
 }
 
 // ------------------------------------------------- 服务端镜像 (1.8.142)

@@ -23,7 +23,7 @@
           maybeHandoffEarly, notePlaybackFailed, notePlaybackSucceeded,
           playbackDuration,
           playQueue, playRecorded: writable, playerIsPlaying, playerNext,
-          rearmMediaSession, reportPlay, savePlayerState, updateMediaSession,
+          rearmMediaSession, reportPlay, savePlayerState, savePlayerStateThrottled, updateMediaSession,
           scrubbing: writable, syncPositionState, updatePlayButtons */
 /* exported bindPlayerAudioEvents, noteAudioSourceChanged, pauseAudio,
             startAudio */
@@ -163,6 +163,7 @@ function bindPlayerAudioEvents(audio) {
   }
   audio.addEventListener("timeupdate", () => {
     lastTimeupdateAt = Date.now();   // 幽灵播放探针 (1.8.85): 还在出声推进
+    savePlayerStateThrottled();      // 1.8.144 出声就存档 (后台定时器冻结也丢不了)
     maybeHandoffEarly();             // 后台连播提前接力 (1.8.100): 趁还响着切
     // 显示基准走 playbackDuration (库时长): 元素时长在 iOS 流上 seek 后
     // 会翻脸 (NaN / 偏短), 信它就是「剩余 -0:00 歌照播」; 进度钳在 [0,1],
@@ -196,5 +197,4 @@ function bindPlayerAudioEvents(audio) {
   });
 
   window.addEventListener("pagehide", savePlayerState);
-  setInterval(() => { if (playerIsPlaying()) savePlayerState(); }, 5000);
 }
