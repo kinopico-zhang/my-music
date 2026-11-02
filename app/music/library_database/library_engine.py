@@ -148,6 +148,6 @@ def ddl_lock() -> Iterator[None]:
     if not path:
         yield
         return
-    with open(f"{path}.init-lock", "w") as lock:
+    with open(f"{path}.init-lock", "w", encoding="utf-8") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
         yield
