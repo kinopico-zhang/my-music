@@ -12,8 +12,8 @@ import threading
 from pathlib import Path
 
 from . import library_settings
-from .library_database import (create_all, dispose_engine, ensure_columns,
-                               init_engine,
+from .library_database import (create_all, ddl_lock, dispose_engine,
+                               ensure_columns, init_engine,
                                database_url as current_database_url,
                                music_directory as current_music_directory,
                                session_factory)
@@ -44,8 +44,11 @@ def start_service(database_url: str | None = None,
     扫不扫由人按 (设置页按钮 / 艺人页刷新);
     重复调用重装配 (换实例, 正在跑的扫描自然收尾)。"""
     init_engine(database_url, music_directory)
-    create_all()
-    ensure_columns()          # 老库补列 (added_at / 检索键), 新列带默认值
+    # 建表/补列排队: 双进程部署两边同秒起, DDL 不串行会撞
+    # 「table already exists」(2026-11-02 实锤) —— 见 ddl_lock 注释
+    with ddl_lock():
+        create_all()
+        ensure_columns()      # 老库补列 (added_at / 检索键), 新列带默认值
     # 曲库路径: 测试注入的目录优先; 没注入就读设置行 (设置页改过的路径
     # 重启动也生效), 与默认不同就同库换个根目录重装配
     if music_directory is None:

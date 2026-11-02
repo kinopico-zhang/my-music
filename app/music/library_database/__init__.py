@@ -7,8 +7,9 @@ import …, 不感知内部分层)。
 from .library_engine import (DEFAULT_DATABASE_URL, DEFAULT_MUSIC_DIRECTORY,
                              PROJECT_DIR, artwork_cache_directory,
                              artwork_cache_directory_for, create_all,
-                             database_url, dispose_engine, engine, get_db,
-                             init_engine, music_directory, session_factory)
+                             database_url, ddl_lock, dispose_engine, engine,
+                             get_db, init_engine, music_directory,
+                             session_factory)
 from .library_migrations import ensure_columns
 from .library_models import (AUDIO_EXTENSION_FORMATS,
                              BROWSER_PLAYABLE_FORMATS, POSTER_FILE_NAMES,
@@ -27,6 +28,6 @@ __all__ = [
     "PlayerPosition", "PlayerQueue",
     "ShareLink", "Track",
     "artwork_cache_directory", "artwork_cache_directory_for", "create_all",
-    "database_url", "dispose_engine", "engine", "ensure_columns", "get_db",
-    "init_engine", "music_directory", "session_factory",
+    "database_url", "ddl_lock", "dispose_engine", "engine", "ensure_columns",
+    "get_db", "init_engine", "music_directory", "session_factory",
 ]

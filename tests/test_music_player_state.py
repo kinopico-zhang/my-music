@@ -6,12 +6,15 @@ wiring/page_wiring 两文件已满 200 行帽, 新钉全进本文件。"""
 import json
 import logging
 import time
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 import app.main as m
+import app.music.service as music_service
 from app import account_store
+from app.music import library_database
 from app.music.library_database import (PlayerPosition, PlayerQueue,
                                         session_factory)
 from tests.music_library_helpers import _seed_library
@@ -119,6 +122,19 @@ def test_record_play_logs_each_play(auth, caplog):
     assert len(lines) == 2                             # 播一次一笔
     assert "曲A" in lines[0] and "曲B" in lines[1]
     assert "补报" not in lines[0] and "补报" in lines[1]
+
+
+def test_startup_ddl_lock_wiring():
+    """建表/补列过同一把跨进程文件锁: run.sh 双进程 (8500/8501) 两边同秒
+    起, create_all 的查与建不是一个原子, 后到者撞「table already exists」
+    当场死 (2026-11-02 实锤, 8500 起不来全站锁 HTTPS)。"""
+    service_src = Path(music_service.__file__).read_text(encoding="utf-8")
+    engine_src = Path(
+        library_database.library_engine.__file__).read_text(encoding="utf-8")
+    assert "with ddl_lock():" in service_src
+    assert service_src.index("with ddl_lock():") < service_src.index(
+        "ensure_columns()")            # 建表与补列同锁同段
+    assert "fcntl.flock" in engine_src
 
 
 def test_player_state_client_wiring():

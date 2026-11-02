@@ -7,7 +7,9 @@ sqlite 临时文件挪到大硬盘 (/tmp 是 64MB 内存盘, 大扫描的排序�
 文件一撑就 ENOSPC)、WAL (扫描线程写库时读请求不再被挡成 503)、
 锁等待 30 秒 (默认 5 秒, 扫描写事务一长读请求就炸)。
 """
+import fcntl
 import os
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -133,3 +135,19 @@ def get_db() -> Iterator[Session]:
 def create_all() -> None:
     """建表 (启动时调用)。"""
     MusicLibraryBase.metadata.create_all(engine())
+
+
+@contextmanager
+def ddl_lock() -> Iterator[None]:
+    """建表/补列的跨进程排他锁: run.sh 双进程部署 (8500/8501) 两边同一
+    秒起时, create_all 的「查一遍再建」不是一个原子 —— 后到者查的时候
+    先到者的 DDL 还没提交, 查不见就跟着建, 撞「table already exists」
+    当场死 (2026-11-02 实锤, 8500 起不来全站锁 HTTPS)。锁文件挨着库文件
+    (测试的临时库各有各的锁); 内存库没路径, 裸跑。"""
+    path = engine().url.database
+    if not path:
+        yield
+        return
+    with open(f"{path}.init-lock", "w") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        yield
