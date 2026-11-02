@@ -90,7 +90,7 @@ def test_music_click_play_starts_from_beginning():
                         player.index("function prefetchNextTrack")]
     assert "audio.currentTime = startTime;" in load_track  # 换源后显式写 (0 = 点播归零)
     assert 'preload="none"' in html          # 恢复态不拉元数据 (待生效进度的温床)
-    restore = player[player.index("function playerRestore"):
+    restore = player[player.index("function applySavedState"):
                      player.index("function renderPlayerChrome")]
     assert "loadTrack(track, false, saved.time || 0);" in restore  # 续听同一条路
     assert "audio.src = " not in restore     # 恢复不再自己赋源 (loadTrack 管)

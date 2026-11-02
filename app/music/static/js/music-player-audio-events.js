@@ -138,8 +138,7 @@ function bindPlayerAudioEvents(audio) {
     rearmMediaSession();   // 1.8.70 iOS 认出声那刻的键位, 重挂 (幂等)
     notePlaybackSucceeded();   // 1.8.76 出声了: 连挂计数清零
     // 真正出声了才算"听过" (恢复现场直接暂停的不算); 暂停续播不重复报。
-    // 1.8.124 发后不管退役: 走补报队列 (music-play-outbox-integration
-    // 的 reportPlay) —— 报不上暂存本机等回网补, 排行离线也不缺账
+    // 1.8.124 发后不管退役: 走补报队列 (integration 的 reportPlay) —— 报不上暂存本机等回网补, 排行离线也不缺账
     if (playRecorded || !currentTrack) return;
     playRecorded = true;
     reportPlay(currentTrack.track_id);
@@ -184,6 +183,7 @@ function bindPlayerAudioEvents(audio) {
   audio.addEventListener("ended", () => {
     if (playQueue && playQueue.repeat === "one") {   // 单曲循环: 回开头重播
       audio.currentTime = 0;
+      playRecorded = false;   // 1.8.142: 每圈都是一遍完整收听, 重报一次
       startAudio().catch(() => {});
       return;
     }

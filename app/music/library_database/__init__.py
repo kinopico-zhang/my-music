@@ -16,14 +16,16 @@ from .library_models import (AUDIO_EXTENSION_FORMATS,
                              MusicLibraryBase, MusicSetting,
                              PlayEvent, PlayStat, Playlist, PlaylistItem,
                              ShareLink, Track)
+from .player_state_models import PlayerPosition, PlayerQueue
 
 __all__ = [
     "AUDIO_EXTENSION_FORMATS", "BROWSER_PLAYABLE_FORMATS",
     "DEFAULT_DATABASE_URL", "DEFAULT_MUSIC_DIRECTORY", "POSTER_FILE_NAMES",
     "PROJECT_DIR",
     "Album", "Artist", "MusicLibraryBase", "MusicSetting",
-    "PlayEvent", "PlayStat", "Playlist", "PlaylistItem", "ShareLink",
-    "Track",
+    "PlayEvent", "PlayStat", "Playlist", "PlaylistItem",
+    "PlayerPosition", "PlayerQueue",
+    "ShareLink", "Track",
     "artwork_cache_directory", "artwork_cache_directory_for", "create_all",
     "database_url", "dispose_engine", "engine", "ensure_columns", "get_db",
     "init_engine", "music_directory", "session_factory",

@@ -112,7 +112,7 @@ def test_play_outbox_wiring():
     # 1.8.125 事故钉: 部署窗口里 v16 曾以「带内联接线的旧内容」进了手机的
     # 不可变缓存, 与 integration 的 const playOutbox 撞名 → audio-events 整个
     # SyntaxError 没接上 (startAudio 全灭, 点歌无声) —— 本体里不许再有自己的
-    # playOutbox, 版本号钉 v17/v2 (改这俩文件必须 bump, 旧 URL 手机拉不回新的)
+    # playOutbox, 版本号钉 v18/v2 (改这俩文件必须 bump, 旧 URL 手机拉不回新的)
     assert "const playOutbox" not in events_js
     assert 'js/play-outbox.js?v=2"' in html
-    assert 'js/music-player-audio-events.js?v=17"' in html
+    assert 'js/music-player-audio-events.js?v=18"' in html

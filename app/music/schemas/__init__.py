@@ -14,9 +14,11 @@ from .scan_schemas import (ScanStatus, ScanSummary, ScannedTrack, TagFields)
 from .search_schemas import (AudioQuality, LyricHit, LyricsApplyRequest,
                              LyricsCandidate, LyricsOffsetRequest,
                              LyricsResponse, LyricsSearchResponse,
-                             PlayRecordRequest, RecentPlaysResponse,
-                             RecentTrackBrief, SearchResult, TopPlaysResponse,
-                             TrackCredits)
+                             PlayRecordRequest, PlayerPositionSnapshot,
+                             PlayerQueueRequest, PlayerQueueSnapshot,
+                             PlayerStateResponse, PlayerTickRequest,
+                             RecentPlaysResponse, RecentTrackBrief,
+                             SearchResult, TopPlaysResponse, TrackCredits)
 from .settings_schemas import MusicSettingsState, MusicSettingsUpdate
 from .share_schemas import ShareCreated, ShareCreateRequest, SharePageData
 from .viewport_schemas import ViewportEvent, ViewportLogReport
@@ -28,6 +30,8 @@ __all__ = [
     "LyricsOffsetRequest", "LyricsResponse", "LyricsSearchResponse",
     "MusicSettingsState", "MusicSettingsUpdate", "MusicStatusResponse",
     "PlayRecordRequest",
+    "PlayerPositionSnapshot", "PlayerQueueRequest", "PlayerQueueSnapshot",
+    "PlayerStateResponse", "PlayerTickRequest",
     "PlaylistBrief", "PlaylistCreateRequest", "PlaylistOrderRequest",
     "PlaylistPage", "PlaylistPageList", "PlaylistTrackRequest",
     "RecentPlaysResponse",

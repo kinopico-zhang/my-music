@@ -25,7 +25,7 @@ let lyricsViewOpen = false;
 let queueViewOpen = false;           // 封面区翻开成队列视图 (与歌词视图二选一)
 let queueDrag = null;                // 队列拖拽换位进行中 (null = 没在拖)
 let scrubbing = false;
-let playRecorded = false;          // 本曲已报过最近播放 (暂停续播不重复报)
+let playRecorded = false;          // 本圈已报过播放 (换曲/循环每圈重报, 暂停续播不重复报)
 // 歌词自由滑动: 手动滚过就暂停跟唱, 出"回到当前句"; 静置几秒自动恢复
 let lyricsFollowPaused = false;
 let lyricsLastScrollAt = 0;

@@ -1,4 +1,5 @@
 """播放记录查询: 记一次播放 + 本人的最近播放 + 区间排行。"""
+import logging
 import time
 from datetime import datetime, timedelta
 
@@ -10,6 +11,8 @@ from ..library_database import Album, PlayEvent, PlayStat, Track
 from ..schemas import RecentTrackBrief
 from .browse_queries import track_brief
 
+_log = logging.getLogger("uvicorn.error")   # 蹭 uvicorn 输出道落 journal (仓内无日志配置, my-tesla 同款)
+
 
 def record_play(session: Session, user_uuid: str, track_id: int,
                 played_at: float | None = None) -> bool:
@@ -19,7 +22,8 @@ def record_play(session: Session, user_uuid: str, track_id: int,
     越界 (非正 / 超当下 5 分钟) 落回当下; 补报旧账只把 play_count 加一,
     不把 last_played_at 拉回去 —— 最近播放的次序跟着真实时刻走, 不被
     晚到的旧账翻乱。"""
-    if session.get(Track, track_id) is None:
+    track = session.get(Track, track_id)
+    if track is None:
         return False
     stat = session.execute(
         select(PlayStat).where(PlayStat.user_uuid == user_uuid,
@@ -37,6 +41,12 @@ def record_play(session: Session, user_uuid: str, track_id: int,
     session.add(PlayEvent(user_uuid=user_uuid, track_id=track_id,
                           played_at=when))
     session.commit()
+    # 每次播放留一笔服务端日志 (2026-11-02 用户点名): 谁在几点听了哪首,
+    # 补报 (离线攒的旧账) 单独标出来 —— 排行里两次是分不开的, 日志分得开
+    _log.info("播放: 「%s」- %s | 用户 %s | %s%s", track.title, track.artist,
+              user_uuid[:8],
+              datetime.fromtimestamp(when, LOCAL_TZ).strftime("%m-%d %H:%M:%S"),
+              " (补报)" if when < now - 1 else "")
     return True
 
 

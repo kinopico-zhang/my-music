@@ -8,13 +8,14 @@
 """
 from .common import music_app
 from . import (library_routes, lyrics_edit_routes, media_routes, page_routes,
-               playlist_routes, quality_routes, settings_routes, share_routes,
-               viewport_routes)
+               player_state_routes, playlist_routes, quality_routes,
+               settings_routes, share_routes, viewport_routes)
 
 music_app.include_router(page_routes.router)      # / /login /sw.js /changelog
 music_app.include_router(page_routes.api_router)  # /api/logout
 music_app.include_router(share_routes.router)     # /api/shares + /share/{token}*
 music_app.include_router(library_routes.router)   # /api: 曲库浏览与查询
+music_app.include_router(player_state_routes.router)   # /api: 播放现场 (1.8.142)
 music_app.include_router(settings_routes.router)  # /api: 设置 + 蜂窝流量
 music_app.include_router(playlist_routes.router)  # /api: 播放列表
 music_app.include_router(viewport_routes.router)  # /api: 视口体检回传 (1.8.10)

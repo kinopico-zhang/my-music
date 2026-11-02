@@ -1,4 +1,6 @@
-"""搜索与播放记录域的接口模型: 搜索四板块 + 记播/最近播放/歌词/来源。"""
+"""搜索与播放记录域的接口模型: 搜索四板块 + 记播/最近播放/播放现场/歌词/来源。"""
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from .browse_schemas import AlbumCard, ArtistBrief, TrackBrief
@@ -55,6 +57,53 @@ class TopPlaysResponse(BaseModel):
 
     period: str                                        # week | month | year
     tracks: list[RecentTrackBrief] = Field(default_factory=list)
+
+
+class PlayerQueueRequest(BaseModel):
+    """PUT /api/player-state 的请求体 (现场全量): 字段名与客户端 localStorage
+    现场档一字不差 (applySavedState 直接消费); 队列变了才发, 平时走 tick。"""
+
+    tracks: list[dict[str, Any]]
+    order: list[int] = Field(default_factory=list)
+    index: int = 0
+    position: int = 0
+    time: float = 0.0
+    shuffle: bool = False
+    repeat: str = "all"
+
+
+class PlayerTickRequest(BaseModel):
+    """PUT /api/player-state/tick 的请求体 (进度小拍): 播到队列哪环哪首哪一秒。"""
+
+    index: int = 0
+    position: int = 0
+    time: float = 0.0
+
+
+class PlayerQueueSnapshot(BaseModel):
+    """现场·队列半边 (读回给开局回填)。"""
+
+    tracks: list[dict[str, Any]] = Field(default_factory=list)
+    order: list[int] = Field(default_factory=list)
+    shuffle: bool = False
+    repeat: str = "all"
+    updated_at: float = 0.0
+
+
+class PlayerPositionSnapshot(BaseModel):
+    """现场·进度半边 (读回给开局回填)。"""
+
+    index: int = 0
+    position: int = 0
+    time: float = 0.0
+    updated_at: float = 0.0
+
+
+class PlayerStateResponse(BaseModel):
+    """GET /api/player-state 的应答: 两半边各自独立缺省 (没存过 = None)。"""
+
+    queue: PlayerQueueSnapshot | None = None
+    position: PlayerPositionSnapshot | None = None
 
 
 class LyricsResponse(BaseModel):

@@ -8,6 +8,15 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.142", date="2026-11-02", items=[
+    ChangelogItem(kind="新增", text="播放进度改存在服务端 —— 手机浏览器会随"
+                                   "时清掉本地数据, 以前清一次进度就丢一次; "
+                                   "现在换设备登录、清了缓存, 打开都从上次"
+                                   "听到的位置接着放。"),
+    ChangelogItem(kind="修复", text="修了播放排行的计数口径 —— 单曲循环听一"
+                                   "整天只记一次, 现在每完整听一遍都算一次, "
+                                   "排行和真实收听终于对得上。"),
+]),
     ChangelogVersion(version="1.8.141", date="2026-10-26", items=[
     ChangelogItem(kind="新增", text="画中画小窗改方形跟唱版 —— 上半屏歌词"
                                    "跟着唱滚动点亮, 原来的封面和按键条沉到"
