@@ -8,6 +8,12 @@ from typing import Final
 from ..schemas import ChangelogItem, ChangelogVersion
 
 VERSIONS_1_8: Final[list[ChangelogVersion]] = [
+    ChangelogVersion(version="1.8.143", date="2026-11-02", items=[
+    ChangelogItem(kind="修复", text="修了重启应用后播放现场回不来 —— 进度"
+                                   "和播放按钮全部消失, 一直以为是浏览器清"
+                                   "了数据, 其实档一直在, 只是恢复那条路"
+                                   "自己断了; 现在重启就接着上次的位置放。"),
+]),
     ChangelogVersion(version="1.8.142", date="2026-11-02", items=[
     ChangelogItem(kind="新增", text="播放进度改存在服务端 —— 手机浏览器会随"
                                    "时清掉本地数据, 以前清一次进度就丢一次; "

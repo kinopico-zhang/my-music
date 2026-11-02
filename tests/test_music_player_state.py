@@ -154,7 +154,11 @@ def test_player_state_client_wiring():
     assert 'js/music-player-audio-events.js?v=18"' in html
     assert 'js/music-player-boot.js?v=3"' in html
     assert 'js/music-player-state.js?v=5"' in html
-    assert "music-shell-v125" in sw
+    assert "music-shell-v126" in sw
+    # 1.8.143: hero-snap 必须先于 player-queue 加载 —— 开局恢复现场在页面
+    # 装配期调 loadTrack, 定义晚于调用方 = boot 当场 ReferenceError 断链
+    assert html.index("js/music-hero-snap.js") < html.index(
+        "js/music-player-queue.js")
     # 服务端镜像与开局回填
     assert 'fetchJSON("/music/api/player-state")' in persistence
     assert '"/music/api/player-state/tick"' in persistence

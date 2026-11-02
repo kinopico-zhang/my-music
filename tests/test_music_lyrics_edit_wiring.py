@@ -103,4 +103,4 @@ def test_music_lyrics_edit_share_follows():
     assert "audio.currentTime - lyricsOffsetMs / 1000" in js   # 高亮对轴
     assert "audio.currentTime = time + lyricsOffsetMs / 1000" in js  # 点句定位
     sw = (MUSIC_STATIC / "sw.js").read_text(encoding="utf-8")
-    assert "music-shell-v125" in sw
+    assert "music-shell-v126" in sw
